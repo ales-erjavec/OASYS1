@@ -116,6 +116,9 @@ spec = \
 
      ("logging/dockable", bool, True, "Allow log window to be docked"),
 
+     ("output/default-working-dir", str, "",
+      "Default working directory"),
+
      ("output/redirect-stderr", bool, True,
       "Redirect and display standard error output"),
 

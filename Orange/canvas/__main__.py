@@ -14,7 +14,7 @@ import shlex
 
 import pkg_resources
 
-from PyQt4.QtGui import QFont, QColor
+from PyQt4.QtGui import QFont, QColor, QDialog
 from PyQt4.QtCore import Qt, QDir
 
 from Orange import canvas
@@ -46,18 +46,6 @@ def running_in_ipython():
 if "PYCHARM_HOSTED" in os.environ:
     import signal
     signal.signal(signal.SIGINT, signal.SIG_DFL)
-
-
-def fix_osx_10_9_private_font():
-    """Temporary fix for QTBUG-32789."""
-    from PyQt4.QtCore import QSysInfo
-    if sys.platform == "darwin":
-        try:
-            if QSysInfo.MacintoshVersion > QSysInfo.MV_10_8:
-                QFont.insertSubstitution(".Lucida Grande UI", "Lucida Grande")
-        except AttributeError:
-            pass
-
 
 def fix_win_pythonw_std_stream():
     """
@@ -123,9 +111,6 @@ def main(argv=None):
     # Fix streams before configuring logging (otherwise it will store
     # and write to the old file descriptors)
     fix_win_pythonw_std_stream()
-
-    # Try to fix fonts on OSX Mavericks
-    fix_osx_10_9_private_font()
 
     # File handler should always be at least INFO level so we need
     # the application root level to be at least at INFO.
@@ -277,7 +262,7 @@ def main(argv=None):
     canvas_window.show()
     canvas_window.raise_()
 
-    want_welcome = \
+    want_welcome = True or \
         settings.value("startup/show-welcome-screen", True, type=bool) \
         and not options.no_welcome
 
@@ -289,8 +274,13 @@ def main(argv=None):
 
     app.fileOpenRequest.connect(canvas_window.open_scheme_file)
 
+    close_app = False
+
+    close_app = False
     if want_welcome and not args and not open_requests:
-        canvas_window.welcome_dialog()
+        if not canvas_window.welcome_dialog():
+            log.info("Welcome screen cancelled; closing application")
+            close_app = True
 
     elif args:
         log.info("Loading a scheme from the command line argument %r",
@@ -335,17 +325,20 @@ def main(argv=None):
         sys.excepthook = ExceptHook()
         sys.excepthook.handledException.connect(output_view.parent().show)
 
-    with redirect_stdout(stdout), redirect_stderr(stderr):
-        log.info("Entering main event loop.")
-        try:
-            status = app.exec_()
-        except BaseException:
-            log.error("Error in main event loop.", exc_info=True)
+    if not close_app:
+        with redirect_stdout(stdout), redirect_stderr(stderr):
+            log.info("Entering main event loop.")
+            try:
+                status = app.exec_()
+            except BaseException:
+                log.error("Error in main event loop.", exc_info=True)
 
-    canvas_window.deleteLater()
-    app.processEvents()
-    app.flush()
-    del canvas_window
+        canvas_window.deleteLater()
+        app.processEvents()
+        app.flush()
+        del canvas_window
+    else:
+        status = False
 
     # Collect any cycles before deleting the QApplication instance
     gc.collect()

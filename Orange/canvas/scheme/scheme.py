@@ -10,9 +10,10 @@ The :class:`Scheme` class defines a DAG (Directed Acyclic Graph) workflow.
 from operator import itemgetter
 from collections import deque
 
+import os
 import logging
 
-from PyQt4.QtCore import QObject
+from PyQt4.QtCore import QObject, QSettings
 from PyQt4.QtCore import pyqtSignal as Signal
 from PyQt4.QtCore import pyqtProperty as Property
 
@@ -21,6 +22,7 @@ from .link import SchemeLink, compatible_channels
 from .annotations import BaseSchemeAnnotation
 
 from ..utils import check_arg, check_type
+from ..utils.settings import Settings
 
 from .errors import (
     SchemeCycleError, IncompatibleChannelTypeError, SinkChannelError,
@@ -47,6 +49,8 @@ class Scheme(QObject):
         The scheme title.
     description : str
         A longer description of the scheme.
+    working_directory : str
+        Working directory
 
 
     Attributes
@@ -86,11 +90,15 @@ class Scheme(QObject):
     # Signal emitted when the description of scheme changes.
     description_changed = Signal(str)
 
+    # Signal emitted when the working directory changes.
+    working_directory_changed = Signal(str)
+
     node_state_changed = Signal()
     channel_state_changed = Signal()
     topology_changed = Signal()
 
-    def __init__(self, parent=None, title=None, description=None):
+    def __init__(self, parent=None, title=None, description=None,
+                 working_directory=None):
         QObject.__init__(self, parent)
 
         self.__title = title or ""
@@ -98,6 +106,16 @@ class Scheme(QObject):
 
         self.__description = description or ""
         "Scheme description (empty string by default)."
+
+        settings = QSettings()
+
+        self.__working_directory = (
+            working_directory or
+            settings.value("output/default-working-directory",
+                           os.path.expanduser("~/Shadow"), type=str))
+        if not os.path.exists(self.__working_directory):
+            os.mkdir(self.__working_directory)
+
 
         self.__annotations = []
         self.__nodes = []
@@ -157,6 +175,27 @@ class Scheme(QObject):
         return self.__description
 
     description = Property(str, fget=description, fset=set_description)
+
+    def set_working_directory(self, working_directory):
+        """
+        Set the scheme working_directory.
+        """
+        if self.__working_directory != working_directory:
+            self.__working_directory = working_directory
+            if not os.path.exists(self.__working_directory):
+                 os.mkdir(self.__working_directory)
+            self.working_directory_changed.emit(working_directory)
+            os.chdir(working_directory)
+
+    def working_directory(self):
+        """
+        The working_directory of the scheme.
+        """
+        return self.__working_directory
+
+    working_directory = Property(str,
+                                 fget=working_directory,
+                                 fset=set_working_directory)
 
     def add_node(self, node):
         """

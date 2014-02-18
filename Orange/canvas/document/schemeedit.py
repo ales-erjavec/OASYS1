@@ -686,6 +686,14 @@ class SchemeEditWidget(QWidget):
             commands.SetAttrCommand(self.__scheme, "description", description)
         )
 
+    def setWorkingDirectory(self, directory):
+        """
+        Set the scheme description string.
+        """
+        self.__undoStack.push(
+            commands.SetAttrCommand(self.__scheme, "working_directory", directory)
+        )
+
     def addNode(self, node):
         """
         Add a new node (:class:`.SchemeNode`) to the document.

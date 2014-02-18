@@ -141,6 +141,8 @@ def _get_default_env():
 
     buffer_dir = config.cache_dir()
 
+    shadow_working_directory="/Users/labx/Desktop/Orange3_Test/Shadow"
+
     return locals()
 
 _ALL_ENV_OPTIONS = ["version", "version_display", "is_canvas_installed",
@@ -152,7 +154,7 @@ _ALL_DIR_OPTIONS = ["install_dir", "canvas_install_dir",
                     "add_ons_dir", "add_ons_dir_user",
                     "application_dir", "output_dir", "default_reports_dir",
                     "orange_settings_dir",
-                    "widget_settings_dir", "buffer_dir"]
+                    "widget_settings_dir", "buffer_dir", "shadow_working_directory"]
 
 def get_platform_option(section, option):
     """ Return the platform specific configuration `option` from `section`.

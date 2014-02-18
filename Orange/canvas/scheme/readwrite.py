@@ -3,6 +3,7 @@ Scheme save/load routines.
 
 """
 import base64
+import os
 import sys
 import warnings
 
@@ -10,6 +11,9 @@ from xml.etree.ElementTree import TreeBuilder, Element, ElementTree, parse
 
 from collections import defaultdict, namedtuple
 from itertools import chain, count
+
+from PyQt4.QtGui import QFileDialog
+from PyQt4.QtCore import QSettings
 
 import pickle as pickle
 import json
@@ -23,6 +27,7 @@ import logging
 from . import SchemeNode, SchemeLink
 from .annotations import SchemeTextAnnotation, SchemeArrowAnnotation
 from .errors import IncompatibleChannelTypeError
+from ..application import settings
 
 from ..registry import global_registry
 
@@ -203,6 +208,13 @@ def parse_scheme_v_2_0(etree, scheme, error_handler, widget_registry=None,
     scheme_node = etree.getroot()
     scheme.title = scheme_node.attrib.get("title", "")
     scheme.description = scheme_node.attrib.get("description", "")
+    scheme.working_directory = scheme_node.attrib.get("working_directory", "")
+    if not os.path.exists(scheme.working_directory):
+        scheme.working_directory = \
+            settings.value("output/default-working-directory") or \
+            os.path.expanduser("~/Shadow")
+        if not os.path.exists(scheme.working_directory):
+            os.mkdir(scheme.working_directory)
 
     # Load and create scheme nodes.
     for node_el in etree.findall("nodes/node"):
@@ -395,7 +407,8 @@ def parse_scheme_v_1_0(etree, scheme, error_handler, widget_registry=None,
 # Intermediate scheme representation
 _scheme = namedtuple(
     "_scheme",
-    ["title", "version", "description", "nodes", "links", "annotations"])
+    ["title", "version", "description", "working_directory",
+     "nodes", "links", "annotations"])
 
 _node = namedtuple(
     "_node",
@@ -498,6 +511,7 @@ def parse_ows_etree_v_2_0(tree):
         version=scheme.get("version"),
         title=scheme.get("title", ""),
         description=scheme.get("description"),
+        working_directory=scheme.get("working_directory"),
         nodes=nodes,
         links=links,
         annotations=annotations
@@ -640,6 +654,24 @@ def scheme_load(scheme, stream, registry=None, error_handler=None):
     scheme.title = desc.title
     scheme.description = desc.description
 
+    scheme.working_directory = getattr(desc, "working_directory",
+                                       os.path.expanduser("~/Shadow"))
+    #scheme.working_directory = desc.working_directory
+    scheme.working_directory = getattr(desc, "working_directory", os.path.expanduser("/Users/labx/Desktop/Orange3_Test/Shadow"))
+
+    if not os.path.exists(scheme.working_directory):
+        new_wd = ""
+        while not new_wd:
+            new_wd = QFileDialog.getExistingDirectory(
+                None, "Set working directory",
+                QSettings.value("output/default-working-directory",
+                                os.path.expanduser("~/Shadow"), type=str))
+        scheme.working_directory = new_wd
+        if not os.path.exists(scheme.working_directory):
+            os.mkdir(scheme.working_directory)
+
+    os.chdir(scheme.working_directory)
+
     for node_d in desc.nodes:
         try:
             w_desc = registry.widget(node_d.qualified_name)
@@ -721,7 +753,9 @@ def scheme_to_etree(scheme, data_format="literal", pickle_fallback=False):
     builder = TreeBuilder(element_factory=Element)
     builder.start("scheme", {"version": "2.0",
                              "title": scheme.title or "",
-                             "description": scheme.description or ""})
+                             "description": scheme.description or "",
+                             "working_directory":
+                             scheme.working_directory or ""})
 
     ## Nodes
     node_ids = defaultdict(inf_range().__next__)

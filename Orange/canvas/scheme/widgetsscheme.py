@@ -243,6 +243,7 @@ class WidgetManager(QObject):
         self.__widget_processing_state[widget] = 0
 
         widget.__init__()
+        widget.setWorkingDirectory(self.scheme().working_directory)
         widget.setCaption(node.title)
         widget.widgetInfo = desc
 
