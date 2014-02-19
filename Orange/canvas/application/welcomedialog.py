@@ -118,7 +118,7 @@ class WelcomeDialog(QDialog):
         self.__showAtStartupCheck = check
 
         bottom_bar_layout.addWidget(check, alignment=Qt.AlignVCenter | \
-                                    Qt.AlignLeft)
+                                   Qt.AlignLeft)
 
         self.layout().addWidget(bottom_bar, alignment=Qt.AlignBottom,
                                 stretch=1)
@@ -130,14 +130,13 @@ class WelcomeDialog(QDialog):
         """
         Set the 'Show at startup' check box state.
         """
-        if self.__showAtStartupCheck.isChecked() != show:
-            self.__showAtStartupCheck.setChecked(show)
+        pass
 
     def showAtStartup(self):
         """
         Return the 'Show at startup' check box state.
         """
-        return self.__showAtStartupCheck.isChecked()
+        return True
 
     def addRow(self, actions, background="light-orange"):
         """Add a row with `actions`.

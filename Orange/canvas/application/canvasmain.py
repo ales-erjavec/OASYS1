@@ -1371,18 +1371,9 @@ class CanvasMainWindow(QMainWindow):
     def scheme_properties_dialog(self):
         """Return an empty `SchemeInfo` dialog instance.
         """
-        settings = QSettings()
-        value_key = "schemeinfo/show-at-new-scheme"
-
         dialog = SchemeInfoDialog(self)
-
         dialog.setWindowTitle(self.tr("Scheme Info"))
         dialog.setFixedSize(725, 450)
-
-        dialog.setShowAtNewScheme(
-            settings.value(value_key, True, type=bool)
-        )
-
         return dialog
 
     def show_scheme_properties(self):
@@ -1404,10 +1395,12 @@ class CanvasMainWindow(QMainWindow):
             stack.beginMacro(self.tr("Change Info"))
             current_doc.setTitle(editor.title())
             current_doc.setDescription(editor.description())
+            current_doc.setWorkingDirectory(
+                editor.working_directory())
             stack.endMacro()
 
             # Store the check state.
-            settings.setValue(value_key, dlg.showAtNewScheme())
+            # settings.setValue(value_key, dlg.showAtNewScheme())
         return status
 
     def show_scheme_properties_for(self, scheme, window_title=None):
@@ -1415,23 +1408,12 @@ class CanvasMainWindow(QMainWindow):
         a default 'Scheme Info' title will be used.
 
         """
-        settings = QSettings()
-        value_key = "schemeinfo/show-at-new-scheme"
-
         dialog = self.scheme_properties_dialog()
-
         if window_title is not None:
             dialog.setWindowTitle(window_title)
-
         dialog.setScheme(scheme)
-
         status = dialog.exec_()
-        if status == QDialog.Accepted:
-            # Store the check state.
-            settings.setValue(value_key, dialog.showAtNewScheme())
-
         dialog.deleteLater()
-
         return status
 
     def set_signal_freeze(self, freeze):

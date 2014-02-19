@@ -3,6 +3,7 @@ User settings/preference dialog
 ===============================
 
 """
+import os
 import sys
 import logging
 
@@ -16,11 +17,11 @@ from ..utils.propertybindings import (
 from PyQt4.QtGui import (
     QWidget, QMainWindow, QComboBox, QCheckBox, QListView, QTabWidget,
     QToolBar, QAction, QStackedWidget, QVBoxLayout, QHBoxLayout,
-    QFormLayout, QStandardItemModel, QSizePolicy
-)
+    QFormLayout, QStandardItemModel, QSizePolicy, QLabel, QPushButton,
+    QFileDialog)
 
 from PyQt4.QtCore import (
-    Qt, QEventLoop, QAbstractItemModel, QModelIndex
+    Qt, QEventLoop, QAbstractItemModel, QModelIndex, QSettings
 )
 
 log = logging.getLogger(__name__)
@@ -302,14 +303,9 @@ class UserSettingsDialog(QMainWindow):
         cb_splash = QCheckBox(self.tr("Show splash screen"), self,
                               objectName="show-splash-screen")
 
-        cb_welcome = QCheckBox(self.tr("Show welcome screen"), self,
-                                objectName="show-welcome-screen")
-
         self.bind(cb_splash, "checked", "startup/show-splash-screen")
-        self.bind(cb_welcome, "checked", "startup/show-welcome-screen")
 
         startup.layout().addWidget(cb_splash)
-        startup.layout().addWidget(cb_welcome)
 
         form.addRow(self.tr("On startup"), startup)
 
@@ -332,8 +328,24 @@ class UserSettingsDialog(QMainWindow):
                     toolTip="Output Redirection")
 
         form = QFormLayout()
+
         box = QWidget(self, objectName="streams")
         layout = QVBoxLayout()
+        self.default_wd_label = QLabel(
+            QSettings().value("output/default-working-directory",
+                              "", type=str))
+        pb = QPushButton("Change ...")
+        pb.clicked.connect(self.change_working_directory)
+
+        layout.addWidget(self.default_wd_label)
+        layout.addWidget(pb)
+        box.setLayout(layout)
+
+        form.addRow(self.tr("Default working directory"), box)
+
+        box = QWidget(self, objectName="streams")
+        layout = QVBoxLayout()
+
         layout.setContentsMargins(0, 0, 0, 0)
 
         cb1 = QCheckBox(self.tr("Standard output"))
@@ -487,3 +499,13 @@ class UserSettingsDialog(QMainWindow):
 
     def __macOnToolBarAction(self, action):
         self.stack.setCurrentIndex(action.data())
+
+    def change_working_directory(self):
+        cur_wd = QSettings().value("output/default-working-directory",
+                                   os.path.expanduser("~/Shadow"), type=str)
+        new_wd = QFileDialog.getExistingDirectory(
+            self, "Set working directory", cur_wd
+        )
+        if new_wd:
+            QSettings().setValue("output/default-working-directory", new_wd)
+            self.default_wd_label.setText(new_wd)
