@@ -199,7 +199,7 @@ class OpticalElement(ow_generic_element.GenericElement):
 
     #####
 
-    file_to_write_out = Setting(0)
+    file_to_write_out = Setting(3)
     write_out_inc_ref_angles = Setting(0)
 
     ##########################################
