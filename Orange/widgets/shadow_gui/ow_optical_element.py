@@ -1103,6 +1103,8 @@ class OpticalElement(ow_generic_element.GenericElement):
             self.close()
             
     def setBeam(self, beam):
+        self.onReceivingInput()
+
         self.input_beam = beam
 
         if self.is_automatic_run:

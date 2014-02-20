@@ -21,6 +21,7 @@ class GenericElement(ow_automatic_element.AutomaticElement):
     view_type=Setting(2)
 
     plotted_beam=None
+    tab=[]
 
     def __init__(self):
         super().__init__()
@@ -44,6 +45,11 @@ class GenericElement(ow_automatic_element.AutomaticElement):
         self.shadow_output.setFixedWidth(850)
 
     def initializeTabs(self):
+        size = len(self.tab)
+        indexes = range(0, size)
+        for index in indexes:
+            self.tabs.removeTab(size-1-index)
+
         self.tab = [gui.createTabPage(self.tabs, "X,Z"),
                     gui.createTabPage(self.tabs, "X',Z'"),
                     gui.createTabPage(self.tabs, "X,X'"),
@@ -61,13 +67,8 @@ class GenericElement(ow_automatic_element.AutomaticElement):
         self.progressBarInit()
 
         if not self.plotted_beam==None:
-            size = len(self.tab)
-            indexes = range(0, size)
-            for index in indexes:
-                self.tabs.removeTab(size-1-index)
 
             self.initializeTabs()
-
             self.plot_results(self.plotted_beam, 80)
 
         self.progressBarFinished()
@@ -140,6 +141,9 @@ class GenericElement(ow_automatic_element.AutomaticElement):
         self.shadow_output.setTextCursor(cursor)
         self.shadow_output.ensureCursorVisible()
         qApp.processEvents()
+
+    def onReceivingInput(self):
+        self.initializeTabs()
 
 if __name__ == "__main__":
     a = QApplication(sys.argv)
