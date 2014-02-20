@@ -17,4 +17,4 @@ BACKGROUND = "#b8bcdb"
 
 ICON = "icons/ingranaggio.jpg"
 
-PRIORITY = 5
+PRIORITY = 6

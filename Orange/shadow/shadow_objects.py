@@ -63,6 +63,8 @@ class ShadowBeam:
 
         self.beam.traceOE(shadow_oe.oe, self.oe_number)
 
+        shadow_oe.oe.write("end.0" + str(self.oe_number))
+
         return self
 
 class ShadowSource:

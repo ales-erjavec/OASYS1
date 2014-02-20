@@ -3,10 +3,8 @@ import Orange
 import Orange.shadow
 from Orange.widgets import gui
 from Orange.widgets.settings import Setting
-from Orange.canvas.utils.environ import shadow_working_directory
 from PyQt4.QtGui import QApplication
 
-import Shadow
 from Orange.widgets.shadow_gui import ow_automatic_element
 
 

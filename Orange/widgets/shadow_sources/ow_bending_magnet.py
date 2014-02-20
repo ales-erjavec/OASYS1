@@ -25,12 +25,12 @@ class BendingMagnet(ow_generic_element.GenericElement):
                 "doc":"Shadow Beam",
                 "id":"beam"}]
 
-    number_of_rays =Setting(5000)
-    seed =Setting(6775431)
-    e_min =Setting(0)
-    e_max =Setting(100000)
-    optical_paths_combo=Setting(1)
-    sample_distribution_combo=Setting(0)
+    number_of_rays=Setting(5000)
+    seed=Setting(6775431)
+    e_min=Setting(0)
+    e_max=Setting(100000)
+    optical_paths_combo=Setting(1) # TODO TOGLIERE DA GUI LASCIARE 1 COME DEFAULT
+    sample_distribution_combo=Setting(0) # TODO TOGLIERE DA GUI LASCIARE 0 COME DEFAULT
     generate_polarization_combo=Setting(2)
 
     sigma_x=Setting(0)
@@ -62,8 +62,8 @@ class BendingMagnet(ow_generic_element.GenericElement):
         ShadowGui.lineEdit(left_box_1, self, "seed", "Seed", tooltip="Seed", valueType=int, orientation="horizontal")
         ShadowGui.lineEdit(left_box_1, self, "e_min", "Minimum Energy (eV)", tooltip="Minimum Energy (eV)", valueType=float, orientation="horizontal")
         ShadowGui.lineEdit(left_box_1, self, "e_max", "Maximum Energy (eV)", tooltip="Maximum Energy (eV)", valueType=float, orientation="horizontal")
-        gui.comboBox(left_box_1, self, "optical_paths_combo", label="Store Optical Paths?", items=["No", "Yes"], orientation="horizontal")
-        gui.comboBox(left_box_1, self, "sample_distribution_combo", label="Sample Distribution", items=["Photon", "Power"], orientation="horizontal")
+        #gui.comboBox(left_box_1, self, "optical_paths_combo", label="Store Optical Paths?", items=["No", "Yes"], orientation="horizontal")
+        #gui.comboBox(left_box_1, self, "sample_distribution_combo", label="Sample Distribution", items=["Photon", "Power"], orientation="horizontal")
         gui.comboBox(left_box_1, self, "generate_polarization_combo", label="Generate Polarization", items=["Only Parallel", "Only Perpendicular", "Total"], orientation="horizontal")
 
         left_box_2 = gui.widgetBox(self.controlArea, "Machine Parameters", addSpace=True, orientation="vertical")
@@ -88,7 +88,7 @@ class BendingMagnet(ow_generic_element.GenericElement):
         gui.comboBox(left_box_2, self, "calculation_mode_combo", label="Calculation Mode", items=["Precomputed", "Exact"], orientation="horizontal")
 
         left_box_3 = gui.widgetBox(self.controlArea, "", addSpace=True, orientation="vertical")
-        left_box_3.setFixedHeight(65)
+        left_box_3.setFixedHeight(120)
 
         gui.button(self.controlArea, self, "Run Shadow/source", callback=self.runShadowSource)
 

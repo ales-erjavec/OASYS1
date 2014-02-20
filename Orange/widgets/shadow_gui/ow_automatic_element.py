@@ -15,7 +15,7 @@ class AutomaticElement(widget.OWWidget):
         super().__init__()
 
         gui.checkBox(gui.widgetBox(self.controlArea, "General Options", addSpace=True, orientation="vertical"), \
-                     self, 'is_automatic_run', 'Automatic Execution of SHADOW')
+                     self, 'is_automatic_run', 'Automatic Execution')
 
 if __name__ == "__main__":
     a = QApplication(sys.argv)

@@ -216,6 +216,8 @@ class OpticalElement(ow_generic_element.GenericElement):
     def __init__(self, graphical_options = GraphicalOptions()):
         super().__init__()
 
+        #TODO VERIFICARE LA POSSIBILITA DI CAMBIARE L'ALLINEAMTO DEI BOX E QUINDI EVITARE GLI HIDDEN
+
         self.graphical_options = graphical_options
 
         self.controlArea.setFixedWidth(500)
@@ -894,11 +896,17 @@ class OpticalElement(ow_generic_element.GenericElement):
 
     def populateFields(self, shadow_oe = Orange.shadow.ShadowOpticalElement.create_empty_oe()):
 
+        #TODO eliminare exit-slits
+        #TODO disabilitare angoli incidenza e uscita se autotuning del cristallo
+        #TODO se elementi curvi con parametri calcolati si possono modificare i campi con i dati del file end.xx
+
+        # per scrivere i campi calcolati
+
         if self.graphical_options.is_screen_slit:
             shadow_oe.oe.setFrameOfReference(self.source_plane_distance, \
                                              self.image_plane_distance, \
                                              0, \
-                                             0, \
+                                             180, \
                                              0)
         else:
             shadow_oe.oe.setFrameOfReference(self.source_plane_distance, \
