@@ -29,8 +29,8 @@ class BendingMagnet(ow_generic_element.GenericElement):
     seed=Setting(6775431)
     e_min=Setting(0)
     e_max=Setting(100000)
-    optical_paths_combo=Setting(1) # TODO TOGLIERE DA GUI LASCIARE 1 COME DEFAULT
-    sample_distribution_combo=Setting(0) # TODO TOGLIERE DA GUI LASCIARE 0 COME DEFAULT
+    optical_paths_combo=Setting(1) # REMOVED FROM GUI: 1 AS DEFAULT
+    sample_distribution_combo=Setting(0) # REMOVED FROM GUI: 0 AS DEFAULT
     generate_polarization_combo=Setting(2)
 
     sigma_x=Setting(0)

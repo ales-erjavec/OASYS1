@@ -206,10 +206,10 @@ class OpticalElement(ow_generic_element.GenericElement):
     # SCREEN/SLITS
     ##########################################
 
-    exit_slit = Setting(0)
-    es_slit_length = Setting(0)
-    es_slit_width = Setting(0)
-    es_slit_tilt = Setting(0)
+    #exit_slit = Setting(0)
+    #es_slit_length = Setting(0)
+    #es_slit_width = Setting(0)
+    #es_slit_tilt = Setting(0)
 
     want_main_area=1
 
@@ -228,13 +228,13 @@ class OpticalElement(ow_generic_element.GenericElement):
         ShadowGui.lineEdit(upper_box, self, "image_plane_distance", "Image Plane Distance [cm]", tooltip="Image Plane Distance [cm]", valueType=float, orientation="horizontal")
 
         if not self.graphical_options.is_screen_slit:
-            incidence_angle_mrad = self.calculate_incidence_angle_mrad()
-            reflection_angle_mrad = self.calculate_reflection_angle_mrad()
+            self.calculate_incidence_angle_mrad()
+            self.calculate_reflection_angle_mrad()
 
-            ShadowGui.lineEdit(upper_box, self, "incidence_angle_deg", "Incident Angle respect to the normal [deg]", callback=self.calculate_incidence_angle_mrad, tooltip="Incident Angle respect to the normal [deg]", valueType=float, orientation="horizontal")
-            ShadowGui.lineEdit(upper_box, self, "incidence_angle_mrad", "... or with respect to the surface [mrad]", callback=self.calculate_incidence_angle_deg, tooltip="... or with respect to the surface [mrad]", valueType=float, orientation="horizontal")
-            ShadowGui.lineEdit(upper_box, self, "reflection_angle_deg", "Reflection Angle respect to the normal [deg]", callback=self.calculate_reflection_angle_mrad, tooltip="Reflection Angle respect to the normal [deg]", valueType=float, orientation="horizontal")
-            ShadowGui.lineEdit(upper_box, self, "reflection_angle_mrad", "... or with respect to the surface [mrad]", callback=self.calculate_incidence_angle_deg, tooltip="... or with respect to the surface [mrad]", valueType=float, orientation="horizontal")
+            self.incidence_angle_deg_le = ShadowGui.lineEdit(upper_box, self, "incidence_angle_deg", "Incident Angle respect to the normal [deg]", callback=self.calculate_incidence_angle_mrad, valueType=float, orientation="horizontal")
+            self.incidence_angle_rad_le = ShadowGui.lineEdit(upper_box, self, "incidence_angle_mrad", "... or with respect to the surface [mrad]", callback=self.calculate_incidence_angle_deg, valueType=float, orientation="horizontal")
+            self.reflection_angle_deg_le = ShadowGui.lineEdit(upper_box, self, "reflection_angle_deg", "Reflection Angle respect to the normal [deg]", callback=self.calculate_reflection_angle_mrad, valueType=float, orientation="horizontal")
+            self.reflection_angle_rad_le = ShadowGui.lineEdit(upper_box, self, "reflection_angle_mrad", "... or with respect to the surface [mrad]", callback=self.calculate_reflection_angle_deg, valueType=float, orientation="horizontal")
             ShadowGui.lineEdit(upper_box, self, "mirror_orientation_angle", "Mirror Orientation Angle [deg]", tooltip="Mirror Orientation Angle [deg]", valueType=float, orientation="horizontal")
 
             tabs_setting = gui.tabWidget(self.controlArea)
@@ -245,7 +245,7 @@ class OpticalElement(ow_generic_element.GenericElement):
             # graph tab
             tab_bas = gui.createTabPage(tabs_setting, "Basic Setting")
             tab_adv = gui.createTabPage(tabs_setting, "Advanced Setting")
-            tab_scr = gui.createTabPage(tabs_setting, "Exit Slits")
+            #tab_scr = gui.createTabPage(tabs_setting, "Exit Slits")
 
             tabs_basic_setting = gui.tabWidget(tab_bas)
 
@@ -665,27 +665,27 @@ class OpticalElement(ow_generic_element.GenericElement):
             ##########################################
             ##########################################
 
-            exit_slit_box = gui.widgetBox(tab_scr, " ", addSpace=False, orientation="vertical")
-            exit_slit_box.setFixedHeight(self.ONE_ROW_HEIGHT)
+            #exit_slit_box = gui.widgetBox(tab_scr, " ", addSpace=False, orientation="vertical")
+            #exit_slit_box.setFixedHeight(self.ONE_ROW_HEIGHT)
 
-            gui.comboBox(exit_slit_box, self, "exit_slit", label="Exit Slit", \
-                         items=["No", "Yes"], \
-                         callback=self.set_ExitSlit, sendSelectedValue=False, orientation="horizontal")
+            #gui.comboBox(exit_slit_box, self, "exit_slit", label="Exit Slit", \
+            #             items=["No", "Yes"], \
+            #             callback=self.set_ExitSlit, sendSelectedValue=False, orientation="horizontal")
 
-            self.exit_slit_box_hidden =  gui.widgetBox(tab_scr, "", addSpace=False, orientation="vertical")
-            self.exit_slit_box_hidden.setFixedHeight(420)
+            #self.exit_slit_box_hidden =  gui.widgetBox(tab_scr, "", addSpace=False, orientation="vertical")
+            #self.exit_slit_box_hidden.setFixedHeight(420)
 
-            self.exit_slit_box_1 = gui.widgetBox(tab_scr, " ", addSpace=False, orientation="vertical")
-            self.exit_slit_box_1.setFixedHeight(self.THREE_ROW_HEIGHT)
+            #self.exit_slit_box_1 = gui.widgetBox(tab_scr, " ", addSpace=False, orientation="vertical")
+            #self.exit_slit_box_1.setFixedHeight(self.THREE_ROW_HEIGHT)
 
-            ShadowGui.lineEdit(self.exit_slit_box_1, self, "es_slit_length", "Slit Length (Sagittal)", valueType=float, orientation="horizontal")
-            ShadowGui.lineEdit(self.exit_slit_box_1, self, "es_slit_width", "Slit Width (Tangential)", valueType=float, orientation="horizontal")
-            ShadowGui.lineEdit(self.exit_slit_box_1, self, "es_slit_tilt", "Slit Tilt (CCW, deg)", valueType=float, orientation="horizontal")
+            #ShadowGui.lineEdit(self.exit_slit_box_1, self, "es_slit_length", "Slit Length (Sagittal)", valueType=float, orientation="horizontal")
+            #ShadowGui.lineEdit(self.exit_slit_box_1, self, "es_slit_width", "Slit Width (Tangential)", valueType=float, orientation="horizontal")
+            #ShadowGui.lineEdit(self.exit_slit_box_1, self, "es_slit_tilt", "Slit Tilt (CCW, deg)", valueType=float, orientation="horizontal")
 
-            self.exit_slit_box_1_hidden =  gui.widgetBox(tab_scr, "", addSpace=False, orientation="vertical")
-            self.exit_slit_box_1_hidden.setFixedHeight(250)
+            #self.exit_slit_box_1_hidden =  gui.widgetBox(tab_scr, "", addSpace=False, orientation="vertical")
+            #self.exit_slit_box_1_hidden.setFixedHeight(250)
 
-            self.set_ExitSlit()
+            #self.set_ExitSlit()
 
     ############################################################
     #
@@ -693,15 +693,15 @@ class OpticalElement(ow_generic_element.GenericElement):
     #
     ############################################################
 
-    def set_ExitSlit(self):
-        if self.exit_slit == 0:
-            self.exit_slit_box_hidden.setVisible(True)
-            self.exit_slit_box_1.setVisible(False)
-            self.exit_slit_box_1_hidden.setVisible(False)
-        else:
-            self.exit_slit_box_hidden.setVisible(False)
-            self.exit_slit_box_1.setVisible(True)
-            self.exit_slit_box_1_hidden.setVisible(True)
+    #def set_ExitSlit(self):
+    #    if self.exit_slit == 0:
+    #        self.exit_slit_box_hidden.setVisible(True)
+    #        self.exit_slit_box_1.setVisible(False)
+    #        self.exit_slit_box_1_hidden.setVisible(False)
+    #    else:
+    #        self.exit_slit_box_hidden.setVisible(False)
+    #        self.exit_slit_box_1.setVisible(True)
+    #        self.exit_slit_box_1_hidden.setVisible(True)
 
     def set_SourceMovement(self):
         if self.source_movement == 0:
@@ -820,11 +820,22 @@ class OpticalElement(ow_generic_element.GenericElement):
 
     def set_Autosetting(self):
         if self.crystal_auto_setting == 0:
+            self.incidence_angle_deg_le.setEnabled(True)
+            self.incidence_angle_rad_le.setEnabled(True)
+            self.reflection_angle_deg_le.setEnabled(True)
+            self.reflection_angle_rad_le.setEnabled(True)
+
             self.autosetting_box_hidden.setVisible(True)
             self.autosetting_box_units.setVisible(False)
             self.autosetting_box_units_1.setVisible(False)
             self.autosetting_box_units_2.setVisible(False)
+            self
         else:
+            self.incidence_angle_deg_le.setEnabled(False)
+            self.incidence_angle_rad_le.setEnabled(False)
+            self.reflection_angle_deg_le.setEnabled(False)
+            self.reflection_angle_rad_le.setEnabled(False)
+
             self.autosetting_box_hidden.setVisible(False)
             self.autosetting_box_units.setVisible(True)
             self.set_UnitsInUse()
@@ -883,24 +894,18 @@ class OpticalElement(ow_generic_element.GenericElement):
 
 
     def calculate_incidence_angle_mrad(self):
-        self.incidence_angle_mrad = math.radians(90-self.incidence_angle_deg)*1000
+        self.incidence_angle_mrad = math.radians(self.incidence_angle_deg)*1000
 
     def calculate_reflection_angle_mrad(self):
-        self.reflection_angle_mrad = math.radians(90-self.reflection_angle_deg)*1000
+        self.reflection_angle_mrad = math.radians(self.reflection_angle_deg)*1000
 
     def calculate_incidence_angle_deg(self):
-        self.incidence_angle_deg = 90-math.degrees(self.incidence_angle_mrad/1000)
+        self.incidence_angle_deg = math.degrees(self.incidence_angle_mrad/1000)
 
     def calculate_reflection_angle_deg(self):
-        self.reflection_angle_mrad = 90-math.degrees(self.reflection_angle_mrad/1000)
+        self.reflection_angle_deg = math.degrees(self.reflection_angle_mrad/1000)
 
     def populateFields(self, shadow_oe = Orange.shadow.ShadowOpticalElement.create_empty_oe()):
-
-        #TODO eliminare exit-slits
-        #TODO disabilitare angoli incidenza e uscita se autotuning del cristallo
-        #TODO se elementi curvi con parametri calcolati si possono modificare i campi con i dati del file end.xx
-
-        # per scrivere i campi calcolati
 
         if self.graphical_options.is_screen_slit:
             shadow_oe.oe.setFrameOfReference(self.source_plane_distance, \
@@ -1038,17 +1043,30 @@ class OpticalElement(ow_generic_element.GenericElement):
             shadow_oe.oe.FWRITE=self.file_to_write_out
             shadow_oe.oe.F_ANGLE=self.write_out_inc_ref_angles
 
-            if self.exit_slit == 1:
-                 shadow_oe.oe.FSLIT=1
-                 shadow_oe.oe.SLLEN=self.es_slit_length
-                 shadow_oe.oe.SLWID=self.es_slit_width
-                 shadow_oe.oe.SLTILT=self.es_slit_tilt
+            #if self.exit_slit == 1:
+            #     shadow_oe.oe.FSLIT=1
+            #     shadow_oe.oe.SLLEN=self.es_slit_length
+            #     shadow_oe.oe.SLWID=self.es_slit_width
+            #     shadow_oe.oe.SLTILT=self.es_slit_tilt
 
     def doSpecificSetting(self, shadow_oe):
         return None
 
     def checkFields(self):
         return True
+
+    def writeCalculatedFields(self, shadow_oe):
+        if self.surface_shape_parameters == 0:
+            if self.graphical_options.is_spheric:
+                self.spherical_radius = shadow_oe.oe.RMIRR
+            elif self.graphical_options.is_toroidal:
+                self.torus_major_radius = shadow_oe.oe.RMAJ
+                self.torus_minor_radius = shadow_oe.oe.RMIN
+        if self.crystal_auto_setting == 1:
+            self.incidence_angle_mrad = shadow_oe.oe.T_INCIDENCE*1000
+            self.reflection_angle_mrad = shadow_oe.oe.T_REFLECTION*1000
+            self.calculate_incidence_angle_deg()
+            self.calculate_reflection_angle_deg()
 
     def completeOperations(self, shadow_oe=None):
 
@@ -1062,6 +1080,8 @@ class OpticalElement(ow_generic_element.GenericElement):
         self.progressBarSet(50)
 
         beam_out = Orange.shadow.ShadowBeam.trace_from_oe(self.input_beam, shadow_oe)
+
+        self.writeCalculatedFields(shadow_oe)
 
         grabber.stop()
 
