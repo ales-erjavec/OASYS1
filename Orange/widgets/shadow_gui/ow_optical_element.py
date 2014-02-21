@@ -3,8 +3,8 @@ import Orange
 import Orange.shadow
 from Orange.widgets import gui
 from Orange.widgets.settings import Setting
+from PyQt4 import QtCore, QtGui
 from PyQt4.QtGui import QApplication, qApp
-from PyQt4.QtCore import Qt
 from Orange.widgets.shadow_gui import ow_generic_element
 from Orange.shadow.shadow_objects import EmittingStream, TTYGrabber
 from Orange.shadow.shadow_util import ShadowGui
@@ -56,6 +56,12 @@ class OpticalElement(ow_generic_element.GenericElement):
     ONE_ROW_HEIGHT = 65
     TWO_ROW_HEIGHT = 110
     THREE_ROW_HEIGHT = 170
+
+
+    TABS_AREA_HEIGHT = 480
+    CONTROL_AREA_HEIGHT = 450
+    CONTROL_AREA_WIDTH = 450
+    INNER_BOX_WIDTH=400
 
     graphical_options=None
 
@@ -206,11 +212,9 @@ class OpticalElement(ow_generic_element.GenericElement):
     def __init__(self, graphical_options = GraphicalOptions()):
         super().__init__()
 
-        #TODO VERIFICARE LA POSSIBILITA DI CAMBIARE L'ALLINEAMTO DEI BOX E QUINDI EVITARE GLI HIDDEN
-
         self.graphical_options = graphical_options
 
-        self.controlArea.setFixedWidth(500)
+        self.controlArea.setFixedWidth(self.CONTROL_AREA_WIDTH)
 
         upper_box = gui.widgetBox(self.controlArea, "Optical Element Orientation", addSpace=True, orientation="vertical")
 
@@ -227,9 +231,10 @@ class OpticalElement(ow_generic_element.GenericElement):
             self.reflection_angle_rad_le = ShadowGui.lineEdit(upper_box, self, "reflection_angle_mrad", "... or with respect to the surface [mrad]", callback=self.calculate_reflection_angle_deg, valueType=float, orientation="horizontal")
             ShadowGui.lineEdit(upper_box, self, "mirror_orientation_angle", "Mirror Orientation Angle [deg]", tooltip="Mirror Orientation Angle [deg]", valueType=float, orientation="horizontal")
 
-            tabs_setting = ShadowGui.tabWidget(self.controlArea, height=530)
+            tabs_setting = ShadowGui.tabWidget(self.controlArea, height=self.TABS_AREA_HEIGHT)
 
-            gui.button(self.controlArea, self, "Run Shadow/trace", callback=self.traceOpticalElement)
+            button = gui.button(self.controlArea, self, "Run Shadow/trace", callback=self.traceOpticalElement)
+            button.setFixedHeight(45)
 
             # graph tab
             tab_bas = ShadowGui.createTabPage(tabs_setting, "Basic Setting")
@@ -254,7 +259,7 @@ class OpticalElement(ow_generic_element.GenericElement):
 
                 gui.comboBox(surface_box, self, "surface_shape_parameters", label="Type", items=["internal/calculated", "external/user_defined"], callback=self.set_IntExt_Parameters, sendSelectedValue=False, orientation="horizontal")
 
-                self.surface_box_ext = ShadowGui.widgetBox(surface_box, " ", addSpace=False, orientation="vertical", height=150)
+                self.surface_box_ext = ShadowGui.widgetBox(surface_box, "", addSpace=True, orientation="vertical", height=110)
 
                 if self.graphical_options.is_spheric:
                     ShadowGui.lineEdit(self.surface_box_ext, self, "spherical_radius", "Spherical Radius [cm]", valueType=float, orientation="horizontal")
@@ -262,11 +267,12 @@ class OpticalElement(ow_generic_element.GenericElement):
                     ShadowGui.lineEdit(self.surface_box_ext, self, "torus_major_radius", "Torus Major Radius [cm]", valueType=float, orientation="horizontal")
                     ShadowGui.lineEdit(self.surface_box_ext, self, "torus_minor_radius", "Torus Minor Radius [cm]", valueType=float, orientation="horizontal")
 
-                self.surface_box_int = ShadowGui.widgetBox(surface_box, " ", addSpace=False, orientation="vertical", height=150, width=440)
+                self.surface_box_int = ShadowGui.widgetBox(surface_box, "", addSpace=True, orientation="vertical", height=110)
 
                 gui.comboBox(self.surface_box_int, self, "focii_and_continuation_plane", label="Focii and Continuation Plane", items=["Coincident", "Different"], callback=self.set_FociiCont_Parameters, sendSelectedValue=False, orientation="horizontal")
 
-                self.surface_box_int_2 = ShadowGui.widgetBox(self.surface_box_int, "", addSpace=False, orientation="vertical", width=410)
+                self.surface_box_int_2 = ShadowGui.widgetBox(self.surface_box_int, "", addSpace=True, orientation="vertical", width=self.INNER_BOX_WIDTH)
+                self.surface_box_int_2_empty = ShadowGui.widgetBox(self.surface_box_int, "", addSpace=True, orientation="vertical", width=self.INNER_BOX_WIDTH)
 
                 self.w_object_side_focal_distance = ShadowGui.lineEdit(self.surface_box_int_2, self, "object_side_focal_distance", "Object Side_Focal Distance [cm]", valueType=float, orientation="horizontal")
                 self.w_image_side_focal_distance = ShadowGui.lineEdit(self.surface_box_int_2, self, "image_side_focal_distance", "Image Side_Focal Distance [cm]", valueType=float, orientation="horizontal")
@@ -275,7 +281,7 @@ class OpticalElement(ow_generic_element.GenericElement):
                 self.set_IntExt_Parameters()
 
                 if self.graphical_options.is_toroidal:
-                    surface_box_thorus = ShadowGui.widgetBox(surface_box, "Torus Parameter", addSpace=True, orientation="vertical")
+                    surface_box_thorus = ShadowGui.widgetBox(surface_box, "", addSpace=True, orientation="vertical")
 
                     gui.comboBox(surface_box_thorus, self, "toroidal_mirror_pole_location", label="Torus pole location", \
                                  items=["lower/outer (concave/concave)", \
@@ -283,15 +289,14 @@ class OpticalElement(ow_generic_element.GenericElement):
                                         "upper/inner (convex/concave)", \
                                         "upper/outer (convex/convex)"], \
                                  sendSelectedValue=False, orientation="horizontal")
-                else:
-                    ShadowGui.widgetBox(surface_box, "", addSpace=False, orientation="vertical", height=self.ONE_ROW_HEIGHT)
 
-                surface_box_2 = ShadowGui.widgetBox(tab_bas_shape, "Cylinder Parameter", addSpace=True, orientation="vertical", height=150)
+                surface_box_2 = ShadowGui.widgetBox(tab_bas_shape, "Cylinder Parameter", addSpace=True, orientation="vertical", height=120)
 
                 gui.comboBox(surface_box_2, self, "surface_curvature", label="Surface Curvature", items=["Concave", "Convex"], sendSelectedValue=False, orientation="horizontal")
                 gui.comboBox(surface_box_2, self, "is_cylinder", label="Cylindrical", items=["No", "Yes"], callback=self.set_isCyl_Parameters, sendSelectedValue=False, orientation="horizontal")
 
-                self.surface_box_cyl = ShadowGui.widgetBox(surface_box_2, " ", addSpace=False, orientation="vertical")
+                self.surface_box_cyl = ShadowGui.widgetBox(surface_box_2, "", addSpace=True, orientation="vertical", width=self.INNER_BOX_WIDTH)
+                self.surface_box_cyl_empty = ShadowGui.widgetBox(surface_box_2, "", addSpace=True, orientation="vertical", width=self.INNER_BOX_WIDTH)
 
                 ShadowGui.lineEdit(self.surface_box_cyl, self, "cylinder_orientation", "Cylinder Orientation (deg) [CCW from X axis]", valueType=float, orientation="horizontal")
 
@@ -304,39 +309,29 @@ class OpticalElement(ow_generic_element.GenericElement):
             ##########################################
 
             if self.graphical_options.is_mirror:
-                refl_box = gui.widgetBox(tab_bas_refl, "Reflectivity Parameter", addSpace=False, orientation="vertical")
-                refl_box.setFixedHeight(self.ONE_ROW_HEIGHT)
+                refl_box = ShadowGui.widgetBox(tab_bas_refl, "Reflectivity Parameter", addSpace=False, orientation="vertical", height=170)
 
                 gui.comboBox(refl_box, self, "reflectivity_type", label="Reflectivity", \
                              items=["Not considered", "Full Polarization dependence", "No Polarization dependence (scalar)"], \
                              callback=self.set_Refl_Parameters, sendSelectedValue=False, orientation="horizontal")
 
-                self.refl_box_pol_hidden = gui.widgetBox(tab_bas_refl, "", addSpace=False, orientation="vertical")
-                self.refl_box_pol_hidden.setFixedHeight(175)
-
-                self.refl_box_pol = gui.widgetBox(tab_bas_refl, " ", addSpace=False, orientation="vertical")
-                self.refl_box_pol.setFixedHeight(self.ONE_ROW_HEIGHT)
+                self.refl_box_pol = ShadowGui.widgetBox(refl_box, "", addSpace=True, orientation="vertical", width=self.INNER_BOX_WIDTH)
+                self.refl_box_pol_empty = ShadowGui.widgetBox(refl_box, "", addSpace=True, orientation="vertical", width=self.INNER_BOX_WIDTH)
 
                 gui.comboBox(self.refl_box_pol, self, "source_of_reflectivity", label="Source of Reflectivity", \
                              items=["file generated by PREREFL", "electric susceptibility", "file generated by pre_mlayer"], \
                              callback=self.set_ReflSource_Parameters, sendSelectedValue=False, orientation="horizontal")
 
-                self.refl_box_pol_1 = gui.widgetBox(tab_bas_refl, " ", addSpace=False, orientation="vertical")
-                self.refl_box_pol_1.setFixedHeight(self.ONE_ROW_HEIGHT)
+                self.refl_box_pol_1 = ShadowGui.widgetBox(self.refl_box_pol, "", addSpace=True, orientation="vertical")
 
                 ShadowGui.lineEdit(self.refl_box_pol_1, self, "file_prerefl", "File Name", valueType=str, orientation="horizontal")
 
-                self.refl_box_pol_1_hidden = gui.widgetBox(tab_bas_refl, "", addSpace=False, orientation="vertical")
-                self.refl_box_pol_1_hidden.setFixedHeight(30)
-
-                self.refl_box_pol_2 = gui.widgetBox(tab_bas_refl, " ", addSpace=False, orientation="vertical")
-                self.refl_box_pol_2.setFixedHeight(self.TWO_ROW_HEIGHT)
+                self.refl_box_pol_2 = gui.widgetBox(self.refl_box_pol, "", addSpace=False, orientation="vertical")
 
                 ShadowGui.lineEdit(self.refl_box_pol_2, self, "alpha", "Alpha [epsilon=(1-alpha)+i gamma]", valueType=float, orientation="horizontal")
                 ShadowGui.lineEdit(self.refl_box_pol_2, self, "gamma", "Gamma [epsilon=(1-alpha)+i gamma]", valueType=float, orientation="horizontal")
 
-                self.refl_box_pol_3 = gui.widgetBox(tab_bas_refl, " ", addSpace=False, orientation="vertical")
-                self.refl_box_pol_3.setFixedHeight(self.TWO_ROW_HEIGHT)
+                self.refl_box_pol_3 = gui.widgetBox(self.refl_box_pol, "", addSpace=True, orientation="vertical")
 
                 ShadowGui.lineEdit(self.refl_box_pol_3, self, "file_prerefl_m", "File Name", valueType=str, orientation="horizontal")
                 gui.comboBox(self.refl_box_pol_3, self, "m_layer_tickness", label="Mlayer thickness vary as cosine", \
@@ -344,10 +339,10 @@ class OpticalElement(ow_generic_element.GenericElement):
                              sendSelectedValue=False, orientation="horizontal")
 
                 self.set_Refl_Parameters()
-
-                self.refl_box_hidden = gui.widgetBox(tab_bas_refl, "", addSpace=False, orientation="vertical")
-                self.refl_box_hidden.setFixedHeight(280)
             else:
+
+                #####
+                #TODO SONO QUI
                 tabs_crystal_setting = gui.tabWidget(tab_bas_crystal)
 
                 tab_cryst_1 = gui.createTabPage(tabs_crystal_setting, "Diffraction Settings")
@@ -447,15 +442,16 @@ class OpticalElement(ow_generic_element.GenericElement):
             #
             ##########################################
 
-            dimension_box = ShadowGui.widgetBox(tab_bas_dim, "Dimensions", addSpace=False, orientation="vertical")
+            dimension_box = ShadowGui.widgetBox(tab_bas_dim, "Dimensions", addSpace=False, orientation="vertical", height=200)
 
             gui.comboBox(dimension_box, self, "is_infinite", label="Limits Check", \
                          items=["Infinite o.e. dimensions", "Finite o.e. dimensions"], \
                          callback=self.set_Dim_Parameters, sendSelectedValue=False, orientation="horizontal")
 
-            self.dimdet_box = ShadowGui.widgetBox(tab_bas_dim, " ", addSpace=False, orientation="vertical")
+            self.dimdet_box = ShadowGui.widgetBox(dimension_box, "", addSpace=False, orientation="vertical", width=self.INNER_BOX_WIDTH)
+            self.dimdet_box_empty = ShadowGui.widgetBox(dimension_box, "", addSpace=False, orientation="vertical", width=self.INNER_BOX_WIDTH)
 
-            gui.comboBox(self.dimdet_box, self, "mirror_shape", label="Limits Check", \
+            gui.comboBox(self.dimdet_box, self, "mirror_shape", label="Shape selected", \
                          items=["Rectangular", "Full ellipse", "Ellipse with hole"], \
                          sendSelectedValue=False, orientation="horizontal")
 
@@ -477,7 +473,7 @@ class OpticalElement(ow_generic_element.GenericElement):
             tab_adv_mod_surf = ShadowGui.createTabPage(tabs_advanced_setting, "Modified Surface")
             tab_adv_mir_mov = ShadowGui.createTabPage(tabs_advanced_setting, "Mirror Movement")
             tab_adv_sou_mov = ShadowGui.createTabPage(tabs_advanced_setting, "Source Movement")
-            tab_adv_misc = ShadowGui.createTabPage(tabs_advanced_setting, "Other")
+            tab_adv_misc = ShadowGui.createTabPage(tabs_advanced_setting, "Output Files")
 
             ##########################################
             #
@@ -485,36 +481,36 @@ class OpticalElement(ow_generic_element.GenericElement):
             #
             ##########################################
 
-            mod_surf_box = gui.widgetBox(tab_adv_mod_surf, " ", addSpace=False, orientation="vertical")
+            mod_surf_box = ShadowGui.widgetBox(tab_adv_mod_surf, "Modified Surface Parameters", addSpace=False, orientation="vertical", height=250, width=self.INNER_BOX_WIDTH+18)
 
-            gui.comboBox(mod_surf_box, self, "modified_surface", label="Modified Surface", \
+            gui.comboBox(mod_surf_box, self, "modified_surface", label="Modification Type", \
                          items=["None", "Surface Error", "Faceted Surface", "Surface Roughness", "Kumakhov Lens", "Segmented Mirror"], \
                          callback=self.set_ModifiedSurface, sendSelectedValue=False, orientation="horizontal")
 
             # NONE
 
-            self.mod_surf_box_container =  ShadowGui.widgetBox(tab_adv_mod_surf, box="", addSpace=False, orientation="vertical")
+            self.surface_error_box =  ShadowGui.widgetBox(mod_surf_box, box="", addSpace=False, orientation="vertical")
 
             # SURFACE ERROR
 
-            type_of_defect_box = ShadowGui.widgetBox(self.mod_surf_box_container, " ", addSpace=False, orientation="vertical")
+            type_of_defect_box = ShadowGui.widgetBox(self.surface_error_box, "", addSpace=False, orientation="vertical")
 
             gui.comboBox(type_of_defect_box, self, "ms_type_of_defect", label="Type of Defect", \
                          items=["sinusoidal", "gaussian", "external spline"], \
                          callback=self.set_TypeOfDefect, sendSelectedValue=False, orientation="horizontal")
 
-            self.mod_surf_box_1 = ShadowGui.widgetBox(self.mod_surf_box_container, " ", addSpace=False, orientation="vertical")
+            self.mod_surf_err_box_1 = ShadowGui.widgetBox(self.surface_error_box, "", addSpace=False, orientation="vertical")
 
-            ShadowGui.lineEdit(self.mod_surf_box_1, self, "ms_defect_file_name", "File name", valueType=str, orientation="horizontal")
+            ShadowGui.lineEdit(self.mod_surf_err_box_1, self, "ms_defect_file_name", "File name", valueType=str, orientation="horizontal")
 
-            self.mod_surf_box_2 = ShadowGui.widgetBox(self.mod_surf_box_container, " ", addSpace=False, orientation="vertical")
+            self.mod_surf_err_box_2 = ShadowGui.widgetBox(self.surface_error_box, "", addSpace=False, orientation="vertical")
 
-            ShadowGui.lineEdit(self.mod_surf_box_2, self, "ms_ripple_wavel_x", "Ripple Wavel. X", valueType=float, orientation="horizontal")
-            ShadowGui.lineEdit(self.mod_surf_box_2, self, "ms_ripple_wavel_y", "Ripple Wavel. Y", valueType=float, orientation="horizontal")
-            ShadowGui.lineEdit(self.mod_surf_box_2, self, "ms_ripple_ampli_x", "Ripple Ampli. X", valueType=float, orientation="horizontal")
-            ShadowGui.lineEdit(self.mod_surf_box_2, self, "ms_ripple_ampli_y", "Ripple Ampli. Y", valueType=float, orientation="horizontal")
-            ShadowGui.lineEdit(self.mod_surf_box_2, self, "ms_ripple_phase_x", "Ripple Phase X", valueType=float, orientation="horizontal")
-            ShadowGui.lineEdit(self.mod_surf_box_2, self, "ms_ripple_phase_y", "Ripple Phase Y", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.mod_surf_err_box_2, self, "ms_ripple_wavel_x", "Ripple Wavel. X", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.mod_surf_err_box_2, self, "ms_ripple_wavel_y", "Ripple Wavel. Y", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.mod_surf_err_box_2, self, "ms_ripple_ampli_x", "Ripple Ampli. X", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.mod_surf_err_box_2, self, "ms_ripple_ampli_y", "Ripple Ampli. Y", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.mod_surf_err_box_2, self, "ms_ripple_phase_x", "Ripple Phase X", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.mod_surf_err_box_2, self, "ms_ripple_phase_y", "Ripple Phase Y", valueType=float, orientation="horizontal")
 
             ####
 
@@ -528,20 +524,20 @@ class OpticalElement(ow_generic_element.GenericElement):
             #
             ##########################################
 
-            mir_mov_box = ShadowGui.widgetBox(tab_adv_mir_mov, " ", addSpace=False, orientation="vertical")
+            mir_mov_box = ShadowGui.widgetBox(tab_adv_mir_mov, "Mirror Movement Parameters", addSpace=False, orientation="vertical", height=230, width=self.INNER_BOX_WIDTH+18)
 
             gui.comboBox(mir_mov_box, self, "mirror_movement", label="Mirror Movement", \
                          items=["No", "Yes"], \
                          callback=self.set_MirrorMovement, sendSelectedValue=False, orientation="horizontal")
 
-            self.mir_mov_box_container = ShadowGui.widgetBox(tab_adv_mir_mov, " ", addSpace=False, orientation="vertical")
+            self.mir_mov_box_1 = ShadowGui.widgetBox(mir_mov_box, "", addSpace=False, orientation="vertical")
 
-            ShadowGui.lineEdit(self.mir_mov_box_container, self, "mm_mirror_offset_x", "Mirror Offset X", valueType=float, orientation="horizontal")
-            ShadowGui.lineEdit(self.mir_mov_box_container, self, "mm_mirror_rotation_x", "Mirror Rotation X", valueType=float, orientation="horizontal")
-            ShadowGui.lineEdit(self.mir_mov_box_container, self, "mm_mirror_offset_y", "Mirror Offset Y", valueType=float, orientation="horizontal")
-            ShadowGui.lineEdit(self.mir_mov_box_container, self, "mm_mirror_rotation_y", "Mirror Rotation Z", valueType=float, orientation="horizontal")
-            ShadowGui.lineEdit(self.mir_mov_box_container, self, "mm_mirror_offset_z", "Mirror Offset Z", valueType=float, orientation="horizontal")
-            ShadowGui.lineEdit(self.mir_mov_box_container, self, "mm_mirror_rotation_z", "Mirror Rotation Z", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.mir_mov_box_1, self, "mm_mirror_offset_x", "Mirror Offset X", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.mir_mov_box_1, self, "mm_mirror_rotation_x", "Mirror Rotation X", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.mir_mov_box_1, self, "mm_mirror_offset_y", "Mirror Offset Y", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.mir_mov_box_1, self, "mm_mirror_rotation_y", "Mirror Rotation Z", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.mir_mov_box_1, self, "mm_mirror_offset_z", "Mirror Offset Z", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.mir_mov_box_1, self, "mm_mirror_rotation_z", "Mirror Rotation Z", valueType=float, orientation="horizontal")
 
             self.set_MirrorMovement()
 
@@ -551,26 +547,26 @@ class OpticalElement(ow_generic_element.GenericElement):
             #
             ##########################################
 
-            sou_mov_box = ShadowGui.widgetBox(tab_adv_sou_mov, " ", addSpace=False, orientation="vertical")
+            sou_mov_box = ShadowGui.widgetBox(tab_adv_sou_mov, "Source Movement Parameters", addSpace=False, orientation="vertical", height=400, width=self.INNER_BOX_WIDTH+18)
 
             gui.comboBox(sou_mov_box, self, "source_movement", label="Source Movement", \
                          items=["No", "Yes"], \
                          callback=self.set_SourceMovement, sendSelectedValue=False, orientation="horizontal")
 
-            self.sou_mov_box_container = ShadowGui.widgetBox(tab_adv_sou_mov, " ", addSpace=False, orientation="vertical")
+            self.sou_mov_box_1 = ShadowGui.widgetBox(sou_mov_box, "", addSpace=False, orientation="vertical")
 
-            ShadowGui.lineEdit(self.sou_mov_box_container, self, "sm_angle_of_incidence", "Angle of Incidence [deg]", valueType=float, orientation="horizontal")
-            ShadowGui.lineEdit(self.sou_mov_box_container, self, "sm_distance_from_mirror", "Distance from mirror [cm]", valueType=float, orientation="horizontal")
-            ShadowGui.lineEdit(self.sou_mov_box_container, self, "sm_z_rotation", "Z-rotation [deg]", valueType=float, orientation="horizontal")
-            ShadowGui.lineEdit(self.sou_mov_box_container, self, "sm_offset_x_mirr_ref_frame", "offset X [cm] in MIRROR reference frame", valueType=float, orientation="horizontal")
-            ShadowGui.lineEdit(self.sou_mov_box_container, self, "sm_offset_y_mirr_ref_frame", "offset Y [cm] in MIRROR reference frame", valueType=float, orientation="horizontal")
-            ShadowGui.lineEdit(self.sou_mov_box_container, self, "sm_offset_z_mirr_ref_frame", "offset Z [cm] in MIRROR reference frame", valueType=float, orientation="horizontal")
-            ShadowGui.lineEdit(self.sou_mov_box_container, self, "sm_offset_x_mirr_ref_frame", "offset X [cm] in MIRROR reference frame", valueType=float, orientation="horizontal")
-            ShadowGui.lineEdit(self.sou_mov_box_container, self, "sm_offset_y_mirr_ref_frame", "offset Y [cm] in MIRROR reference frame", valueType=float, orientation="horizontal")
-            ShadowGui.lineEdit(self.sou_mov_box_container, self, "sm_offset_z_mirr_ref_frame", "offset Z [cm] in MIRROR reference frame", valueType=float, orientation="horizontal")
-            ShadowGui.lineEdit(self.sou_mov_box_container, self, "sm_rotation_around_x", "rotation [CCW, deg] around X", valueType=float, orientation="horizontal")
-            ShadowGui.lineEdit(self.sou_mov_box_container, self, "sm_rotation_around_y", "rotation [CCW, deg] around Y", valueType=float, orientation="horizontal")
-            ShadowGui.lineEdit(self.sou_mov_box_container, self, "sm_rotation_around_z", "rotation [CCW, deg] around Z", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.sou_mov_box_1, self, "sm_angle_of_incidence", "Angle of Incidence [deg]", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.sou_mov_box_1, self, "sm_distance_from_mirror", "Distance from mirror [cm]", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.sou_mov_box_1, self, "sm_z_rotation", "Z-rotation [deg]", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.sou_mov_box_1, self, "sm_offset_x_mirr_ref_frame", "offset X [cm] in MIRROR reference frame", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.sou_mov_box_1, self, "sm_offset_y_mirr_ref_frame", "offset Y [cm] in MIRROR reference frame", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.sou_mov_box_1, self, "sm_offset_z_mirr_ref_frame", "offset Z [cm] in MIRROR reference frame", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.sou_mov_box_1, self, "sm_offset_x_mirr_ref_frame", "offset X [cm] in MIRROR reference frame", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.sou_mov_box_1, self, "sm_offset_y_mirr_ref_frame", "offset Y [cm] in MIRROR reference frame", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.sou_mov_box_1, self, "sm_offset_z_mirr_ref_frame", "offset Z [cm] in MIRROR reference frame", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.sou_mov_box_1, self, "sm_rotation_around_x", "rotation [CCW, deg] around X", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.sou_mov_box_1, self, "sm_rotation_around_y", "rotation [CCW, deg] around Y", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.sou_mov_box_1, self, "sm_rotation_around_z", "rotation [CCW, deg] around Z", valueType=float, orientation="horizontal")
 
             self.set_SourceMovement()
 
@@ -581,7 +577,6 @@ class OpticalElement(ow_generic_element.GenericElement):
             ##########################################
 
             adv_other_box = ShadowGui.widgetBox(tab_adv_misc, "Optional file output", addSpace=False, orientation="vertical")
-            adv_other_box.setFixedHeight(self.TWO_ROW_HEIGHT)
 
             gui.comboBox(adv_other_box, self, "file_to_write_out", label="Files to write out", \
                          items=["All", "Mirror", "Image", "None"], \
@@ -599,17 +594,17 @@ class OpticalElement(ow_generic_element.GenericElement):
     ############################################################
 
     def set_SourceMovement(self):
-        self.sou_mov_box_container.setVisible(self.source_movement == 1)
+        self.sou_mov_box_1.setVisible(self.source_movement == 1)
 
     def set_MirrorMovement(self):
-        self.mir_mov_box_container.setVisible(self.mirror_movement == 1)
+        self.mir_mov_box_1.setVisible(self.mirror_movement == 1)
 
     def set_TypeOfDefect(self):
-        self.mod_surf_box_1.setVisible(self.ms_type_of_defect != 0)
-        self.mod_surf_box_2.setVisible(self.ms_type_of_defect == 0)
+        self.mod_surf_err_box_1.setVisible(self.ms_type_of_defect != 0)
+        self.mod_surf_err_box_2.setVisible(self.ms_type_of_defect == 0)
 
     def set_ModifiedSurface(self):
-        self.mod_surf_box_container.setVisible(self.modified_surface == 1)
+        self.surface_error_box.setVisible(self.modified_surface == 1)
         if self.modified_surface == 1: self.set_TypeOfDefect()
 
     # TAB 1.1
@@ -621,41 +616,23 @@ class OpticalElement(ow_generic_element.GenericElement):
 
     def set_FociiCont_Parameters(self):
         self.surface_box_int_2.setVisible(self.focii_and_continuation_plane == 1)
+        self.surface_box_int_2_empty.setVisible(self.focii_and_continuation_plane == 0)
 
     def set_isCyl_Parameters(self):
         self.surface_box_cyl.setVisible(self.is_cylinder == 1)
+        self.surface_box_cyl_empty.setVisible(self.is_cylinder == 0)
 
     # TAB 1.2
 
     def set_Refl_Parameters(self):
-        if self.reflectivity_type == 0:
-            self.refl_box_pol_hidden.setVisible(True)
-            self.refl_box_pol.setVisible(False)
-            self.refl_box_pol_1.setVisible(False)
-            self.refl_box_pol_1_hidden.setVisible(False)
-            self.refl_box_pol_2.setVisible(False)
-            self.refl_box_pol_3.setVisible(False)
-        else:
-            self.refl_box_pol_hidden.setVisible(False)
-            self.refl_box_pol.setVisible(True)
-            self.set_ReflSource_Parameters()
+        self.refl_box_pol.setVisible(self.reflectivity_type != 0)
+        self.refl_box_pol_empty.setVisible(self.reflectivity_type == 0)
+        if self.reflectivity_type != 0: self.set_ReflSource_Parameters()
 
     def set_ReflSource_Parameters(self):
-        if self.source_of_reflectivity == 0:
-            self.refl_box_pol_1.setVisible(True)
-            self.refl_box_pol_1_hidden.setVisible(True)
-            self.refl_box_pol_2.setVisible(False)
-            self.refl_box_pol_3.setVisible(False)
-        elif self.source_of_reflectivity == 1:
-            self.refl_box_pol_1.setVisible(False)
-            self.refl_box_pol_1_hidden.setVisible(False)
-            self.refl_box_pol_2.setVisible(True)
-            self.refl_box_pol_3.setVisible(False)
-        elif self.source_of_reflectivity == 2:
-            self.refl_box_pol_1.setVisible(False)
-            self.refl_box_pol_1_hidden.setVisible(False)
-            self.refl_box_pol_2.setVisible(False)
-            self.refl_box_pol_3.setVisible(True)
+        self.refl_box_pol_1.setVisible(self.source_of_reflectivity == 0)
+        self.refl_box_pol_2.setVisible(self.source_of_reflectivity == 1)
+        self.refl_box_pol_3.setVisible(self.source_of_reflectivity == 2)
 
     def set_Autosetting(self):
         if self.crystal_auto_setting == 0:
@@ -725,19 +702,20 @@ class OpticalElement(ow_generic_element.GenericElement):
 
     def set_Dim_Parameters(self):
         self.dimdet_box.setVisible(self.is_infinite == 1)
+        self.dimdet_box_empty.setVisible(self.is_infinite == 0)
 
 
     def calculate_incidence_angle_mrad(self):
-        self.incidence_angle_mrad = math.radians(self.incidence_angle_deg)*1000
+        self.incidence_angle_mrad = round(math.radians(self.incidence_angle_deg)*1000, 2)
 
     def calculate_reflection_angle_mrad(self):
-        self.reflection_angle_mrad = math.radians(self.reflection_angle_deg)*1000
+        self.reflection_angle_mrad = round(math.radians(self.reflection_angle_deg)*1000, 2)
 
     def calculate_incidence_angle_deg(self):
-        self.incidence_angle_deg = math.degrees(self.incidence_angle_mrad/1000)
+        self.incidence_angle_deg = round(math.degrees(self.incidence_angle_mrad/1000), 3)
 
     def calculate_reflection_angle_deg(self):
-        self.reflection_angle_deg = math.degrees(self.reflection_angle_mrad/1000)
+        self.reflection_angle_deg = round(math.degrees(self.reflection_angle_mrad/1000), 3)
 
     def populateFields(self, shadow_oe = Orange.shadow.ShadowOpticalElement.create_empty_oe()):
 

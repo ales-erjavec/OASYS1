@@ -86,9 +86,10 @@ class BendingMagnet(ow_generic_element.GenericElement):
         gui.comboBox(left_box_3, self, "calculation_mode_combo", label="Calculation Mode", items=["Precomputed", "Exact"], orientation="horizontal")
 
         left_box_4 = gui.widgetBox(self.controlArea, "", addSpace=True, orientation="vertical")
-        left_box_4.setFixedHeight(120)
+        left_box_4.setFixedHeight(75)
 
-        gui.button(self.controlArea, self, "Run Shadow/source", callback=self.runShadowSource)
+        button = gui.button(self.controlArea, self, "Run Shadow/source", callback=self.runShadowSource)
+        button.setFixedHeight(45)
 
         gui.rubber(self.controlArea)
 

@@ -14,7 +14,7 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 
 class GenericElement(ow_automatic_element.AutomaticElement):
 
-    IMAGE_WIDTH = 900
+    IMAGE_WIDTH = 800
     IMAGE_HEIGHT = 545
 
     want_main_area=1
@@ -28,9 +28,9 @@ class GenericElement(ow_automatic_element.AutomaticElement):
 
         view_box = gui.widgetBox(self.mainArea, "Plotting Style", addSpace=False, orientation="vertical")
 
-        gui.comboBox(view_box, self, "view_type", label="Plot quality", \
-                         items=["Detailed Plot", "Preview", "None"], \
-                         callback=self.set_PlotQuality, sendSelectedValue=False, orientation="horizontal")
+        self.view_type_combo = gui.comboBox(view_box, self, "view_type", label="Plot quality", \
+                                            items=["Detailed Plot", "Preview", "None"], \
+                                            callback=self.set_PlotQuality, sendSelectedValue=False, orientation="horizontal")
 
         self.tabs = gui.tabWidget(self.mainArea)
 
@@ -42,7 +42,7 @@ class GenericElement(ow_automatic_element.AutomaticElement):
         out_box.layout().addWidget(self.shadow_output)
 
         self.shadow_output.setFixedHeight(150)
-        self.shadow_output.setFixedWidth(850)
+        self.shadow_output.setFixedWidth(750)
 
     def initializeTabs(self):
         size = len(self.tab)
@@ -136,7 +136,11 @@ class GenericElement(ow_automatic_element.AutomaticElement):
 
         #TODO BOX A SCOMPARSA CON BOTTONE SHOW CONTROLS CON LE OPZIONI
 
+
         if not self.view_type == 2:
+
+            self.view_type_combo.setEnabled(False)
+
             if self.view_type == 1:
                 self.plot_xy_fast(beam_out, progressBarValue+4, 1, 3, plot_canvas_index=0, title="X,Z", xtitle="X", ytitle="Z")
                 self.plot_xy_fast(beam_out, progressBarValue+8, 4, 6, plot_canvas_index=1, title="X',Z'", xtitle="X'", ytitle="Z'")
@@ -150,9 +154,9 @@ class GenericElement(ow_automatic_element.AutomaticElement):
 
             self.plot_histo(beam_out, progressBarValue+20, 11, figure_canvas_index=4, title="Energy",xtitle="Energy", ytitle="Rays")
 
-            ST.plt.close("all")
+            self.view_type_combo.setEnabled(True)
 
-            self.plotted_beam = beam_out
+        self.plotted_beam = beam_out
 
     def writeStdOut(self, text):
         cursor = self.shadow_output.textCursor()
