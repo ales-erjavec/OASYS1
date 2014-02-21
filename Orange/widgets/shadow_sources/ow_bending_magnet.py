@@ -27,26 +27,26 @@ class BendingMagnet(ow_generic_element.GenericElement):
 
     number_of_rays=Setting(5000)
     seed=Setting(6775431)
-    e_min=Setting(0)
+    e_min=Setting(5000)
     e_max=Setting(100000)
     optical_paths_combo=Setting(1) # REMOVED FROM GUI: 1 AS DEFAULT
     sample_distribution_combo=Setting(0) # REMOVED FROM GUI: 0 AS DEFAULT
     generate_polarization_combo=Setting(2)
 
-    sigma_x=Setting(0)
-    sigma_z=Setting(0)
-    emittance_x=Setting(0)
-    emittance_z=Setting(0)
-    energy=Setting(0)
+    sigma_x=Setting(0.0078)
+    sigma_z=Setting(0.0036)
+    emittance_x=Setting(3.8E-7)
+    emittance_z=Setting(3.8E-9)
+    energy=Setting(6.04)
     distance_from_waist_x=Setting(0)
     distance_from_waist_z=Setting(0)
 
-    magnetic_radius=Setting(0)
-    magnetic_field=Setting(0)
-    horizontal_half_divergence_from=Setting(0)
-    horizontal_half_divergence_to=Setting(0)
-    max_vertical_half_divergence_from=Setting(0)
-    max_vertical_half_divergence_to=Setting(0)
+    magnetic_radius=Setting(25.1772)
+    magnetic_field=Setting(0.8)
+    horizontal_half_divergence_from=Setting(0.0005)
+    horizontal_half_divergence_to=Setting(0.0005)
+    max_vertical_half_divergence_from=Setting(1)
+    max_vertical_half_divergence_to=Setting(1)
 
     calculation_mode_combo=Setting(0)
 
@@ -62,8 +62,6 @@ class BendingMagnet(ow_generic_element.GenericElement):
         ShadowGui.lineEdit(left_box_1, self, "seed", "Seed", tooltip="Seed", valueType=int, orientation="horizontal")
         ShadowGui.lineEdit(left_box_1, self, "e_min", "Minimum Energy (eV)", tooltip="Minimum Energy (eV)", valueType=float, orientation="horizontal")
         ShadowGui.lineEdit(left_box_1, self, "e_max", "Maximum Energy (eV)", tooltip="Maximum Energy (eV)", valueType=float, orientation="horizontal")
-        #gui.comboBox(left_box_1, self, "optical_paths_combo", label="Store Optical Paths?", items=["No", "Yes"], orientation="horizontal")
-        #gui.comboBox(left_box_1, self, "sample_distribution_combo", label="Sample Distribution", items=["Photon", "Power"], orientation="horizontal")
         gui.comboBox(left_box_1, self, "generate_polarization_combo", label="Generate Polarization", items=["Only Parallel", "Only Perpendicular", "Total"], orientation="horizontal")
 
         left_box_2 = gui.widgetBox(self.controlArea, "Machine Parameters", addSpace=True, orientation="vertical")
