@@ -1,4 +1,4 @@
-import sys, numpy
+import sys, numpy, gc
 from Orange.widgets import gui
 from PyQt4 import QtGui
 from PyQt4.QtGui import QApplication, qApp
@@ -76,14 +76,28 @@ class GenericElement(ow_automatic_element.AutomaticElement):
     def replaceObject(self, index, object):
         if self.plot_canvas[index] is not None:
             self.tab[index].layout().removeWidget(self.plot_canvas[index])
+        return_object = self.plot_canvas[index]
         self.plot_canvas[index] = object
         self.tab[index].layout().addWidget(self.plot_canvas[index])
 
+        return return_object
+
     def replace_fig(self, figure_canvas_index, figure):
-        self.replaceObject(figure_canvas_index, FigureCanvas(figure))
+        old_figure = self.replaceObject(figure_canvas_index, FigureCanvas(figure))
+
+        if not old_figure is None:
+            old_figure.figure.clf()
+            ST.plt.close("all")
+            gc.collect()
 
     def replace_plot(self, plot_canvas_index, plot):
-        self.replaceObject(plot_canvas_index, plot)
+        old_figure = self.replaceObject(plot_canvas_index, plot)
+
+        if not old_figure is None:
+            old_figure.clf()
+            ST.plt.close("all")
+            gc.collect()
+
 
     def plot_xy_fast(self, beam_out, progressBarValue, var_x, var_y, plot_canvas_index, title, xtitle, ytitle):
 
@@ -94,7 +108,8 @@ class GenericElement(ow_automatic_element.AutomaticElement):
         if not len(t)==0:
             plot = PlotWindow(roi=True, control=True, position=True)
             plot.setDefaultPlotLines(False)
-            plot.addCurve(x[t], y[t], title, symbol='o', color='blue') #'+', '^',
+            plot.setActiveCurveColor(color='darkblue')
+            plot.addCurve(x[t], y[t], title, symbol=',', color='blue') #'+', '^',
             plot.setGraphXLabel(xtitle)
             plot.setGraphYLabel(ytitle)
             plot.setDrawModeEnabled(True, 'rectangle')
@@ -134,6 +149,8 @@ class GenericElement(ow_automatic_element.AutomaticElement):
                 self.plot_xy(beam_out, progressBarValue+16, 3, 6, figure_canvas_index=3, title="Z,Z'", xtitle="Z", ytitle="Z'")
 
             self.plot_histo(beam_out, progressBarValue+20, 11, figure_canvas_index=4, title="Energy",xtitle="Energy", ytitle="Rays")
+
+            ST.plt.close("all")
 
             self.plotted_beam = beam_out
 

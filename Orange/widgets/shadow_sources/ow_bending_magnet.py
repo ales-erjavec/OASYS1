@@ -3,7 +3,7 @@ import Orange
 import Orange.shadow
 from Orange.widgets import gui
 from Orange.widgets.settings import Setting
-from PyQt4.QtGui import QApplication, qApp
+from PyQt4.QtGui import QApplication, qApp, QScrollArea
 
 from Orange.widgets.shadow_gui import ow_generic_element
 from Orange.shadow.shadow_objects import EmittingStream, TTYGrabber
@@ -56,7 +56,7 @@ class BendingMagnet(ow_generic_element.GenericElement):
         super().__init__()
 
         left_box_1 = gui.widgetBox(self.controlArea, "Monte Carlo and Energy Spectrum", addSpace=True, orientation="vertical")
-        
+
         ShadowGui.lineEdit(left_box_1, self, "number_of_rays", "Number of Rays", tooltip="Number of Rays", valueType=int, orientation="horizontal")
 
         ShadowGui.lineEdit(left_box_1, self, "seed", "Seed", tooltip="Seed", valueType=int, orientation="horizontal")
@@ -76,19 +76,19 @@ class BendingMagnet(ow_generic_element.GenericElement):
         ShadowGui.lineEdit(left_box_2, self, "distance_from_waist_x", "Distance from Waist X [cm]", tooltip="Distance from Waist X [cm]", valueType=float, orientation="horizontal")
         ShadowGui.lineEdit(left_box_2, self, "distance_from_waist_z", "Distance from Waist Z [cm]", tooltip="Distance from Waist Z [cm]", valueType=float, orientation="horizontal")
 
-        left_box_2 = gui.widgetBox(self.controlArea, "Bending Magnet Parameters", addSpace=True, orientation="vertical")
+        left_box_3 = gui.widgetBox(self.controlArea, "Bending Magnet Parameters", addSpace=True, orientation="vertical")
 
-        ShadowGui.lineEdit(left_box_2, self, "magnetic_radius", "Magnetic Radius [m]", callback=self.calculateMagneticField, tooltip="Magnetic Radius [m]", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(left_box_2, self, "magnetic_field", "Magnetic Field [T]", callback=self.calculateMagneticRadius, tooltip="Magnetic Field [T]", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(left_box_3, self, "magnetic_radius", "Magnetic Radius [m]", callback=self.calculateMagneticField, tooltip="Magnetic Radius [m]", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(left_box_3, self, "magnetic_field", "Magnetic Field [T]", callback=self.calculateMagneticRadius, tooltip="Magnetic Field [T]", valueType=float, orientation="horizontal")
 
-        ShadowGui.lineEdit(left_box_2, self, "horizontal_half_divergence_from", "Horizontal half-divergence [rads] From [+]", tooltip="Horizontal half-divergence [rads] From [+]", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(left_box_2, self, "horizontal_half_divergence_to", "Horizontal half-divergence [rads] To [-]", tooltip="Horizontal half-divergence [rads] To [-]", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(left_box_2, self, "max_vertical_half_divergence_from", "Max vertical half-divergence [rads] From [+]", tooltip="Max vertical half-divergence [rads] From [+]", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(left_box_2, self, "max_vertical_half_divergence_to", "Max vertical half-divergence [rads] To [-]", tooltip="Max vertical half-divergence [rads] To [-]", valueType=float, orientation="horizontal")
-        gui.comboBox(left_box_2, self, "calculation_mode_combo", label="Calculation Mode", items=["Precomputed", "Exact"], orientation="horizontal")
+        ShadowGui.lineEdit(left_box_3, self, "horizontal_half_divergence_from", "Horizontal half-divergence [rads] From [+]", tooltip="Horizontal half-divergence [rads] From [+]", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(left_box_3, self, "horizontal_half_divergence_to", "Horizontal half-divergence [rads] To [-]", tooltip="Horizontal half-divergence [rads] To [-]", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(left_box_3, self, "max_vertical_half_divergence_from", "Max vertical half-divergence [rads] From [+]", tooltip="Max vertical half-divergence [rads] From [+]", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(left_box_3, self, "max_vertical_half_divergence_to", "Max vertical half-divergence [rads] To [-]", tooltip="Max vertical half-divergence [rads] To [-]", valueType=float, orientation="horizontal")
+        gui.comboBox(left_box_3, self, "calculation_mode_combo", label="Calculation Mode", items=["Precomputed", "Exact"], orientation="horizontal")
 
-        left_box_3 = gui.widgetBox(self.controlArea, "", addSpace=True, orientation="vertical")
-        left_box_3.setFixedHeight(120)
+        left_box_4 = gui.widgetBox(self.controlArea, "", addSpace=True, orientation="vertical")
+        left_box_4.setFixedHeight(120)
 
         gui.button(self.controlArea, self, "Run Shadow/source", callback=self.runShadowSource)
 
@@ -151,7 +151,7 @@ class BendingMagnet(ow_generic_element.GenericElement):
 
         self.progressBarSet(50)
 
-        beam_out = Orange.shadow.ShadowBeam.trace_from_source(shadow_src)
+        beam_out = Orange.shadow.ShadowBeam.traceFromSource(shadow_src)
 
         grabber.stop()
 

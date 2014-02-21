@@ -10,6 +10,9 @@ from Orange.widgets.shadow_gui import ow_automatic_element
 
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 
+
+
+
 class PlotXY(ow_automatic_element.AutomaticElement):
 
     name = "Plot XY"
