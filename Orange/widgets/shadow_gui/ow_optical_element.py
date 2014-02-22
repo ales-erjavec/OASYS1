@@ -3,7 +3,6 @@ import Orange
 import Orange.shadow
 from Orange.widgets import gui
 from Orange.widgets.settings import Setting
-from PyQt4 import QtCore, QtGui
 from PyQt4.QtGui import QApplication, qApp
 from Orange.widgets.shadow_gui import ow_generic_element
 from Orange.shadow.shadow_objects import EmittingStream, TTYGrabber

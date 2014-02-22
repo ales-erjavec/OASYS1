@@ -2,6 +2,7 @@ import sys, numpy, gc
 from Orange.widgets import gui
 from PyQt4 import QtGui
 from PyQt4.QtGui import QApplication, qApp
+from PyQt4.QtCore import QRect
 
 from PyMca.widgets.PlotWindow import PlotWindow
 from Orange.widgets.settings import Setting
@@ -25,6 +26,9 @@ class GenericElement(ow_automatic_element.AutomaticElement):
 
     def __init__(self):
         super().__init__()
+
+        geom = QApplication.desktop().availableGeometry()
+        self.setGeometry(QRect(round(geom.width()*0.05),round(geom.height()*0.05),round(geom.width()*0.8),round(geom.height()*0.88)))
 
         view_box = gui.widgetBox(self.mainArea, "Plotting Style", addSpace=False, orientation="vertical")
 
