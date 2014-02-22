@@ -87,6 +87,7 @@ class GenericElement(ow_automatic_element.AutomaticElement):
 
         if not old_figure is None:
             old_figure.figure.clf()
+            old_figure = None
             ST.plt.close("all")
             gc.collect()
 
@@ -94,7 +95,7 @@ class GenericElement(ow_automatic_element.AutomaticElement):
         old_figure = self.replaceObject(plot_canvas_index, plot)
 
         if not old_figure is None:
-            old_figure.clf()
+            old_figure = None
             ST.plt.close("all")
             gc.collect()
 
