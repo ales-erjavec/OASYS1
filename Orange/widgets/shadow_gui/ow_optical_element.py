@@ -14,6 +14,7 @@ class GraphicalOptions:
     is_screen_slit=False
 
     is_spheric= False
+    is_ellipsoidal=False
     is_toroidal=False
     is_paraboloid=False
     is_hyperboloid=False
@@ -27,6 +28,7 @@ class GraphicalOptions:
                  is_mirror=False, \
                  is_screen_slit=False, \
                  is_spheric=False, \
+                 is_ellipsoidal=False, \
                  is_toroidal=False, \
                  is_paraboloid=False, \
                  is_hyperboloid=False,\
@@ -38,6 +40,7 @@ class GraphicalOptions:
         self.is_mirror=is_mirror
         self.is_screen_slit=is_screen_slit
         self.is_spheric=is_spheric
+        self.is_ellipsoidal=is_ellipsoidal
         self.is_toroidal=is_toroidal
         self.is_paraboloid=is_paraboloid
         self.is_hyperboloid=is_hyperboloid
@@ -84,6 +87,13 @@ class OpticalElement(ow_generic_element.GenericElement):
     torus_major_radius = Setting(0)
     torus_minor_radius = Setting(0)
     toroidal_mirror_pole_location=Setting(0)
+
+    ellipse_hyperbola_semi_major_axis=Setting(0)
+    ellipse_hyperbola_semi_minor_axis=Setting(0)
+    angle_of_majax_and_pole=Setting(0)
+
+    paraboloid_parameter=Setting(0)
+    focus_location=Setting(0)
 
     focii_and_continuation_plane = Setting(0)
 
@@ -150,11 +160,11 @@ class OpticalElement(ow_generic_element.GenericElement):
     ms_intercept_to_use = Setting(0)
     ms_facet_width_x = Setting(10)
     ms_facet_phase_x = Setting(0)
-    ms_dead_with_x_minus = Setting(0)
+    ms_dead_width_x_minus = Setting(0)
     ms_dead_width_x_plus = Setting(0)
     ms_facet_width_y = Setting(10)
     ms_facet_phase_y = Setting(0)
-    ms_dead_with_y_minus = Setting(0)
+    ms_dead_width_y_minus = Setting(0)
     ms_dead_width_y_plus = Setting(0)
 
     # surface roughness
@@ -163,7 +173,7 @@ class OpticalElement(ow_generic_element.GenericElement):
     ms_roughness_rms_y = Setting(0)
 
     # kumakhov lens
-    ms_specify_r2 = Setting(0)
+    ms_specify_rz2 = Setting(0)
     ms_file_with_parameters_rz = Setting(NONE_SPECIFIED)
     ms_file_with_parameters_rz2 = Setting(NONE_SPECIFIED)
     ms_save_intercept_bounces = Setting(0)
@@ -260,15 +270,25 @@ class OpticalElement(ow_generic_element.GenericElement):
 
                 gui.comboBox(surface_box, self, "surface_shape_parameters", label="Type", items=["internal/calculated", "external/user_defined"], callback=self.set_IntExt_Parameters, sendSelectedValue=False, orientation="horizontal")
 
-                self.surface_box_ext = ShadowGui.widgetBox(surface_box, "", addSpace=True, orientation="vertical", height=110)
+                self.surface_box_ext = ShadowGui.widgetBox(surface_box, "", addSpace=True, orientation="vertical", height=150)
+                gui.separator(self.surface_box_ext, width=self.INNER_BOX_WIDTH_L2)
 
                 if self.graphical_options.is_spheric:
                     ShadowGui.lineEdit(self.surface_box_ext, self, "spherical_radius", "Spherical Radius [cm]", valueType=float, orientation="horizontal")
                 elif self.graphical_options.is_toroidal:
                     ShadowGui.lineEdit(self.surface_box_ext, self, "torus_major_radius", "Torus Major Radius [cm]", valueType=float, orientation="horizontal")
                     ShadowGui.lineEdit(self.surface_box_ext, self, "torus_minor_radius", "Torus Minor Radius [cm]", valueType=float, orientation="horizontal")
+                elif self.graphical_options.is_hyperboloid or self.graphical_options.is_ellipsoidal:
+                    ShadowGui.lineEdit(self.surface_box_ext, self, "ellipse_hyperbola_semi_major_axis", "Ellipse/Hyperbola semi-major Axis [cm]", valueType=float, orientation="horizontal")
+                    ShadowGui.lineEdit(self.surface_box_ext, self, "ellipse_hyperbola_semi_minor_axis", "Ellipse/Hyperbola semi-minor Axis [cm]", valueType=float, orientation="horizontal")
+                    ShadowGui.lineEdit(self.surface_box_ext, self, "angle_of_majax_and_pole", "Angle of MajAx and Pole [cm]", valueType=float, orientation="horizontal")
+                elif self.graphical_options.is_paraboloid:
+                    ShadowGui.lineEdit(self.surface_box_ext, self, "paraboloid_parameter", "Paraboloid parameter", valueType=float, orientation="horizontal")
 
-                self.surface_box_int = ShadowGui.widgetBox(surface_box, "", addSpace=True, orientation="vertical", height=110)
+                #TODO ALTRE FORME ATTENZIONE!!!!!
+                #TODO CONTROLLARE DIMENSIONE DEI BOX!!!!!
+
+                self.surface_box_int = ShadowGui.widgetBox(surface_box, "", addSpace=True, orientation="vertical", height=150)
 
                 gui.comboBox(self.surface_box_int, self, "focii_and_continuation_plane", label="Focii and Continuation Plane", items=["Coincident", "Different"], callback=self.set_FociiCont_Parameters, sendSelectedValue=False, orientation="horizontal")
 
@@ -278,6 +298,9 @@ class OpticalElement(ow_generic_element.GenericElement):
                 self.w_object_side_focal_distance = ShadowGui.lineEdit(self.surface_box_int_2, self, "object_side_focal_distance", "Object Side_Focal Distance [cm]", valueType=float, orientation="horizontal")
                 self.w_image_side_focal_distance = ShadowGui.lineEdit(self.surface_box_int_2, self, "image_side_focal_distance", "Image Side_Focal Distance [cm]", valueType=float, orientation="horizontal")
                 self.w_incidence_angle_respect_to_normal = ShadowGui.lineEdit(self.surface_box_int_2, self, "incidence_angle_respect_to_normal", "Incidence Angle Respect to Normal [deg]", valueType=float, orientation="horizontal")
+
+                if self.graphical_options.is_paraboloid:
+                    gui.comboBox(self.surface_box_int, self, "focus_location", label="Focus location", items=["Image", "Source"], sendSelectedValue=False, orientation="horizontal")
 
                 self.set_IntExt_Parameters()
 
@@ -310,11 +333,13 @@ class OpticalElement(ow_generic_element.GenericElement):
             ##########################################
 
             if self.graphical_options.is_mirror:
-                refl_box = ShadowGui.widgetBox(tab_bas_refl, "Reflectivity Parameter", addSpace=False, orientation="vertical", height=170)
+                refl_box = ShadowGui.widgetBox(tab_bas_refl, "Reflectivity Parameter", addSpace=False, orientation="vertical", height=190)
 
                 gui.comboBox(refl_box, self, "reflectivity_type", label="Reflectivity", \
                              items=["Not considered", "Full Polarization dependence", "No Polarization dependence (scalar)"], \
                              callback=self.set_Refl_Parameters, sendSelectedValue=False, orientation="horizontal")
+
+                gui.separator(refl_box, width=self.INNER_BOX_WIDTH_L2, height=10)
 
                 self.refl_box_pol = ShadowGui.widgetBox(refl_box, "", addSpace=True, orientation="vertical", width=self.INNER_BOX_WIDTH_L2)
                 self.refl_box_pol_empty = ShadowGui.widgetBox(refl_box, "", addSpace=True, orientation="vertical", width=self.INNER_BOX_WIDTH_L2)
@@ -325,6 +350,7 @@ class OpticalElement(ow_generic_element.GenericElement):
 
                 self.refl_box_pol_1 = ShadowGui.widgetBox(self.refl_box_pol, "", addSpace=True, orientation="vertical")
 
+                gui.separator(self.refl_box_pol_1, width=self.INNER_BOX_WIDTH_L2,)
                 ShadowGui.lineEdit(self.refl_box_pol_1, self, "file_prerefl", "File Name", valueType=str, orientation="horizontal")
 
                 self.refl_box_pol_2 = gui.widgetBox(self.refl_box_pol, "", addSpace=False, orientation="vertical")
@@ -346,13 +372,15 @@ class OpticalElement(ow_generic_element.GenericElement):
                 tab_cryst_1 = ShadowGui.createTabPage(tabs_crystal_setting, "Diffraction Settings")
                 tab_cryst_2 = ShadowGui.createTabPage(tabs_crystal_setting, "Geometric Setting")
 
-                crystal_box = ShadowGui.widgetBox(tab_cryst_1, "Diffraction Parameters", addSpace=True, orientation="vertical", height=170)
+                crystal_box = ShadowGui.widgetBox(tab_cryst_1, "Diffraction Parameters", addSpace=True, orientation="vertical", height=180)
 
                 ShadowGui.lineEdit(crystal_box, self, "file_crystal_parameters", "File with crystal parameters", valueType=str, orientation="horizontal")
 
                 gui.comboBox(crystal_box, self, "crystal_auto_setting", label="Auto setting", \
                              items=["No", "Yes"], \
                              callback=self.set_Autosetting, sendSelectedValue=False, orientation="horizontal")
+
+                gui.separator(crystal_box, width=self.INNER_BOX_WIDTH_L3, height=10)
 
                 self.autosetting_box = ShadowGui.widgetBox(crystal_box, "", addSpace=True, orientation="vertical", width=self.INNER_BOX_WIDTH_L3)
                 self.autosetting_box_empty = ShadowGui.widgetBox(crystal_box, "", addSpace=True, orientation="vertical", width=self.INNER_BOX_WIDTH_L3)
@@ -373,11 +401,13 @@ class OpticalElement(ow_generic_element.GenericElement):
 
                 self.set_Autosetting()
 
-                mosaic_box = ShadowGui.widgetBox(tab_cryst_2, "Geometric Parameters", addSpace=True, orientation="vertical", height=270)
+                mosaic_box = ShadowGui.widgetBox(tab_cryst_2, "Geometric Parameters", addSpace=True, orientation="vertical", height=280)
 
                 gui.comboBox(mosaic_box, self, "mosaic_crystal", label="Mosaic Crystal", \
                              items=["No", "Yes"], \
                              callback=self.set_Mosaic, sendSelectedValue=False, orientation="horizontal")
+
+                gui.separator(mosaic_box, width=self.INNER_BOX_WIDTH_L3, height=10)
 
                 self.mosaic_box_1 = ShadowGui.widgetBox(mosaic_box, "", addSpace=False, orientation="vertical")
 
@@ -419,11 +449,13 @@ class OpticalElement(ow_generic_element.GenericElement):
             #
             ##########################################
 
-            dimension_box = ShadowGui.widgetBox(tab_bas_dim, "Dimensions", addSpace=False, orientation="vertical", height=200)
+            dimension_box = ShadowGui.widgetBox(tab_bas_dim, "Dimensions", addSpace=False, orientation="vertical", height=210)
 
             gui.comboBox(dimension_box, self, "is_infinite", label="Limits Check", \
                          items=["Infinite o.e. dimensions", "Finite o.e. dimensions"], \
                          callback=self.set_Dim_Parameters, sendSelectedValue=False, orientation="horizontal")
+
+            gui.separator(dimension_box, width=self.INNER_BOX_WIDTH_L2, height=10)
 
             self.dimdet_box = ShadowGui.widgetBox(dimension_box, "", addSpace=False, orientation="vertical", width=self.INNER_BOX_WIDTH_L2)
             self.dimdet_box_empty = ShadowGui.widgetBox(dimension_box, "", addSpace=False, orientation="vertical", width=self.INNER_BOX_WIDTH_L2)
@@ -458,17 +490,17 @@ class OpticalElement(ow_generic_element.GenericElement):
             #
             ##########################################
 
-            mod_surf_box = ShadowGui.widgetBox(tab_adv_mod_surf, "Modified Surface Parameters", addSpace=False, orientation="vertical", height=250, width=self.INNER_BOX_WIDTH_L1)
+            mod_surf_box = ShadowGui.widgetBox(tab_adv_mod_surf, "Modified Surface Parameters", addSpace=False, orientation="vertical", height=370, width=self.INNER_BOX_WIDTH_L1)
 
             gui.comboBox(mod_surf_box, self, "modified_surface", label="Modification Type", \
                          items=["None", "Surface Error", "Faceted Surface", "Surface Roughness", "Kumakhov Lens", "Segmented Mirror"], \
                          callback=self.set_ModifiedSurface, sendSelectedValue=False, orientation="horizontal")
 
-            # NONE
-
-            self.surface_error_box =  ShadowGui.widgetBox(mod_surf_box, box="", addSpace=False, orientation="vertical")
+            gui.separator(mod_surf_box, width=self.INNER_BOX_WIDTH_L1, height=10)
 
             # SURFACE ERROR
+
+            self.surface_error_box =  ShadowGui.widgetBox(mod_surf_box, box="", addSpace=False, orientation="vertical")
 
             type_of_defect_box = ShadowGui.widgetBox(self.surface_error_box, "", addSpace=False, orientation="vertical")
 
@@ -489,9 +521,65 @@ class OpticalElement(ow_generic_element.GenericElement):
             ShadowGui.lineEdit(self.mod_surf_err_box_2, self, "ms_ripple_phase_x", "Ripple Phase X", valueType=float, orientation="horizontal")
             ShadowGui.lineEdit(self.mod_surf_err_box_2, self, "ms_ripple_phase_y", "Ripple Phase Y", valueType=float, orientation="horizontal")
 
-            ####
+            # FACETED SURFACE
 
-            #TODO ALTRI TIPI DI MODIFIED SURFACE!
+            self.faceted_surface_box =  ShadowGui.widgetBox(mod_surf_box, box="", addSpace=False, orientation="vertical")
+
+            ShadowGui.lineEdit(self.faceted_surface_box, self, "ms_file_facet_descr", "File w/ facet descr.", valueType=str, orientation="horizontal")
+
+            gui.comboBox(self.faceted_surface_box, self, "ms_lattice_type", label="Lattice Type", \
+                         items=["rectangle", "hexagonal"], sendSelectedValue=False, orientation="horizontal")
+
+            gui.comboBox(self.faceted_surface_box, self, "ms_orientation", label="Orientation", \
+                         items=["y-axis", "other"], sendSelectedValue=False, orientation="horizontal")
+
+            gui.comboBox(self.faceted_surface_box, self, "ms_intercept_to_use", label="Intercept to use", \
+                         items=["2nd first", "2nd closest", "closest", "farthest"], sendSelectedValue=False, orientation="horizontal")
+
+
+            ShadowGui.lineEdit(self.faceted_surface_box, self, "ms_facet_width_x", "Facet width (in X)", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.faceted_surface_box, self, "ms_facet_phase_x", "Facet phase in X (0-360)", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.faceted_surface_box, self, "ms_dead_width_x_minus", "Dead width (abs, for -X)", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.faceted_surface_box, self, "ms_dead_width_x_plus", "Dead width (abs, for +X)", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.faceted_surface_box, self, "ms_facet_width_y", "Facet width (in Y)", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.faceted_surface_box, self, "ms_facet_phase_y", "Facet phase in Y (0-360)", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.faceted_surface_box, self, "ms_dead_width_y_minus", "Dead width (abs, for -Y)", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.faceted_surface_box, self, "ms_dead_width_y_plus", "Dead width (abs, for +Y)", valueType=float, orientation="horizontal")
+
+            # SURFACE ROUGHNESS
+
+            self.surface_roughness_box =  ShadowGui.widgetBox(mod_surf_box, box="", addSpace=False, orientation="vertical")
+
+            ShadowGui.lineEdit(self.surface_roughness_box, self, "ms_file_surf_roughness", "Surface Roughness File w/ PSD fn", valueType=str, orientation="horizontal")
+            ShadowGui.lineEdit(self.surface_roughness_box, self, "ms_roughness_rms_y", "Roughness RMS in Y (Å)", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.surface_roughness_box, self, "ms_roughness_rms_x", "Roughness RMS in X (Å)", valueType=float, orientation="horizontal")
+
+            # KUMAKHOV LENS
+
+            self.kumakhov_lens_box =  ShadowGui.widgetBox(mod_surf_box, box="", addSpace=False, orientation="vertical")
+
+            gui.comboBox(self.kumakhov_lens_box, self, "ms_specify_rz2", label="Specify r(z)^2", \
+                         items=["No", "Yes"], callback=self.set_SpecifyRz2, sendSelectedValue=False, orientation="horizontal")
+
+            self.kumakhov_lens_box_1 =  ShadowGui.widgetBox(self.kumakhov_lens_box, box="", addSpace=False, orientation="vertical")
+            self.kumakhov_lens_box_2 =  ShadowGui.widgetBox(self.kumakhov_lens_box, box="", addSpace=False, orientation="vertical")
+
+            ShadowGui.lineEdit(self.kumakhov_lens_box_1, self, "ms_file_with_parameters_rz", "File with parameters (r(z))", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.kumakhov_lens_box_2, self, "ms_file_with_parameters_rz2", "File with parameters (r(z)^2)", valueType=float, orientation="horizontal")
+
+            gui.comboBox(self.kumakhov_lens_box, self, "ms_save_intercept_bounces", label="Save intercept and bounces", \
+                         items=["No", "Yes"], sendSelectedValue=False, orientation="horizontal")
+
+            # SEGMENTED MIRROR
+
+            self.segmented_mirror_box =  ShadowGui.widgetBox(mod_surf_box, box="", addSpace=False, orientation="vertical")
+
+            ShadowGui.lineEdit(self.segmented_mirror_box, self, "ms_number_of_segments_x", "Number of segments (X)", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.segmented_mirror_box, self, "ms_length_of_segments_x", "Length of segments (X)", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.segmented_mirror_box, self, "ms_number_of_segments_y", "Number of segments (Y)", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.segmented_mirror_box, self, "ms_length_of_segments_y", "Length of segments (Y)", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.segmented_mirror_box, self, "ms_file_orientations", "File w/ orientations", valueType=str, orientation="horizontal")
+            ShadowGui.lineEdit(self.segmented_mirror_box, self, "ms_file_polynomial", "File w/ polynomial", valueType=str, orientation="horizontal")
 
             self.set_ModifiedSurface()
 
@@ -506,6 +594,8 @@ class OpticalElement(ow_generic_element.GenericElement):
             gui.comboBox(mir_mov_box, self, "mirror_movement", label="Mirror Movement", \
                          items=["No", "Yes"], \
                          callback=self.set_MirrorMovement, sendSelectedValue=False, orientation="horizontal")
+
+            gui.separator(mir_mov_box, width=self.INNER_BOX_WIDTH_L1, height=10)
 
             self.mir_mov_box_1 = ShadowGui.widgetBox(mir_mov_box, "", addSpace=False, orientation="vertical")
 
@@ -529,6 +619,8 @@ class OpticalElement(ow_generic_element.GenericElement):
             gui.comboBox(sou_mov_box, self, "source_movement", label="Source Movement", \
                          items=["No", "Yes"], \
                          callback=self.set_SourceMovement, sendSelectedValue=False, orientation="horizontal")
+
+            gui.separator(sou_mov_box, width=self.INNER_BOX_WIDTH_L1, height=10)
 
             self.sou_mov_box_1 = ShadowGui.widgetBox(sou_mov_box, "", addSpace=False, orientation="vertical")
 
@@ -569,20 +661,6 @@ class OpticalElement(ow_generic_element.GenericElement):
     # GRAPHIC USER INTERFACE MANAGEMENT
     #
     ############################################################
-
-    def set_SourceMovement(self):
-        self.sou_mov_box_1.setVisible(self.source_movement == 1)
-
-    def set_MirrorMovement(self):
-        self.mir_mov_box_1.setVisible(self.mirror_movement == 1)
-
-    def set_TypeOfDefect(self):
-        self.mod_surf_err_box_1.setVisible(self.ms_type_of_defect != 0)
-        self.mod_surf_err_box_2.setVisible(self.ms_type_of_defect == 0)
-
-    def set_ModifiedSurface(self):
-        self.surface_error_box.setVisible(self.modified_surface == 1)
-        if self.modified_surface == 1: self.set_TypeOfDefect()
 
     # TAB 1.1
 
@@ -653,6 +731,30 @@ class OpticalElement(ow_generic_element.GenericElement):
         self.dimdet_box.setVisible(self.is_infinite == 1)
         self.dimdet_box_empty.setVisible(self.is_infinite == 0)
 
+    # TAB 2
+
+    def set_SourceMovement(self):
+        self.sou_mov_box_1.setVisible(self.source_movement == 1)
+
+    def set_MirrorMovement(self):
+        self.mir_mov_box_1.setVisible(self.mirror_movement == 1)
+
+    def set_TypeOfDefect(self):
+        self.mod_surf_err_box_1.setVisible(self.ms_type_of_defect != 0)
+        self.mod_surf_err_box_2.setVisible(self.ms_type_of_defect == 0)
+
+    def set_ModifiedSurface(self):
+        self.surface_error_box.setVisible(self.modified_surface == 1)
+        self.faceted_surface_box.setVisible(self.modified_surface == 2)
+        self.surface_roughness_box.setVisible(self.modified_surface == 3)
+        self.kumakhov_lens_box.setVisible(self.modified_surface == 4)
+        self.segmented_mirror_box.setVisible(self.modified_surface == 5)
+        if self.modified_surface == 1: self.set_TypeOfDefect()
+        if self.modified_surface == 4: self.set_SpecifyRz2()
+
+    def set_SpecifyRz2(self):
+        self.kumakhov_lens_box_1.setVisible(self.ms_specify_rz2 == 0)
+        self.kumakhov_lens_box_2.setVisible(self.ms_specify_rz2 == 1)
 
     def calculate_incidence_angle_mrad(self):
         self.incidence_angle_mrad = round(math.radians(self.incidence_angle_deg)*1000, 2)
@@ -701,6 +803,7 @@ class OpticalElement(ow_generic_element.GenericElement):
                                             ssour=self.object_side_focal_distance, \
                                             simag=self.image_side_focal_distance, \
                                             theta=self.incidence_angle_respect_to_normal)
+               if self.graphical_options.is_paraboloid: shadow_oe.oe.F_SIDE=self.focus_location
             else:
                shadow_oe.oe.FEXT=1
                if self.graphical_options.is_spheric:
@@ -708,7 +811,14 @@ class OpticalElement(ow_generic_element.GenericElement):
                elif self.graphical_options.is_toroidal:
                    shadow_oe.oe.RMAJ=self.torus_major_radius
                    shadow_oe.oe.RMIN=self.torus_minor_radius
-               ### TODO ALTRE FORME ATTENZIONE!!!!!
+               elif self.graphical_options.is_hyperboloid or self.graphical_options.is_ellipsoidal:
+                   shadow_oe.oe.AXMAJ=self.ellipse_hyperbola_semi_major_axis
+                   shadow_oe.oe.AXMIN=self.ellipse_hyperbola_semi_minor_axis
+                   shadow_oe.oe.ELL_THE=self.angle_of_majax_and_pole
+               elif self.graphical_options.is_paraboloid:
+                   shadow_oe.oe.PARAM=self.paraboloid_parameter
+
+               #TODO ALTRE FORME ATTENZIONE!!!!!
 
             if self.graphical_options.is_toroidal: shadow_oe.oe.F_TORUS=self.toroidal_mirror_pole_location
 
@@ -765,6 +875,8 @@ class OpticalElement(ow_generic_element.GenericElement):
             # ADVANCED SETTING
             #####################################
 
+            shadow_oe.oe.FDUMMY=self.modified_surface
+
             if self.modified_surface == 1:
                  if self.ms_type_of_defect == 0:
                      shadow_oe.oe.setRipple(f_g_s=0, xyAmpWavPha=array([self.ms_ripple_ampli_x, \
@@ -775,6 +887,35 @@ class OpticalElement(ow_generic_element.GenericElement):
                                                                         self.ms_ripple_phase_y]))
                  else:
                      shadow_oe.oe.setRipple(f_g_s=self.ms_type_of_defect, file_rip=bytes(self.ms_defect_file_name, 'utf-8'))
+            elif self.modified_surface == 2:
+                shadow_oe.oe.FILE_FAC=bytes(self.ms_file_facet_descr, 'utf-8')
+                shadow_oe.oe.F_FAC_LATT=self.ms_lattice_type
+                shadow_oe.oe.F_FAC_ORIENT=self.ms_orientation
+                shadow_oe.oe.F_POLSEL=self.ms_lattice_type+1
+                shadow_oe.oe.RFAC_LENX=self.ms_facet_width_x
+                shadow_oe.oe.RFAC_PHAX=self.ms_facet_phase_x
+                shadow_oe.oe.RFAC_DELX1=self.ms_dead_width_x_minus
+                shadow_oe.oe.RFAC_DELX2=self.ms_dead_width_x_plus
+                shadow_oe.oe.RFAC_LENY=self.ms_facet_width_y
+                shadow_oe.oe.RFAC_PHAY=self.ms_facet_phase_y
+                shadow_oe.oe.RFAC_DELY1=self.ms_dead_width_y_minus
+                shadow_oe.oe.RFAC_DELY2=self.ms_dead_width_y_plus
+            elif self.modified_surface == 3:
+                shadow_oe.oe.FILE_ROUGH=bytes(self.ms_file_surf_roughness, 'utf-8')
+                shadow_oe.oe.ROUGH_X=self.ms_roughness_rms_x
+                shadow_oe.oe.ROUGH_Y=self.ms_roughness_rms_y
+            elif self.modified_surface == 4:
+                shadow_oe.oe.F_KOMA_CA=self.ms_specify_rz2
+                shadow_oe.oe.FILE_KOMA=bytes(self.ms_file_with_parameters_rz, 'utf-8')
+                shadow_oe.oe.FILE_KOMA_CA=bytes(self.ms_file_with_parameters_rz2, 'utf-8')
+                shadow_oe.oe.F_KOMA_BOUNCE=self.ms_save_intercept_bounces
+            elif self.modified_surface == 5:
+                shadow_oe.oe.ISEG_XNUM=self.ms_number_of_segments_x
+                shadow_oe.oe.ISEG_YNUM=self.ms_number_of_segments_y
+                shadow_oe.oe.SEG_LENX=self.ms_length_of_segments_x
+                shadow_oe.oe.SEG_LENY=self.ms_length_of_segments_y
+                shadow_oe.oe.FILE_SEGMENT=bytes(self.ms_file_orientations, 'utf-8')
+                shadow_oe.oe.FILE_SEGP=bytes(self.ms_file_polynomial, 'utf-8')
 
             if self.mirror_movement == 1:
                  shadow_oe.oe.F_MOVE=1
@@ -784,7 +925,6 @@ class OpticalElement(ow_generic_element.GenericElement):
                  shadow_oe.oe.X_ROT=self.mm_mirror_rotation_x
                  shadow_oe.oe.Y_ROT=self.mm_mirror_rotation_y
                  shadow_oe.oe.Z_ROT=self.mm_mirror_rotation_z
-
 
             if self.source_movement == 1:
                  shadow_oe.oe.FSTAT=1

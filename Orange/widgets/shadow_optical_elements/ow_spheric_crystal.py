@@ -4,18 +4,16 @@ import Orange.shadow
 from Orange.widgets import gui
 from PyQt4.QtGui import QApplication
 
-import Shadow
-from Orange.widgets.shadow_gui import ow_plane_element, ow_optical_element
+from Orange.widgets.shadow_gui import ow_spheric_element, ow_optical_element
 
+class SphericCrystal(ow_spheric_element.SphericElement):
 
-class PlaneCrystal(ow_plane_element.PlaneElement):
-
-    name = "Plane Crystal"
-    description = "Shadow OE: Plane Crystal"
-    icon = "icons/plane_crystal.png"
+    name = "Spherical Crystal"
+    description = "Shadow OE: Spherical Crystal"
+    icon = "icons/spherical_crystal.png"
     maintainer = "Luca Rebuffi"
     maintainer_email = "luca.rebuffi(@at@)elettra.eu"
-    priority = 7
+    priority = 8
     category = "Optical Elements"
     keywords = ["data", "file", "load", "read"]
 
@@ -37,11 +35,11 @@ class PlaneCrystal(ow_plane_element.PlaneElement):
         gui.rubber(self.mainArea)
 
     def instantiateShadowOE(self):
-        return Orange.shadow.ShadowOpticalElement.create_plane_crystal()
+        return Orange.shadow.ShadowOpticalElement.create_spherical_crystal()
 
 if __name__ == "__main__":
     a = QApplication(sys.argv)
-    ow = PlaneCrystal()
+    ow = SphericCrystal()
     ow.show()
     a.exec_()
     ow.saveSettings()

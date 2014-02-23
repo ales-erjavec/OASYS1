@@ -7,7 +7,7 @@ from PyQt4.QtGui import QApplication
 
 from Orange.widgets.shadow_gui import ow_spheric_element, ow_optical_element
 
-class SphericalMirror(ow_spheric_element.SphericElement):
+class SphericMirror(ow_spheric_element.SphericElement):
 
     name = "Spherical Mirror"
     description = "Shadow OE: Spherical Mirror"
@@ -50,7 +50,7 @@ class SphericalMirror(ow_spheric_element.SphericElement):
 
 if __name__ == "__main__":
     a = QApplication(sys.argv)
-    ow = SphericalMirror()
+    ow = SphericMirror()
     ow.show()
     a.exec_()
     ow.saveSettings()

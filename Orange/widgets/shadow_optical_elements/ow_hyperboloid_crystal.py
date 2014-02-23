@@ -1,21 +1,20 @@
 import sys
+from numpy import array
 import Orange
 import Orange.shadow
 from Orange.widgets import gui
 from PyQt4.QtGui import QApplication
 
-import Shadow
-from Orange.widgets.shadow_gui import ow_plane_element, ow_optical_element
+from Orange.widgets.shadow_gui import ow_hyperboloid_element, ow_optical_element
 
+class HyperboloidCrystal(ow_hyperboloid_element.HyperboloidElement):
 
-class PlaneCrystal(ow_plane_element.PlaneElement):
-
-    name = "Plane Crystal"
-    description = "Shadow OE: Plane Crystal"
-    icon = "icons/plane_crystal.png"
+    name = "Hyperboloid Crystal"
+    description = "Shadow OE: Hyperboloid Crystal"
+    icon = "icons/hyperboloid_crystal.png"
     maintainer = "Luca Rebuffi"
     maintainer_email = "luca.rebuffi(@at@)elettra.eu"
-    priority = 7
+    priority = 11
     category = "Optical Elements"
     keywords = ["data", "file", "load", "read"]
 
@@ -27,6 +26,10 @@ class PlaneCrystal(ow_plane_element.PlaneElement):
                 "doc":"Shadow Beam",
                 "id":"beam"}]
 
+    ##########################################
+    # BASIC SETTING
+    ##########################################
+
     def __init__(self):
         graphical_Options=ow_optical_element.GraphicalOptions(is_mirror=False)
 
@@ -36,12 +39,18 @@ class PlaneCrystal(ow_plane_element.PlaneElement):
 
         gui.rubber(self.mainArea)
 
+    ################################################################
+    #
+    #  SHADOW MANAGEMENT
+    #
+    ################################################################
+
     def instantiateShadowOE(self):
-        return Orange.shadow.ShadowOpticalElement.create_plane_crystal()
+        return Orange.shadow.ShadowOpticalElement.create_hyperboloid_crystal()
 
 if __name__ == "__main__":
     a = QApplication(sys.argv)
-    ow = PlaneCrystal()
+    ow = HyperboloidCrystal()
     ow.show()
     a.exec_()
     ow.saveSettings()

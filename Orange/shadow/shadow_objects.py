@@ -191,6 +191,16 @@ class ShadowOpticalElement:
         return self
 
     @classmethod
+    def create_ellipsoid_mirror(cls):
+        self = cls.__new__(ShadowOpticalElement, oe=Shadow.OE())
+
+        self.oe.FMIRR=2
+        self.oe.unsetCrystal()
+        self.oe.setReflector()
+
+        return self
+
+    @classmethod
     def create_hyperboloid_mirror(cls):
         self = cls.__new__(ShadowOpticalElement, oe=Shadow.OE())
 
@@ -210,15 +220,6 @@ class ShadowOpticalElement:
 
         return self
 
-    @classmethod
-    def create_ellipsoid_mirror(cls):
-        self = cls.__new__(ShadowOpticalElement, oe=Shadow.OE())
-
-        self.oe.FMIRR=2
-        self.oe.unsetCrystal()
-        self.oe.setReflector()
-
-        return self
 
     @classmethod
     def create_polynomial_mirror(cls):
@@ -255,6 +256,36 @@ class ShadowOpticalElement:
         self = cls.__new__(ShadowOpticalElement, oe=Shadow.OE())
 
         self.oe.FMIRR=1
+        self.oe.setCrystal()
+        self.oe.setReflector()
+
+        return self
+
+    @classmethod
+    def create_paraboloid_crystal(cls):
+        self = cls.__new__(ShadowOpticalElement, oe=Shadow.OE())
+
+        self.oe.FMIRR=4
+        self.oe.setCrystal()
+        self.oe.setReflector()
+
+        return self
+
+    @classmethod
+    def create_ellipsoid_crystal(cls):
+        self = cls.__new__(ShadowOpticalElement, oe=Shadow.OE())
+
+        self.oe.FMIRR=2
+        self.oe.setCrystal()
+        self.oe.setReflector()
+
+        return self
+
+    @classmethod
+    def create_hyperboloid_crystal(cls):
+        self = cls.__new__(ShadowOpticalElement, oe=Shadow.OE())
+
+        self.oe.FMIRR=7
         self.oe.setCrystal()
         self.oe.setReflector()
 

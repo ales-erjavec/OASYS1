@@ -17,7 +17,7 @@ class ScreenSlit(OpticalElement):
     icon = "icons/screen_slits.png"
     maintainer = "Luca Rebuffi"
     maintainer_email = "luca.rebuffi(@at@)elettra.eu"
-    priority = 6
+    priority = 12
     category = "Optical Elements"
     keywords = ["data", "file", "load", "read"]
 
