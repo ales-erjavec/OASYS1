@@ -15,7 +15,7 @@ DESCRIPTION = "Widgets for Plotting Tools."
 
 BACKGROUND = "#f19563"
 
-ICON = "icons/plottingTools.png"
+ICON = "icons/plottingTools.jpg"
 
 
 PRIORITY = 5
