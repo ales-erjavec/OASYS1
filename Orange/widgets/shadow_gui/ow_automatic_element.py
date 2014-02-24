@@ -2,8 +2,9 @@ import sys
 
 from Orange.widgets import widget, gui
 from Orange.widgets.settings import Setting
-from PyQt4 import QtGui
-from PyQt4.QtGui import QApplication, qApp
+from PyQt4.QtGui import QApplication
+from PyQt4.QtCore import QRect
+from Orange.shadow.shadow_util import ShadowGui
 
 class AutomaticElement(widget.OWWidget):
 
@@ -13,6 +14,9 @@ class AutomaticElement(widget.OWWidget):
 
     def __init__(self):
         super().__init__()
+
+        geom = QApplication.desktop().availableGeometry()
+        self.setGeometry(QRect(round(geom.width()*0.05),round(geom.height()*0.05),round(geom.width()*0.8),round(geom.height()*0.885)))
 
         gui.checkBox(gui.widgetBox(self.controlArea, "General Options", addSpace=True, orientation="vertical"), \
                      self, 'is_automatic_run', 'Automatic Execution')

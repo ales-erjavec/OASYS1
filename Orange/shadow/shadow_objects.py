@@ -63,12 +63,7 @@ class ShadowBeam:
 
     @classmethod
     def traceFromOE(cls, input_beam, shadow_oe):
-        beam = copy.deepcopy(input_beam.beam)
-        beam.rays = copy.deepcopy(input_beam.beam.rays)
-
-        self = cls.__new__(ShadowBeam, input_beam.oe_number+1, beam)
-
-        self.beam.traceOE(shadow_oe.oe, self.oe_number)
+        self = ShadowBeam.traceFromOENoHistory(input_beam=input_beam, shadow_oe=shadow_oe)
 
         if len(self.history) < self.oe_number:
             self.history.append(ShadowOEHistoryItem(input_beam, shadow_oe, self))
@@ -77,11 +72,30 @@ class ShadowBeam:
 
         return self
 
+    @classmethod
+    def traceFromOENoHistory(cls, input_beam, shadow_oe):
+        beam = copy.deepcopy(input_beam.beam)
+        beam.rays = copy.deepcopy(input_beam.beam.rays)
+
+        self = cls.__new__(ShadowBeam, input_beam.oe_number+1, beam)
+
+        self.beam.traceOE(shadow_oe.oe, self.oe_number)
+
+        return self
+
     def getOEHistory(self, oe_number=None):
         if oe_number is None:
             return self.history
         else:
             return self.history[oe_number-1]
+
+    def getLastOE(self):
+        dimension = len(self.history)
+
+        if dimension > 0:
+            return self.history[dimension-1]
+        else:
+            return None
 
 class ShadowSource:
     def __new__(cls, src=None):
