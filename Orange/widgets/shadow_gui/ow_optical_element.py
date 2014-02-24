@@ -66,6 +66,7 @@ class OpticalElement(ow_generic_element.GenericElement):
     INNER_BOX_WIDTH_L3=387
     INNER_BOX_WIDTH_L2=400
     INNER_BOX_WIDTH_L1=418
+    INNER_BOX_WIDTH_L0=442
 
     graphical_options=None
 
@@ -218,6 +219,22 @@ class OpticalElement(ow_generic_element.GenericElement):
     file_to_write_out = Setting(3)
     write_out_inc_ref_angles = Setting(0)
 
+    ##########################################
+    # SCREEN/SLIT SETTING
+    ##########################################
+
+    aperturing = Setting(0)
+    open_slit_solid_stop = Setting(0)
+    aperture_shape = Setting(0)
+    slit_width_xaxis = Setting(0)
+    slit_height_zaxis = Setting(0)
+    slit_center_xaxis = Setting(0)
+    slit_center_zaxis = Setting(0)
+    external_file_with_coordinate=Setting(NONE_SPECIFIED)
+    absorption = Setting(0)
+    thickness = Setting(0)
+    opt_const_file_name = Setting(NONE_SPECIFIED)
+
     want_main_area=1
 
     def __init__(self, graphical_options = GraphicalOptions()):
@@ -227,12 +244,60 @@ class OpticalElement(ow_generic_element.GenericElement):
 
         self.controlArea.setFixedWidth(self.CONTROL_AREA_WIDTH)
 
-        upper_box = gui.widgetBox(self.controlArea, "Optical Element Orientation", addSpace=True, orientation="vertical")
+        upper_box = ShadowGui.widgetBox(self.controlArea, "Optical Element Orientation", addSpace=True, orientation="vertical")
 
-        ShadowGui.lineEdit(upper_box, self, "source_plane_distance", "Source Plane Distance [cm]", tooltip="Source Plane Distance [cm]", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(upper_box, self, "image_plane_distance", "Image Plane Distance [cm]", tooltip="Image Plane Distance [cm]", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(upper_box, self, "source_plane_distance", "Source Plane Distance [cm]", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(upper_box, self, "image_plane_distance", "Image Plane Distance [cm]", valueType=float, orientation="horizontal")
 
-        if not self.graphical_options.is_screen_slit:
+        if self.graphical_options.is_screen_slit:
+
+            box_aperturing = ShadowGui.widgetBox(self.controlArea, "Screen/Slit Shape", addSpace=False, orientation="vertical", width=self.INNER_BOX_WIDTH_L0, height=240)
+
+            gui.comboBox(box_aperturing, self, "aperturing", label="Aperturing", \
+                         items=["No", "Yes"], \
+                         callback=self.set_Aperturing, sendSelectedValue=False, orientation="horizontal")
+
+            gui.separator(box_aperturing, width=self.INNER_BOX_WIDTH_L0)
+
+            self.box_aperturing_shape = ShadowGui.widgetBox(box_aperturing, "", addSpace=False, orientation="vertical")
+
+            gui.comboBox(self.box_aperturing_shape, self, "open_slit_solid_stop", label="Open slit/Solid stop", \
+                         items=["aperture/slit", "obstruction/stop"], \
+                         sendSelectedValue=False, orientation="horizontal")
+
+            gui.comboBox(self.box_aperturing_shape, self, "aperture_shape", label="Aperture shape", \
+                         items=["Rectangular", "Ellipse", "External"], \
+                         callback=self.set_ApertureShape, sendSelectedValue=False, orientation="horizontal")
+
+
+            self.box_aperturing_shape_1 = ShadowGui.widgetBox(self.box_aperturing_shape, "", addSpace=False, orientation="vertical")
+
+            ShadowGui.lineEdit(self.box_aperturing_shape_1, self, "external_file_with_coordinate", "External file with coordinate", valueType=str, orientation="horizontal")
+
+            self.box_aperturing_shape_2 = ShadowGui.widgetBox(self.box_aperturing_shape, "", addSpace=False, orientation="vertical")
+
+            ShadowGui.lineEdit(self.box_aperturing_shape_2, self, "slit_width_xaxis", "Slit width/x-axis", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.box_aperturing_shape_2, self, "slit_height_zaxis", "Slit height/z-axis", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.box_aperturing_shape_2, self, "slit_center_xaxis", "Slit center/x-axis", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.box_aperturing_shape_2, self, "slit_center_zaxis", "Slit center/z-axis", valueType=float, orientation="horizontal")
+
+            self.set_Aperturing()
+
+            box_absorption = ShadowGui.widgetBox(self.controlArea, "Absorption Parameters", addSpace=True, orientation="vertical", width=self.INNER_BOX_WIDTH_L0, height=120)
+
+            gui.comboBox(box_absorption, self, "absorption", label="Absorption", \
+                         items=["No", "Yes"], \
+                         callback=self.set_Absorption, sendSelectedValue=False, orientation="horizontal")
+
+            self.box_absorption_1 = ShadowGui.widgetBox(box_absorption, "", addSpace=False, orientation="vertical", width=self.INNER_BOX_WIDTH_L1)
+            self.box_absorption_1_empty = ShadowGui.widgetBox(box_absorption, "", addSpace=False, orientation="vertical", width=self.INNER_BOX_WIDTH_L1)
+
+            ShadowGui.lineEdit(self.box_absorption_1, self, "thickness", "Thickness [cm]", valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.box_absorption_1, self, "opt_const_file_name", "Opt. const. file name", valueType=str, orientation="horizontal")
+
+            ShadowGui.widgetBox(self.controlArea, "", addSpace=False, orientation="vertical", height=235)
+
+        else:
             self.calculate_incidence_angle_mrad()
             self.calculate_reflection_angle_mrad()
 
@@ -243,9 +308,6 @@ class OpticalElement(ow_generic_element.GenericElement):
             ShadowGui.lineEdit(upper_box, self, "mirror_orientation_angle", "Mirror Orientation Angle [deg]", tooltip="Mirror Orientation Angle [deg]", valueType=float, orientation="horizontal")
 
             tabs_setting = ShadowGui.tabWidget(self.controlArea, height=self.TABS_AREA_HEIGHT)
-
-            button = gui.button(self.controlArea, self, "Run Shadow/trace", callback=self.traceOpticalElement)
-            button.setFixedHeight(45)
 
             # graph tab
             tab_bas = ShadowGui.createTabPage(tabs_setting, "Basic Setting")
@@ -655,6 +717,8 @@ class OpticalElement(ow_generic_element.GenericElement):
                          items=["No", "Yes"], \
                          sendSelectedValue=False, orientation="horizontal")
 
+        button = gui.button(self.controlArea, self, "Run Shadow/trace", callback=self.traceOpticalElement)
+        button.setFixedHeight(45)
 
     ############################################################
     #
@@ -755,6 +819,26 @@ class OpticalElement(ow_generic_element.GenericElement):
     def set_SpecifyRz2(self):
         self.kumakhov_lens_box_1.setVisible(self.ms_specify_rz2 == 0)
         self.kumakhov_lens_box_2.setVisible(self.ms_specify_rz2 == 1)
+
+
+    def set_ApertureShape(self):
+        self.box_aperturing_shape_1.setVisible(self.aperture_shape == 2)
+        self.box_aperturing_shape_2.setVisible(self.aperture_shape != 2)
+
+    def set_Aperturing(self):
+            self.box_aperturing_shape.setVisible(self.aperturing == 1)
+
+            if self.aperturing == 1: self.set_ApertureShape()
+
+    def set_Absorption(self):
+        self.box_absorption_1_empty.setVisible(self.absorption == 0)
+        self.box_absorption_1.setVisible(self.absorption == 1)
+
+    ############################################################
+    #
+    # USER INPUT MANAGEMENT
+    #
+    ############################################################
 
     def calculate_incidence_angle_mrad(self):
         self.incidence_angle_mrad = round(math.radians(self.incidence_angle_deg)*1000, 2)

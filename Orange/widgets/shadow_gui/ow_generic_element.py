@@ -28,7 +28,7 @@ class GenericElement(ow_automatic_element.AutomaticElement):
         super().__init__()
 
         geom = QApplication.desktop().availableGeometry()
-        self.setGeometry(QRect(round(geom.width()*0.05),round(geom.height()*0.05),round(geom.width()*0.8),round(geom.height()*0.88)))
+        self.setGeometry(QRect(round(geom.width()*0.05),round(geom.height()*0.05),round(geom.width()*0.8),round(geom.height()*0.885)))
 
         view_box = gui.widgetBox(self.mainArea, "Plotting Style", addSpace=False, orientation="vertical")
 

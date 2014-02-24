@@ -511,7 +511,7 @@ class OWWidget(QDialog, metaclass=WidgetMetaClass):
         pass
 
     def saveSettings(self):
-        self.settingsHandler.update_class_defaults(self)
+        self.settingsHandler.update_defaults(self)
 
     # this function is only intended for derived classes to send appropriate
     # signals when all settings are loaded
@@ -677,6 +677,8 @@ class OWWidget(QDialog, metaclass=WidgetMetaClass):
         """
         return self.__blocking
 
+    def resetSettings(self):
+        self.settingsHandler.reset_settings(self)
 
 def blocking(method):
     """ Return method that sets blocking flag while executing

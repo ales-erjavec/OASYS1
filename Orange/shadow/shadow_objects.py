@@ -31,6 +31,15 @@ class EmittingStream(QtCore.QObject):
     def write(self, text):
         self.textWritten.emit(str(text))
 
+class ShadowOEHistoryItem:
+
+    def __new__(cls, input_beam=None, shadow_oe=None, output_beam=None):
+        self = super().__new__(cls)
+        self.input_beam = input_beam
+        self.shadow_oe = shadow_oe
+        self.output_beam = output_beam
+        return self
+
 class ShadowBeam:
 
     def __new__(cls, oe_number=0, beam=None):
@@ -47,8 +56,6 @@ class ShadowBeam:
     def traceFromSource(cls, shadow_src):
         self = cls.__new__(ShadowBeam, beam=Shadow.Beam())
 
-        shadow_src.src.write("start.00")
-
         self.beam.genSource(shadow_src.src)
         self.beam.write("begin.dat")
 
@@ -61,16 +68,12 @@ class ShadowBeam:
 
         self = cls.__new__(ShadowBeam, input_beam.oe_number+1, beam)
 
-        #shadow_oe.oe.write("start.0" + str(self.oe_number))
-
         self.beam.traceOE(shadow_oe.oe, self.oe_number)
 
         if len(self.history) < self.oe_number:
-            self.history.append(shadow_oe)
+            self.history.append(ShadowOEHistoryItem(input_beam, shadow_oe, self))
         else:
-            self.history[self.oe_number-1]=shadow_oe
-
-        #shadow_oe.oe.write("end.0" + str(self.oe_number))
+            self.history[self.oe_number-1]=ShadowOEHistoryItem(input_beam, shadow_oe, self)
 
         return self
 
