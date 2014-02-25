@@ -82,8 +82,15 @@ class GenericElement(ow_automatic_element.AutomaticElement):
 
         return return_object
 
-    def replace_fig(self, figure_canvas_index, figure):
-        old_figure = self.replaceObject(figure_canvas_index, FigureCanvas(figure))
+    def replace_fig(self, figure_canvas_index, plot):
+        old_figure=None
+
+        if not plot is None:
+            old_figure = self.replaceObject(figure_canvas_index, FigureCanvas(plot.figure))
+        else:
+            if self.plot_canvas[figure_canvas_index] is not None:
+                self.tab[figure_canvas_index].layout().removeWidget(self.plot_canvas[figure_canvas_index])
+                old_figure=self.plot_canvas[figure_canvas_index]
 
         if not old_figure is None:
             old_figure.figure.clf()
@@ -123,14 +130,14 @@ class GenericElement(ow_automatic_element.AutomaticElement):
         plot = ST.plotxy(beam_out.beam,var_x,var_y,nolost=1,contour=6,nbins=100,nbins_h=100,calfwhm=1,title=title, xtitle=xtitle, ytitle=ytitle, noplot=1)
 
         if not plot is None:
-            self.replace_fig(figure_canvas_index, plot.figure)
+            self.replace_fig(figure_canvas_index, plot)
             self.progressBarSet(progressBarValue)
 
     def plot_histo(self, beam_out, progressBarValue, var, figure_canvas_index, title, xtitle, ytitle):
         plot = ST.histo1(beam_out.beam,var,nolost=1,nbins=100,ref=1,calfwhm=1,title=title, xtitle=xtitle, ytitle=ytitle, noplot=1)
 
         if not plot is None:
-            self.replace_fig(figure_canvas_index, plot.figure)
+            self.replace_fig(figure_canvas_index, plot)
             self.progressBarSet(progressBarValue)
 
     def plot_results(self, beam_out, progressBarValue=80):

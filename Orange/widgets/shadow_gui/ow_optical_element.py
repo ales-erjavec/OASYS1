@@ -881,7 +881,7 @@ class OpticalElement(ow_generic_element.GenericElement):
 
             if self.surface_shape_parameters == 0:
                if self.focii_and_continuation_plane == 0:
-                  shadow_oe.oe.setAutoFocus(1)
+                  shadow_oe.oe.setAutoFocus(f_default=1)
                else:
                   shadow_oe.oe.setAutoFocus(f_default=0, \
                                             ssour=self.object_side_focal_distance, \
