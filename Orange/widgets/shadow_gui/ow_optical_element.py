@@ -841,16 +841,16 @@ class OpticalElement(ow_generic_element.GenericElement):
     ############################################################
 
     def calculate_incidence_angle_mrad(self):
-        self.incidence_angle_mrad = round(math.radians(self.incidence_angle_deg)*1000, 2)
+        self.incidence_angle_mrad = round((0.5*math.pi-math.radians(self.incidence_angle_deg))*1000, 2)
 
     def calculate_reflection_angle_mrad(self):
-        self.reflection_angle_mrad = round(math.radians(self.reflection_angle_deg)*1000, 2)
+        self.reflection_angle_mrad = round((0.5*math.pi - math.radians(self.reflection_angle_deg))*1000, 2)
 
     def calculate_incidence_angle_deg(self):
-        self.incidence_angle_deg = round(math.degrees(self.incidence_angle_mrad/1000), 3)
+        self.incidence_angle_deg = round(math.degrees(0.5*math.pi-(self.incidence_angle_mrad/1000)), 3)
 
     def calculate_reflection_angle_deg(self):
-        self.reflection_angle_deg = round(math.degrees(self.reflection_angle_mrad/1000), 3)
+        self.reflection_angle_deg = round(math.degrees(0.5*math.pi-(self.reflection_angle_mrad/1000)), 3)
 
     def populateFields(self, shadow_oe = Orange.shadow.ShadowOpticalElement.create_empty_oe()):
 
