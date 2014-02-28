@@ -1,4 +1,5 @@
-import sys, math, array
+import sys, math
+from numpy import array
 import Orange
 import Orange.shadow
 from Orange.widgets import gui
@@ -952,8 +953,7 @@ class OpticalElement(ow_generic_element.GenericElement):
             if self.is_infinite == 0:
                 shadow_oe.oe.FHIT_C = 0
             else:
-                shadow_oe.oe.setDimensions(fshape=self.mirror_shape, \
-                                           params=[self.dim_x_plus, self.dim_x_minus, self.dim_y_plus, self.dim_y_minus])
+                shadow_oe.oe.setDimensions(fshape=(self.mirror_shape+1), params=array([self.dim_x_plus, self.dim_x_minus, self.dim_y_plus, self.dim_y_minus]))
 
             #####################################
             # ADVANCED SETTING
