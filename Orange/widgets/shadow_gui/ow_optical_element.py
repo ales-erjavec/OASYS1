@@ -296,6 +296,8 @@ class OpticalElement(ow_generic_element.GenericElement):
             ShadowGui.lineEdit(self.box_absorption_1, self, "thickness", "Thickness [cm]", valueType=float, orientation="horizontal")
             ShadowGui.lineEdit(self.box_absorption_1, self, "opt_const_file_name", "Opt. const. file name", valueType=str, orientation="horizontal")
 
+            self.set_Absorption()
+
             ShadowGui.widgetBox(self.controlArea, "", addSpace=False, orientation="vertical", height=235)
 
         else:
@@ -890,7 +892,7 @@ class OpticalElement(ow_generic_element.GenericElement):
                                             theta=self.incidence_angle_respect_to_normal)
                if self.graphical_options.is_paraboloid: shadow_oe.oe.F_SIDE=self.focus_location
             else:
-               shadow_oe.oe.FEXT=1
+               shadow_oe.oe.F_EXT=1
                if self.graphical_options.is_spheric:
                    shadow_oe.oe.RMIRR = self.spherical_radius
                elif self.graphical_options.is_toroidal:
@@ -953,7 +955,8 @@ class OpticalElement(ow_generic_element.GenericElement):
             if self.is_infinite == 0:
                 shadow_oe.oe.FHIT_C = 0
             else:
-                shadow_oe.oe.setDimensions(fshape=(self.mirror_shape+1), params=array([self.dim_x_plus, self.dim_x_minus, self.dim_y_plus, self.dim_y_minus]))
+                shadow_oe.oe.setDimensions(fshape=(self.mirror_shape+1), \
+                                           params=array([self.dim_y_plus, self.dim_y_minus,self.dim_x_plus, self.dim_x_minus]))
 
             #####################################
             # ADVANCED SETTING

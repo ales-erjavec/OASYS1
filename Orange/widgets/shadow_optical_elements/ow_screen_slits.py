@@ -45,7 +45,7 @@ class ScreenSlit(OpticalElement):
     def doSpecificSetting(self, shadow_oe):
 
         n_screen = 1
-        i_screen = zeros(10)
+        i_screen = array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0])
         i_abs = zeros(10)
         i_slit = zeros(10)
         i_stop = zeros(10)
