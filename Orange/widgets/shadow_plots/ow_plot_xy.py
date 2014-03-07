@@ -260,8 +260,6 @@ class PlotXY(ow_automatic_element.AutomaticElement):
 
             temp = numpy.array([x_max, y_max, x_min, y_min], float)
 
-            print(temp)
-
             xrange = [temp.min(), temp.max()]
             yrange = [temp.min(), temp.max()]
 
