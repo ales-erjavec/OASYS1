@@ -54,10 +54,16 @@ class ShadowOEHistoryItem:
 
 class ShadowBeam:
 
-    def __new__(cls, oe_number=0, beam=None):
+    def __new__(cls, oe_number=0, beam=None, number_of_rays=0):
         self = super().__new__(cls)
         self.oe_number = oe_number
-        self.beam = beam
+        if (beam is None):
+            if number_of_rays > 0:
+                self.beam = Shadow.Beam(number_of_rays)
+            else:
+                self.beam = Shadow.Beam()
+        else:
+            self.beam = beam
         self.history = []
         return self
 
