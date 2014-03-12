@@ -49,17 +49,19 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     slit_2_vertical_aperture = Setting(0)
     slit_2_horizontal_aperture = Setting(0)
 
-    is_automatic_run = Setting(True)
+    start_angle = Setting(10)
+    stop_angle = Setting(120)
+    step = Setting(0.002)
 
     def __init__(self):
         super().__init__()
 
         upper_box = ShadowGui.widgetBox(self.controlArea, "Sample Parameters", addSpace=True, orientation="vertical")
 
-        ShadowGui.lineEdit(upper_box, self, "capillary_diameter", "Capillary Diameter [mm]", tooltip="Capillary Diameter [mm]", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(upper_box, self, "capillary_diameter", "Capillary Diameter [mm]", valueType=float, orientation="horizontal")
         gui.comboBox(upper_box, self, "capillary_material", label="Capillary Material", items=["Glass", "Kapton"], sendSelectedValue=False, orientation="horizontal")
         gui.comboBox(upper_box, self, "sample_material", label="Material", items=["LaB6", "Si", "ZnO"], sendSelectedValue=False, orientation="horizontal")
-        ShadowGui.lineEdit(upper_box, self, "packing_factor", "Packing Factor (0.0...1.0)", tooltip="Packing Factor", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(upper_box, self, "packing_factor", "Packing Factor (0.0...1.0)", valueType=float, orientation="horizontal")
 
         upper_box = ShadowGui.widgetBox(self.controlArea, "Detector Parameters", addSpace=True, orientation="vertical")
 
@@ -67,22 +69,28 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         gui.separator(upper_box)
 
-        ShadowGui.lineEdit(upper_box, self, "slit_1_distance", "Slit 1 Distance (cm)", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(upper_box, self, "slit_1_distance", "Slit 1 Distance from Detector (cm)", valueType=float, orientation="horizontal")
         ShadowGui.lineEdit(upper_box, self, "slit_1_vertical_aperture", "Slit 1 Vertical Aperture (um)",  valueType=float, orientation="horizontal")
         ShadowGui.lineEdit(upper_box, self, "slit_1_horizontal_aperture", "Slit 1 Horizontal Aperture (um)",  valueType=float, orientation="horizontal")
 
         gui.separator(upper_box)
 
-        ShadowGui.lineEdit(upper_box, self, "slit_2_distance", "Slit 2 Distance (cm)", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(upper_box, self, "slit_2_distance", "Slit 2 Distance from Detector (cm)", valueType=float, orientation="horizontal")
         ShadowGui.lineEdit(upper_box, self, "slit_2_vertical_aperture", "Slit 2 Vertical Aperture (um)",  valueType=float, orientation="horizontal")
         ShadowGui.lineEdit(upper_box, self, "slit_2_horizontal_aperture", "Slit 2 Horizontal Aperture (um)",  valueType=float, orientation="horizontal")
 
         upper_box = ShadowGui.widgetBox(self.controlArea, "Aberrations Parameters", addSpace=True, orientation="vertical")
 
-        ShadowGui.lineEdit(upper_box, self, "horizontal_displacement", "Capillary H Displacement (um)",  tooltip="Capillary H Displacement (cm)", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(upper_box, self, "vertical_displacement", "Capillary V Displacement (um)",  tooltip="Capillary V Displacement (cm)", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(upper_box, self, "horizontal_displacement", "Capillary H Displacement (um)", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(upper_box, self, "vertical_displacement", "Capillary V Displacement (um)", valueType=float, orientation="horizontal")
 
-        ShadowGui.widgetBox(self.controlArea, "", addSpace=True, orientation="vertical", height=250)
+        upper_box = ShadowGui.widgetBox(self.controlArea, "Scan Parameters", addSpace=True, orientation="vertical")
+
+        ShadowGui.lineEdit(upper_box, self, "start_angle", "Start Angle (deg)", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(upper_box, self, "stop_angle", "Stop Angle (deg)",  valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(upper_box, self, "step", "Step (deg)",  valueType=float, orientation="horizontal")
+
+        ShadowGui.widgetBox(self.controlArea, "", addSpace=True, orientation="vertical", height=150)
 
         button = gui.button(self.controlArea, self, "Simulate", callback=self.simulate)
         button.setFixedHeight(45)
@@ -176,7 +184,9 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         self.information(0, "Calculating diffracted beam")
         qApp.processEvents()
 
-        beam_out = Orange.shadow.ShadowBeam(number_of_rays=((len(rays)-rejected) * len(reflections)))
+        number_of_rays=((len(rays)-rejected) * len(reflections))
+
+        beam_out = Orange.shadow.ShadowBeam(number_of_rays=number_of_rays)
 
         for rayIndex in rays:
             if beam_dummy.beam.rays[rayIndex,9] == 1:
@@ -262,10 +272,33 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         # calcolo del pattern di diffrazione
 
+        number_of_steps = math.floor((self.stop_angle-self.start_angle)/self.step)
 
+        steps = range(0, number_of_steps)
 
+        twotheta_angles = []
+        counts = []
+
+        out_file = open("XRD_Profile.xy","w")
+
+        percentage_fraction = 20/len(steps)
+
+        for step_index in steps:
+            twotheta_angle = self.start_angle + step_index*self.step
+
+            intensity = self.calculateIntensity(twotheta_angle, beam_out, number_of_rays)
+
+            twotheta_angles.append(twotheta_angle)
+            counts.append(intensity)
+
+            out_file.write(str(twotheta_angle) + " " + str(intensity) + "\n")
+            out_file.flush()
+
+            self.progressBarAdvance(percentage_fraction)
 
         self.progressBarSet(100)
+
+        out_file.close()
 
         self.information()
         qApp.processEvents()
@@ -300,8 +333,52 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     def calculateAbsorption(self, distance, ):
         return None
 
-    def getRandomPoint(self):
-        return None
+    def calculateIntensity(self, twotheta_angle, beam_out, number_of_rays):
+        rays = range(0, number_of_rays)
+
+        intensity = 0
+
+        x_c_s1 = 0
+        y_c_s1 = self.slit_1_distance*math.cos(twotheta_angle)
+        z_c_s1 = self.slit_1_distance*math.sen(twotheta_angle)
+
+        x_c_s2 = 0
+        y_c_s2 = self.slit_2_distance*math.cos(twotheta_angle)
+        z_c_s2 = self.slit_2_distance*math.sen(twotheta_angle)
+
+        alpha = math.tan(twotheta_angle)
+
+        D_1_eff = self.slit_1_distance*(math.cos(twotheta_angle)+alpha*math.sin(twotheta_angle))
+        D_2_eff = self.slit_2_distance*(math.cos(twotheta_angle)+alpha*math.sin(twotheta_angle))
+
+        for rayIndex in rays:
+            x_p = beam_out.beam.rays[rayIndex,0]
+            y_p = beam_out.beam.rays[rayIndex,1]
+            z_p = beam_out.beam.rays[rayIndex,2]
+
+            cos_x = beam_out.beam.rays[rayIndex,3]
+            cos_y = beam_out.beam.rays[rayIndex,4]
+            cos_z = beam_out.beam.rays[rayIndex,5]
+
+            #TODO: VERIFICARE I CONTI!!!!
+
+            # intersezione del raggio con il piano intercettato dalla slit
+            z_1_int = (z_p + ((cos_z/cos_y)*(D_1_eff-y_p)))/(1-alpha*(cos_z/cos_y))
+            y_1_int = D_1_eff - alpha*z_1_int
+            x_1_int = x_p - (y_1_int-y_p)*(cos_x/cos_z)
+
+            d_1_x = x_1_int
+            d_1_y = y_1_int-y_c_s1
+            d_1_z = z_1_int-z_c_s1
+
+            dist_yz = math.sqrt(d_1_y*d_1_y + d_1_z*d_1_z)
+            dist_x  = abs(d_1_x)
+
+            if dist_x <= self.slit_1_horizontal_aperture and dist_yz <= self.slit_1_vertical_aperture:
+              intensity = intensity + 1
+              #TODO: imporre condizioni per la seconda slit e sommare Es^2 e Ep^2
+
+
 
     def getMaterialDensity(self, material):
         if material == 0:
