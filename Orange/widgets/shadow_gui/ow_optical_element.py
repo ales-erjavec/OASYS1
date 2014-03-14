@@ -1045,8 +1045,8 @@ class OpticalElement(ow_generic_element.GenericElement):
                 self.torus_major_radius = shadow_oe.oe.RMAJ
                 self.torus_minor_radius = shadow_oe.oe.RMIN
         if self.crystal_auto_setting == 1:
-            self.incidence_angle_mrad = shadow_oe.oe.T_INCIDENCE*1000
-            self.reflection_angle_mrad = shadow_oe.oe.T_REFLECTION*1000
+            self.incidence_angle_mrad = math.pi*0.5-shadow_oe.oe.T_INCIDENCE*1000
+            self.reflection_angle_mrad = math.pi*0.5-shadow_oe.oe.T_REFLECTION*1000
             self.calculate_incidence_angle_deg()
             self.calculate_reflection_angle_deg()
 

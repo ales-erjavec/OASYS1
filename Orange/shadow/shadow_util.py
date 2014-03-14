@@ -3,7 +3,7 @@ __author__ = 'labx'
 from PyQt4.QtCore import Qt
 from Orange.widgets import gui
 
-import numpy
+import numpy, math
 import Shadow.ShadowLibExtensions as sd
 import sys
 try:
@@ -152,3 +152,71 @@ class ShadowPlot:
           ticket.averagey = numpy.average( col2[t] )
           ticket.intensityinslit = 0
           return ticket
+
+class ShadowMath:
+
+    @classmethod
+    def vectorial_product(cls, vector1, vector2):
+        result = [0, 0, 0]
+
+        result[0] = vector1[1]*vector2[2] - vector1[2]*vector2[1]
+        result[1] = -(vector1[0]*vector2[2] - vector1[2]*vector2[0])
+        result[2] = vector1[0]*vector2[1] - vector1[1]*vector2[0]
+
+        return result
+
+    @classmethod
+    def scalar_product(cls, vector1, vector2):
+        return vector1[0]*vector2[0] + vector1[1]*vector2[1] + vector1[2]*vector2[2]
+
+    @classmethod
+    def vector_modulus(cls, vector):
+        return math.sqrt(cls.scalar_product(vector, vector))
+
+    @classmethod
+    def vector_multiply(cls, vector, constant):
+        result = [0, 0, 0]
+
+        result[0] = vector[0] * constant
+        result[1] = vector[1] * constant
+        result[2] = vector[2] * constant
+
+        return result
+
+    @classmethod
+    def vector_divide(cls, vector, constant):
+        result = [0, 0, 0]
+
+        result[0] = vector[0] / constant
+        result[1] = vector[1] / constant
+        result[2] = vector[2] / constant
+
+        return result
+
+    @classmethod
+    def vector_normalize(cls, vector):
+        return cls.vector_divide(vector, cls.vector_modulus(vector))
+
+    @classmethod
+    def vector_sum(cls, vector1, vector2):
+        result = [0, 0, 0]
+
+        result[0] = vector1[0] + vector2[0]
+        result[1] = vector1[1] + vector2[1]
+        result[2] = vector1[2] + vector2[2]
+
+        return result
+
+    @classmethod
+    def vector_difference(cls, vector1, vector2):
+        result = [0, 0, 0]
+
+        result[0] = vector1[0] - vector2[0]
+        result[1] = vector1[1] - vector2[1]
+        result[2] = vector1[2] - vector2[2]
+
+        return result
+
+    @classmethod
+    def point_distance(cls, point1, point2):
+        return cls.vector_norm(cls.vector_difference(point1, point2))

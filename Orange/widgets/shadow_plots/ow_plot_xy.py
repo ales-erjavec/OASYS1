@@ -120,7 +120,7 @@ class PlotXY(ow_automatic_element.AutomaticElement):
 
         self.set_XRange()
 
-        self.y_column = gui.comboBox(general_box, self, "y_column_index", label="X Column", \
+        self.y_column = gui.comboBox(general_box, self, "y_column_index", label="Y Column", \
                                      items=["1: X", \
                                             "2: Y", \
                                             "3: Z", \
