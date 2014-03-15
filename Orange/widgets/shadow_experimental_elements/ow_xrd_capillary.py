@@ -198,8 +198,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         out_file_3 = open("medium_points.dat", "w")
         out_file_4 = open("diffracted_points.dat", "w")
-        out_file_5 = open("rotation_axis.dat", "w")
-        out_file_6 = open("v_in.dat", "w")
 
         for rayIndex in rays:
             if beam_intersection.beam.rays[rayIndex,9] == 1:
@@ -218,19 +216,12 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                             beam_intersection.beam.rays[rayIndex,4],
                             beam_intersection.beam.rays[rayIndex,5]]
 
-                    out_file_6.write(str(v_in[0]) + " " + str(v_in[1]) + " " + str(v_in[2]) + "\n")
-                    out_file_6.flush()
-
-
                     #
                     # calcolo dell'asse di rotazione: k x z/|k x z|
                     #
 
                     z_axis = [0, 0, 1]
                     asse_rot = ShadowMath.vector_normalize(ShadowMath.vectorial_product(v_in, z_axis))
-
-                    out_file_5.write(str(asse_rot[0]) + " " + str(asse_rot[1]) + " " + str(asse_rot[2]) + "\n")
-                    out_file_5.flush()
 
                     twotheta_reflection = 2*self.calculateBraggAngle(k_mod, reflection.h, reflection.k, reflection.l, lattice_parameter)
 
@@ -309,20 +300,126 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         out_file_3.close()
         out_file_4.close()
-        out_file_5.close()
-        out_file_6.close()
 
         self.progressBarSet(80)
 
         self.information(0, "Computing diffraction profile (2th vs Intensity)")
         qApp.processEvents()
 
-        # calcolo del pattern di diffrazione
-        number_of_steps = math.floor((self.stop_angle-self.start_angle)/self.step)
-
-        steps = range(0, number_of_steps)
-
+        steps = range(0, math.floor((self.stop_angle-self.start_angle)/self.step))
         twotheta_angles = []
+        counts = []
+
+        for step_index in steps:
+            twotheta_angles.append(math.radians(self.start_angle + step_index*self.step))
+            counts.append(0)
+
+        go = numpy.where(beam_diffracted.beam.rays[:,9] == 1)
+
+        self.D_1 = self.slit_1_distance
+        self.D_2 = self.slit_2_distance
+
+        self.horizontal_acceptance_1 = self.slit_1_horizontal_aperture*1e-4*0.5
+        self.vertical_acceptance_1 = self.slit_1_vertical_aperture*1e-4*0.5
+
+        self.horizontal_acceptance_2 = self.slit_2_horizontal_aperture*1e-4*0.5
+        self.vertical_acceptance_2 = self.slit_2_vertical_aperture*1e-4*0.5
+
+        theta_slit = math.atan(self.vertical_acceptance_1/self.D_1)
+
+        x_0 = beam_diffracted.beam.rays[go,0]
+        y_0 = beam_diffracted.beam.rays[go,1]
+        z_0 = beam_diffracted.beam.rays[go,2]
+
+        v_x = beam_diffracted.beam.rays[go,3]
+        v_y = beam_diffracted.beam.rays[go,4]
+        v_z = beam_diffracted.beam.rays[go,5]
+
+        Es_x = beam_diffracted.beam.rays[go,6]
+        Es_y = beam_diffracted.beam.rays[go,7]
+        Es_z = beam_diffracted.beam.rays[go,8]
+
+        Ep_x = beam_diffracted.beam.rays[go,15]
+        Ep_y = beam_diffracted.beam.rays[go,16]
+        Ep_z = beam_diffracted.beam.rays[go,17]
+
+        percentage_fraction = 20/len(go)
+
+        out_file_7 = open("slit_centers.dat", "w")
+        out_file_8 = open("slit.dat","w")
+
+        go_indexes = range(0, len(go))
+
+        for go_index in go_indexes:
+            
+            #calcolo dell'angolo di intercettato dal vettore con il piano xy
+                        
+            x_0_i = x_0.item(go_index)
+            y_0_i = y_0.item(go_index)
+            z_0_i = z_0.item(go_index)
+
+            v_x_i = v_x.item(go_index)
+            v_y_i = v_y.item(go_index)
+            v_z_i = v_z.item(go_index)
+
+            Es_x_i = Es_x.item(go_index)
+            Es_y_i = Es_y.item(go_index)
+            Es_z_i = Es_z.item(go_index)
+                       
+            Ep_x_i = Ep_x.item(go_index)
+            Ep_y_i = Ep_y.item(go_index)
+            Ep_z_i = Ep_z.item(go_index)
+
+            #
+            #  proiezione del vettore su xy = sqrt(cos_x^2 + cos_y^2)
+            #
+
+            proiez_xy = math.sqrt(v_x_i*v_x_i + v_y_i*v_y_i)
+
+            theta_ray = math.atan(v_z_i/proiez_xy)
+
+            # il ciclo sugli step del detector dovrebbe essere attorno a quest'angolo +- un fattore sufficiente di volte
+            # l'angolo intercettato dalla prima slit
+
+            twotheta_angles_effective = numpy.where(twotheta_angles > theta_ray-10*theta_slit and twotheta_angles < theta_ray+10*theta_slit)
+
+            angle_indexes = range(0, len(twotheta_angles_effective))
+
+            for angle_index in angle_indexes:
+                twotheta_angle = twotheta_angles[twotheta_angles_effective].item(angle_index)
+
+                intensity = self.calculateIntensity(twotheta_angle, 
+                                                    x_0_i, 
+                                                    y_0_i, 
+                                                    z_0_i, 
+                                                    v_x_i, 
+                                                    v_y_i, 
+                                                    v_z_i,                                                           
+                                                    Es_x_i,
+                                                    Es_y_i,
+                                                    Es_z_i,                                                        
+                                                    Ep_x_i,
+                                                    Ep_y_i,
+                                                    Ep_z_i,
+                                                    out_file_8, out_file_7)
+
+                position = numpy.where(twotheta_angles==twotheta_angle)
+
+                counts[position[0]]=counts[position[0]]+ intensity
+
+                self.progressBarAdvance(percentage_fraction)
+
+        out_file = open("XRD_Profile.xy","w")
+
+        cursor = range(0, len(twotheta_angles))
+
+        for angleIndex in cursor:
+            out_file.write(str(math.degrees(twotheta_angles[angleIndex])) + " " + str(counts[angleIndex]) + "\n")
+            out_file.flush()
+
+
+        # calcolo del pattern di diffrazione
+        '''
         counts = []
 
         out_file = open("XRD_Profile.xy","w")
@@ -344,7 +441,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             out_file.flush()
 
             self.progressBarAdvance(percentage_fraction)
-
+        '''
         self.progressBarSet(100)
 
         out_file_7.close()
@@ -382,9 +479,86 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         return math.asin((wl*math.sqrt(h*h+k*k+l*l))/(2*a))
 
-    def calculateAbsorption(self, distance, ):
-        return None
+    def calculateAbsorption(self, distance ):
+        return 1
 
+    def calculateIntensity(self, twotheta_angle, 
+                           x_0, 
+                           y_0, 
+                           z_0, 
+                           v_x, 
+                           v_y, 
+                           v_z,                                                           
+                           Es_x,
+                           Es_y,
+                           Es_z,                                                        
+                           Ep_x,
+                           Ep_y,
+                           Ep_z,
+                           out_file_8, out_file_7):
+        intensity = 0
+
+        sin_twotheta = math.sin(twotheta_angle)
+        cos_twotheta = math.cos(twotheta_angle)
+
+        x_c_s1 = 0
+        y_c_s1 = self.D_1*cos_twotheta
+        z_c_s1 = self.D_1*sin_twotheta
+
+        x_c_s2 = 0
+        y_c_s2 = self.D_2*cos_twotheta
+        z_c_s2 = self.D_2*sin_twotheta
+
+
+        out_file_7.write(str(x_c_s1) + " " + str(y_c_s1) + " " + str(z_c_s1) + "\n")
+        out_file_7.write(str(x_c_s2) + " " + str(y_c_s2) + " " + str(z_c_s2) + "\n")
+        out_file_7.flush()
+
+
+        #z_1_int = numpy.array((beam_out.beam.rays[:,2]+((beam_out.beam.rays[:,5]/beam_out.beam.rays[:,4])*(D_1-beam_out.beam.rays[:,1])))/(1+alpha*(beam_out.beam.rays[:,5]/beam_out.beam.rays[:,4])))
+        #y_1_int = numpy.array(D_1-alpha*z_1_int[:])
+        #x_1_int = numpy.array(beam_out.beam.rays[:,0]+(y_1_int[:]-beam_out.beam.rays[:,1])*(beam_out.beam.rays[:,3]/beam_out.beam.rays[:,5]))
+
+        #d_1_x = x_1_int-x_c_s1
+        #d_1_y = y_1_int-y_c_s1
+        #d_1_z = z_1_int-z_c_s1
+
+        # intersezione del raggio con il piano intercettato dalla slit
+        y_1_int = (self.D_1-(z_0-(v_z/v_y)*y_0)*sin_twotheta)/(cos_twotheta+(v_z/v_y)*sin_twotheta)
+        z_1_int = z_0+(v_z/v_y)*(y_1_int-y_0)
+        x_1_int = x_0+(v_x/v_z)*(y_1_int-y_0)
+
+        d_1_x = x_1_int-x_c_s1
+        d_1_y = y_1_int-y_c_s1
+        d_1_z = z_1_int-z_c_s1
+
+        dist_yz = math.sqrt(d_1_y*d_1_y + d_1_z*d_1_z)
+        dist_x  = abs(d_1_x)
+
+        if dist_x <= self.horizontal_acceptance_1 and dist_yz <= self.vertical_acceptance_1:
+
+            out_file_8.write(str(x_1_int) + " " + str(y_1_int) + " " + str(z_1_int) + "\n")
+            out_file_8.flush()
+
+            # intersezione del raggio con il piano intercettato dalla slit
+            y_2_int = (self.D_2-(z_0-(v_z/v_y)*y_0)*sin_twotheta)/(cos_twotheta+(v_z/v_y)*sin_twotheta)
+            z_2_int = z_0+(v_z/v_y)*(y_2_int-y_0)
+            x_2_int = x_0+(v_x/v_z)*(y_2_int-y_0)
+
+            d_2_x = x_2_int-x_c_s2
+            d_2_y = y_2_int-y_c_s2
+            d_2_z = z_2_int-z_c_s2
+
+            dist_yz = math.sqrt(d_2_y*d_2_y + d_2_z*d_2_z)
+            dist_x  = abs(d_2_x)
+
+            if dist_x <= self.horizontal_acceptance_2 and dist_yz <= self.vertical_acceptance_2:
+                intensity = intensity + (Es_x*Es_x + Es_y*Es_y + Es_z*Es_z) + (Ep_x*Ep_x + Ep_y*Ep_y + Ep_z*Ep_z)
+
+        return intensity
+
+
+    '''
     def calculateIntensity(self, twotheta_angle, beam_out, number_of_rays, out_file_8, out_file_7):
         intensity = 0
 
@@ -479,6 +653,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                         intensity = intensity + (Es_x*Es_x + Es_y*Es_y + Es_z*Es_z) + (Ep_x*Ep_x + Ep_y*Ep_y + Ep_z*Ep_z)
 
         return intensity
+    '''
 
     def getMaterialDensity(self, material):
         if material == 0:
