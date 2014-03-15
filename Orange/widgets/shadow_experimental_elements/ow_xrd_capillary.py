@@ -314,7 +314,11 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             twotheta_angles.append(math.radians(self.start_angle + step_index*self.step))
             counts.append(0)
 
+        twotheta_angles = numpy.array(twotheta_angles)
+        counts = numpy.array(counts)
+
         go = numpy.where(beam_diffracted.beam.rays[:,9] == 1)
+        good_only = len(go[0])
 
         self.D_1 = self.slit_1_distance
         self.D_2 = self.slit_2_distance
@@ -343,17 +347,16 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         Ep_y = beam_diffracted.beam.rays[go,16]
         Ep_z = beam_diffracted.beam.rays[go,17]
 
-        percentage_fraction = 20/len(go)
+
+        percentage_fraction = 20/good_only
 
         out_file_7 = open("slit_centers.dat", "w")
         out_file_8 = open("slit.dat","w")
 
-        go_indexes = range(0, len(go))
+        go_indexes = range(0, good_only)
 
         for go_index in go_indexes:
-            
-            #calcolo dell'angolo di intercettato dal vettore con il piano xy
-                        
+
             x_0_i = x_0.item(go_index)
             y_0_i = y_0.item(go_index)
             z_0_i = z_0.item(go_index)
@@ -370,25 +373,28 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             Ep_y_i = Ep_y.item(go_index)
             Ep_z_i = Ep_z.item(go_index)
 
+
+            # calcolo dell'angolo di intercettato dal vettore con il piano xy
             #
-            #  proiezione del vettore su xy = sqrt(cos_x^2 + cos_y^2)
             #
 
-            proiez_xy = math.sqrt(v_x_i*v_x_i + v_y_i*v_y_i)
+            theta_ray = math.atan(v_z_i/math.sqrt(v_x_i*v_x_i + v_y_i*v_y_i))
 
-            theta_ray = math.atan(v_z_i/proiez_xy)
+            theta_lim_inf = theta_ray-5*theta_slit
+            theta_lim_sup = theta_ray+5*theta_slit
 
             # il ciclo sugli step del detector dovrebbe essere attorno a quest'angolo +- un fattore sufficiente di volte
             # l'angolo intercettato dalla prima slit
 
-            twotheta_angles_effective = numpy.where(twotheta_angles > theta_ray-10*theta_slit and twotheta_angles < theta_ray+10*theta_slit)
 
-            angle_indexes = range(0, len(twotheta_angles_effective))
+            twotheta_angles_effective = numpy.where(numpy.logical_and(twotheta_angles > theta_lim_inf, twotheta_angles < theta_lim_sup))
+
+            angle_indexes = range(0, len(twotheta_angles_effective[0]))
 
             for angle_index in angle_indexes:
                 twotheta_angle = twotheta_angles[twotheta_angles_effective].item(angle_index)
 
-                intensity = self.calculateIntensity(twotheta_angle, 
+                intensity = self.calculateIntensity(twotheta_angle,
                                                     x_0_i, 
                                                     y_0_i, 
                                                     z_0_i, 
@@ -405,9 +411,9 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
                 position = numpy.where(twotheta_angles==twotheta_angle)
 
-                counts[position[0]]=counts[position[0]]+ intensity
+                counts[position[0]]=counts[position[0]]+intensity
 
-                self.progressBarAdvance(percentage_fraction)
+            self.progressBarAdvance(percentage_fraction)
 
         out_file = open("XRD_Profile.xy","w")
 
@@ -417,31 +423,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             out_file.write(str(math.degrees(twotheta_angles[angleIndex])) + " " + str(counts[angleIndex]) + "\n")
             out_file.flush()
 
-
-        # calcolo del pattern di diffrazione
-        '''
-        counts = []
-
-        out_file = open("XRD_Profile.xy","w")
-
-        percentage_fraction = 20/len(steps)
-
-        out_file_7 = open("slit_centers.dat", "w")
-        out_file_8 = open("slit.dat","w")
-
-        for step_index in steps:
-            twotheta_angle = self.start_angle + step_index*self.step
-
-            intensity = self.calculateIntensity(twotheta_angle, beam_diffracted, number_of_rays, out_file_8, out_file_7)
-
-            twotheta_angles.append(twotheta_angle)
-            counts.append(intensity)
-
-            out_file.write(str(twotheta_angle) + " " + str(intensity) + "\n")
-            out_file.flush()
-
-            self.progressBarAdvance(percentage_fraction)
-        '''
         self.progressBarSet(100)
 
         out_file_7.close()
@@ -514,15 +495,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         out_file_7.write(str(x_c_s2) + " " + str(y_c_s2) + " " + str(z_c_s2) + "\n")
         out_file_7.flush()
 
-
-        #z_1_int = numpy.array((beam_out.beam.rays[:,2]+((beam_out.beam.rays[:,5]/beam_out.beam.rays[:,4])*(D_1-beam_out.beam.rays[:,1])))/(1+alpha*(beam_out.beam.rays[:,5]/beam_out.beam.rays[:,4])))
-        #y_1_int = numpy.array(D_1-alpha*z_1_int[:])
-        #x_1_int = numpy.array(beam_out.beam.rays[:,0]+(y_1_int[:]-beam_out.beam.rays[:,1])*(beam_out.beam.rays[:,3]/beam_out.beam.rays[:,5]))
-
-        #d_1_x = x_1_int-x_c_s1
-        #d_1_y = y_1_int-y_c_s1
-        #d_1_z = z_1_int-z_c_s1
-
         # intersezione del raggio con il piano intercettato dalla slit
         y_1_int = (self.D_1-(z_0-(v_z/v_y)*y_0)*sin_twotheta)/(cos_twotheta+(v_z/v_y)*sin_twotheta)
         z_1_int = z_0+(v_z/v_y)*(y_1_int-y_0)
@@ -553,107 +525,9 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             dist_x  = abs(d_2_x)
 
             if dist_x <= self.horizontal_acceptance_2 and dist_yz <= self.vertical_acceptance_2:
-                intensity = intensity + (Es_x*Es_x + Es_y*Es_y + Es_z*Es_z) + (Ep_x*Ep_x + Ep_y*Ep_y + Ep_z*Ep_z)
+                intensity = (Es_x*Es_x + Es_y*Es_y + Es_z*Es_z) + (Ep_x*Ep_x + Ep_y*Ep_y + Ep_z*Ep_z)
 
         return intensity
-
-
-    '''
-    def calculateIntensity(self, twotheta_angle, beam_out, number_of_rays, out_file_8, out_file_7):
-        intensity = 0
-
-        rays = range(0, number_of_rays)
-
-        twotheta_angle_rad =  math.radians(twotheta_angle)
-
-        sin_twotheta = math.sin(twotheta_angle_rad)
-        cos_twotheta = math.cos(twotheta_angle_rad)
-
-        D_1 = self.slit_1_distance
-        D_2 = self.slit_2_distance
-
-        horizontal_acceptance_1 = self.slit_1_horizontal_aperture*1e-4*0.5
-        vertical_acceptance_1 = self.slit_1_vertical_aperture*1e-4*0.5
-
-        horizontal_acceptance_2 = self.slit_2_horizontal_aperture*1e-4*0.5
-        vertical_acceptance_2 = self.slit_2_vertical_aperture*1e-4*0.5
-
-        x_c_s1 = 0
-        y_c_s1 = D_1*cos_twotheta
-        z_c_s1 = D_1*sin_twotheta
-
-        x_c_s2 = 0
-        y_c_s2 = D_2*cos_twotheta
-        z_c_s2 = D_2*sin_twotheta
-
-
-        out_file_7.write(str(x_c_s1) + " " + str(y_c_s1) + " " + str(z_c_s1) + "\n")
-        out_file_7.write(str(x_c_s2) + " " + str(y_c_s2) + " " + str(z_c_s2) + "\n")
-        out_file_7.flush()
-
-
-        #z_1_int = numpy.array((beam_out.beam.rays[:,2]+((beam_out.beam.rays[:,5]/beam_out.beam.rays[:,4])*(D_1-beam_out.beam.rays[:,1])))/(1+alpha*(beam_out.beam.rays[:,5]/beam_out.beam.rays[:,4])))
-        #y_1_int = numpy.array(D_1-alpha*z_1_int[:])
-        #x_1_int = numpy.array(beam_out.beam.rays[:,0]+(y_1_int[:]-beam_out.beam.rays[:,1])*(beam_out.beam.rays[:,3]/beam_out.beam.rays[:,5]))
-
-        #d_1_x = x_1_int-x_c_s1
-        #d_1_y = y_1_int-y_c_s1
-        #d_1_z = z_1_int-z_c_s1
-
-        for rayIndex in rays:
-            if beam_out.beam.rays[rayIndex,9] == 1:
-                x_0 = beam_out.beam.rays[rayIndex,0]
-                y_0 = beam_out.beam.rays[rayIndex,1]
-                z_0 = beam_out.beam.rays[rayIndex,2]
-
-                cos_x = beam_out.beam.rays[rayIndex,3]
-                cos_y = beam_out.beam.rays[rayIndex,4]
-                cos_z = beam_out.beam.rays[rayIndex,5]
-
-                #TODO: VERIFICARE I CONTI!!!!
-
-                # intersezione del raggio con il piano intercettato dalla slit
-                y_1_int = (D_1-(z_0-(cos_z/cos_y)*y_0)*sin_twotheta)/(cos_twotheta+(cos_z/cos_y)*sin_twotheta)
-                z_1_int = z_0+(cos_z/cos_y)*(y_1_int-y_0)
-                x_1_int = x_0+(cos_x/cos_z)*(y_1_int-y_0)
-
-                d_1_x = x_1_int-x_c_s1
-                d_1_y = y_1_int-y_c_s1
-                d_1_z = z_1_int-z_c_s1
-
-                dist_yz = math.sqrt(d_1_y*d_1_y + d_1_z*d_1_z)
-                dist_x  = abs(d_1_x)
-
-                if dist_x <= horizontal_acceptance_1 and dist_yz <= vertical_acceptance_1:
-
-                    out_file_8.write(str(x_1_int) + " " + str(y_1_int) + " " + str(z_1_int) + "\n")
-                    out_file_8.flush()
-
-                    # intersezione del raggio con il piano intercettato dalla slit
-                    y_2_int = (D_2-(z_0-(cos_z/cos_y)*y_0)*sin_twotheta)/(cos_twotheta+(cos_z/cos_y)*sin_twotheta)
-                    z_2_int = z_0+(cos_z/cos_y)*(y_2_int-y_0)
-                    x_2_int = x_0+(cos_x/cos_z)*(y_2_int-y_0)
-
-                    d_2_x = x_2_int-x_c_s2
-                    d_2_y = y_2_int-y_c_s2
-                    d_2_z = z_2_int-z_c_s2
-
-                    dist_yz = math.sqrt(d_2_y*d_2_y + d_2_z*d_2_z)
-                    dist_x  = abs(d_2_x)
-
-                    if dist_x <= horizontal_acceptance_2 and dist_yz <= vertical_acceptance_2:
-                        Es_x = beam_out.beam.rays[rayIndex,6]
-                        Es_y = beam_out.beam.rays[rayIndex,7]
-                        Es_z = beam_out.beam.rays[rayIndex,8]
-
-                        Ep_x = beam_out.beam.rays[rayIndex,15]
-                        Ep_y = beam_out.beam.rays[rayIndex,16]
-                        Ep_z = beam_out.beam.rays[rayIndex,17]
-
-                        intensity = intensity + (Es_x*Es_x + Es_y*Es_y + Es_z*Es_z) + (Ep_x*Ep_x + Ep_y*Ep_y + Ep_z*Ep_z)
-
-        return intensity
-    '''
 
     def getMaterialDensity(self, material):
         if material == 0:
