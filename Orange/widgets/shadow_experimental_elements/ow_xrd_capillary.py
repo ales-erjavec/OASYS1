@@ -1,4 +1,4 @@
-import sys, math, copy, numpy, random
+import sys, math, copy, numpy, random, gc
 import Orange
 import Orange.shadow
 from Orange.widgets import gui
@@ -11,6 +11,7 @@ import Shadow.ShadowTools as ST
 from Orange.widgets.shadow_gui import ow_automatic_element
 from Orange.shadow.shadow_util import ShadowGui, ShadowMath
 
+from PyMca.widgets.PlotWindow import PlotWindow
 
 class XRDCapillary(ow_automatic_element.AutomaticElement):
 
@@ -52,6 +53,12 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     start_angle = Setting(10)
     stop_angle = Setting(120)
     step = Setting(0.002)
+
+    IMAGE_WIDTH = 920
+    IMAGE_HEIGHT = 750
+
+    want_main_area=1
+    plot_canvas=None
 
     def __init__(self):
         super().__init__()
@@ -98,7 +105,41 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         gui.rubber(self.controlArea)
 
+        self.image_box = gui.widgetBox(self.mainArea, "Plot Result", addSpace=True, orientation="vertical")
+        self.image_box.setFixedHeight(self.IMAGE_HEIGHT)
+        self.image_box.setFixedWidth(self.IMAGE_WIDTH)
+
         gui.rubber(self.mainArea)
+
+
+    def replaceObject(self, object):
+        if self.plot_canvas is not None:
+            self.image_box.layout().removeWidget(self.plot_canvas)
+        return_object = self.plot_canvas
+        self.plot_canvas = object
+        self.image_box.layout().addWidget(self.plot_canvas)
+
+    def replace_plot(self, plot):
+        old_figure = self.replaceObject(plot)
+
+        if not old_figure is None:
+            old_figure = None
+            ST.plt.close("all")
+            gc.collect()
+
+    def plotResult(self, tth, counts):
+
+        if not len(tth)==0:
+            plot = PlotWindow(roi=True, control=True, position=True)
+            plot.setDefaultPlotLines(True)
+            plot.setActiveCurveColor(color='darkblue')
+            plot.addCurve(tth, counts, "XRD Diffraction pattern", symbol=',', color='blue') #'+', '^',
+            plot.setGraphXLabel("2Theta (deg)")
+            plot.setGraphYLabel("Intensity (arbitrary units)")
+            plot.setDrawModeEnabled(True, 'rectangle')
+            plot.setZoomModeEnabled(True)
+
+            self.replace_plot(plot)
 
     def simulate(self):
 
@@ -196,7 +237,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         beam_diffracted = Orange.shadow.ShadowBeam(number_of_rays=number_of_rays)
 
-        out_file_3 = open("medium_points.dat", "w")
         out_file_4 = open("diffracted_points.dat", "w")
 
         for rayIndex in rays:
@@ -258,9 +298,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                     t_0 = -1*ShadowMath.scalar_product(Q_ro, v_out)
                     P_0 = ShadowMath.vector_sum(Q_ro, ShadowMath.vector_multiply(v_out, t_0))
 
-                    out_file_3.write(str(P_0[0]) + " " + str(P_0[1]) + " " + str(P_0[2]) + "\n")
-                    out_file_3.flush()
-
                     b = ShadowMath.vector_modulus(P_0)
                     a = math.sqrt(R_sp*R_sp - b*b)
 
@@ -270,7 +307,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                     # ok se P2 con z > 0
 
                     good_only = 0
-                    if (P_2[2] > 0): good_only = 1
+                    if (P_2[2] >= 0): good_only = 1
 
                     #
                     # genesi del nuovo raggio diffratto attenuato dell'intensità relativa e dell'assorbimento
@@ -298,7 +335,14 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                     out_file_4.write(str(P_2[0]) + " " + str(P_2[1]) + " " + str(P_2[2]) + "\n")
                     out_file_4.flush()
 
-        out_file_3.close()
+        out_file_4.write(str(0) + " " + str(0) + " " + str(self.detector_distance) + "\n")
+        out_file_4.write(str(0) + " " + str(0) + " " + str(-self.detector_distance) + "\n")
+        out_file_4.write(str(0) + " " + str(self.detector_distance) + " " + str(0) + "\n")
+        out_file_4.write(str(0) + " " + str(-self.detector_distance) + " " + str(0)+ "\n")
+        out_file_4.write(str(self.detector_distance) + " " + str(0) + " " + str(0) + "\n")
+        out_file_4.write(str(-self.detector_distance) + " " + str(0) + " " + str(0) + "\n")
+        out_file_4.flush()
+
         out_file_4.close()
 
         self.progressBarSet(80)
@@ -419,9 +463,15 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         cursor = range(0, len(twotheta_angles))
 
+        twotheta_angles_deg = []
         for angleIndex in cursor:
-            out_file.write(str(math.degrees(twotheta_angles[angleIndex])) + " " + str(counts[angleIndex]) + "\n")
+            twotheta_angle_deg = math.degrees(twotheta_angles[angleIndex])
+
+            twotheta_angles_deg.append(twotheta_angle_deg)
+            out_file.write(str(twotheta_angle_deg) + " " + str(counts[angleIndex]) + "\n")
             out_file.flush()
+
+        self.plotResult(twotheta_angles_deg, counts)
 
         self.progressBarSet(100)
 
