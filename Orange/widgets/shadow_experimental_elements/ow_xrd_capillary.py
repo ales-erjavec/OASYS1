@@ -143,6 +143,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     def simulate(self):
 
+        self.progressBarInit()
+
         self.information(0, "Running XRD Capillary Simulation")
         qApp.processEvents()
 
@@ -167,8 +169,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         displacement_h = self.horizontal_displacement*0.0001
         displacement_v = self.vertical_displacement*0.0001
 
-        in_out_coordinates_list = []
-
         self.information(0, "Calculating intersections with capillary")
         qApp.processEvents()
 
@@ -181,6 +181,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         diffracted_rays = []
 
         percentage_fraction = 50/number_of_rays
+        bar_value = 0
 
         for rayIndex in rays:
 
@@ -225,8 +226,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
                     out_file_2.write(str(x_point) + " " + str(y_point) + " " + str(z_point) + "\n")
                     out_file_2.flush()
-
-                    in_out_coordinates_list.append(InOutCoordinates(x1, y1, z1, x2, y2, z2))
 
                     reflection_index=-1
 
@@ -328,7 +327,9 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
                         diffracted_rays.append(diffracted_ray)
 
-            self.progressBarAdvance(percentage_fraction)
+            bar_value += percentage_fraction
+            self.progressBarSet(bar_value)
+            #self.progressBarAdvance(percentage_fraction)
 
         out_file_4.write(str(0) + " " + str(0) + " " + str(self.detector_distance) + "\n")
         out_file_4.write(str(0) + " " + str(0) + " " + str(-self.detector_distance) + "\n")
@@ -356,9 +357,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         ################################
         ################################
-
-        #TODO: SPOSTARE ANCHE QUESTO CICLO NEL PRIMO!!!!!!
-
 
         steps = range(0, math.floor((self.stop_angle-self.start_angle)/self.step))
         twotheta_angles = []
@@ -465,7 +463,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
                 counts[position[0]]=counts[position[0]]+intensity
 
-            self.progressBarAdvance(percentage_fraction)
+            bar_value += percentage_fraction
+            self.progressBarSet(bar_value)
 
         out_file = open("XRD_Profile.xy","w")
 
@@ -698,22 +697,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             return None
 
         return reflections
-
-class InOutCoordinates:
-    x1=0
-    x2=0
-    y1=0
-    y2=0
-    z1=0
-    z2=0
-
-    def __init__(self, x1, y1, z1, x2, y2, z2):
-        self.x1=x1
-        self.y1=y1
-        self.z1=z1
-        self.x2=x2
-        self.y2=y2
-        self.z2=z2
 
 class Reflection:
     h=0
