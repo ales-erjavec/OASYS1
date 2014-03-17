@@ -219,4 +219,4 @@ class ShadowMath:
 
     @classmethod
     def point_distance(cls, point1, point2):
-        return cls.vector_norm(cls.vector_difference(point1, point2))
+        return cls.vector_modulus(cls.vector_difference(point1, point2))
