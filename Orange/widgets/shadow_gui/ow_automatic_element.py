@@ -12,11 +12,18 @@ class AutomaticElement(widget.OWWidget):
 
     is_automatic_run = Setting(True)
 
+    MAX_WIDTH = 1400
+    MAX_HEIGHT = 850
+
     def __init__(self):
         super().__init__()
 
+
         geom = QApplication.desktop().availableGeometry()
-        self.setGeometry(QRect(round(geom.width()*0.05),round(geom.height()*0.05),round(geom.width()*0.8),round(geom.height()*0.885)))
+        self.setGeometry(QRect(round(geom.width()*0.05),
+                               round(geom.height()*0.05),
+                               round(min(geom.width()*0.8, self.MAX_WIDTH)),
+                               round(min(geom.height()*0.885, self.MAX_HEIGHT))))
 
         gui.checkBox(gui.widgetBox(self.controlArea, "General Options", addSpace=True, orientation="vertical"), \
                      self, 'is_automatic_run', 'Automatic Execution')
