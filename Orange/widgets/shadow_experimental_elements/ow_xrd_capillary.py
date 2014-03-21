@@ -338,19 +338,21 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         out_file_2.close()
 
         ################################
-        ################################
+        # ARRAYS FOR OUTPUT AND PLOTS
 
         steps = range(0, math.floor((self.stop_angle-self.start_angle)/self.step))
         twotheta_angles = []
         counts = []
 
         for step_index in steps:
-            twotheta_angles.append(math.radians(self.start_angle + step_index*self.step))
+            twotheta_angles.append(self.start_angle + step_index*self.step)
             counts.append(0)
 
         twotheta_angles = numpy.array(twotheta_angles)
         counts = numpy.array(counts)
 
+        ################################
+        # VALUES TO BE CALCULATED ONCE
 
         self.D_1 = self.slit_1_distance
         self.D_2 = self.slit_2_distance
@@ -363,6 +365,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         theta_slit = math.atan(self.vertical_acceptance_1/self.D_1)
 
+        ################################
+
         number_of_rays=len(diffracted_rays)
         rays = range(0, number_of_rays)
 
@@ -372,6 +376,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         out_file_8 = open("slit.dat","w")
 
         beam_diffracted = Orange.shadow.ShadowBeam(number_of_rays=number_of_rays)
+
+        max_position = len(twotheta_angles) - 1
 
         for rayIndex in rays:
             diffracted_ray = diffracted_rays[rayIndex]
@@ -398,39 +404,48 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
             theta_ray = math.atan(v_z_i/math.sqrt(v_x_i*v_x_i + v_y_i*v_y_i))
 
-            theta_lim_inf = theta_ray-3*theta_slit
-            theta_lim_sup = theta_ray+3*theta_slit
+            theta_lim_inf = math.degrees(theta_ray-3*theta_slit)
+            theta_lim_sup = math.degrees(theta_ray+3*theta_slit)
 
             # il ciclo sugli step del detector dovrebbe essere attorno a quest'angolo +- un fattore sufficiente di volte
             # l'angolo intercettato dalla prima slit
 
             #TODO: CALCOLARE TWOTHETA AL VOLO E NON CON UNA WHERE
 
-            twotheta_angles_effective = numpy.where(numpy.logical_and(twotheta_angles > theta_lim_inf, twotheta_angles < theta_lim_sup))
+            if (theta_lim_inf < self.stop_angle and theta_lim_sup > self.start_angle):
+                n_steps_inf = math.floor((max(theta_lim_inf, self.start_angle)-self.start_angle)/self.step)
+                n_steps_sup = math.ceil((min(theta_lim_sup, self.stop_angle)-self.start_angle)/self.step)
 
-            angle_indexes = range(0, len(twotheta_angles_effective[0]))
+                print(str(theta_lim_inf) + " " + str(theta_lim_sup))
+                print(str(n_steps_inf) + " " + str(n_steps_sup))
 
-            for angle_index in angle_indexes:
-                twotheta_angle = twotheta_angles[twotheta_angles_effective].item(angle_index)
+                #twotheta_angles_effective = numpy.where(numpy.logical_and(twotheta_angles > theta_lim_inf, twotheta_angles < theta_lim_sup))
 
-                intensity = self.calculateIntensity(twotheta_angle,
-                                                    x_0_i,
-                                                    y_0_i,
-                                                    z_0_i,
-                                                    v_x_i,
-                                                    v_y_i,
-                                                    v_z_i,
-                                                    Es_x_i,
-                                                    Es_y_i,
-                                                    Es_z_i,
-                                                    Ep_x_i,
-                                                    Ep_y_i,
-                                                    Ep_z_i,
-                                                    out_file_8, out_file_7)
+                steps_between_limits = range(0, n_steps_sup - n_steps_inf)
 
-                position = numpy.where(twotheta_angles==twotheta_angle)
+                for n_step in steps_between_limits:
+                    twotheta_angle = self.start_angle + (n_steps_inf + n_step)*self.step
 
-                counts[position[0]]=counts[position[0]]+intensity
+                    intensity = self.calculateIntensity(math.radians(twotheta_angle),
+                                                        x_0_i,
+                                                        y_0_i,
+                                                        z_0_i,
+                                                        v_x_i,
+                                                        v_y_i,
+                                                        v_z_i,
+                                                        Es_x_i,
+                                                        Es_y_i,
+                                                        Es_z_i,
+                                                        Ep_x_i,
+                                                        Ep_y_i,
+                                                        Ep_z_i,
+                                                        out_file_8, out_file_7)
+
+                    position = min(n_steps_inf + n_step, max_position)
+
+                    print("POS : " + str(position) + " - " + str(twotheta_angle) + " - " + str(intensity))
+
+                    counts[position]=counts[position]+intensity
 
             bar_value += percentage_fraction
             self.progressBarSet(bar_value)
@@ -439,15 +454,11 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         cursor = range(0, len(twotheta_angles))
 
-        twotheta_angles_deg = []
         for angleIndex in cursor:
-            twotheta_angle_deg = math.degrees(twotheta_angles[angleIndex])
-
-            twotheta_angles_deg.append(twotheta_angle_deg)
-            out_file.write(str(twotheta_angle_deg) + " " + str(counts[angleIndex]) + "\n")
+            out_file.write(str(twotheta_angles[angleIndex]) + " " + str(counts[angleIndex]) + "\n")
             out_file.flush()
 
-        self.plotResult(twotheta_angles_deg, counts)
+        self.plotResult(twotheta_angles, counts)
 
         self.progressBarSet(100)
 
@@ -592,6 +603,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                 intensity = (Es_x*Es_x + Es_y*Es_y + Es_z*Es_z) + (Ep_x*Ep_x + Ep_y*Ep_y + Ep_z*Ep_z)
 
         return intensity
+
 
     def getMassAttenuationCoefficient(self):
 
