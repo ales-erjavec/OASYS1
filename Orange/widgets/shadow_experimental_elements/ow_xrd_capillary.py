@@ -40,6 +40,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     horizontal_displacement = Setting(0)
     vertical_displacement = Setting(0)
     calculate_absorption = Setting(0)
+    normalization_factor = Setting(100)
 
     shift_2theta = Setting(0)
 
@@ -110,19 +111,22 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         ShadowGui.lineEdit(box_4, self, "horizontal_displacement", "Capillary H Displacement (um)", valueType=float, orientation="horizontal")
         ShadowGui.lineEdit(box_4, self, "vertical_displacement", "Capillary V Displacement (um)", valueType=float, orientation="horizontal")
-        gui.comboBox(box_4, self, "calculate_absorption", label="Calculate Absorption", items=["No", "Yes"], sendSelectedValue=False, orientation="horizontal")
+        gui.comboBox(box_4, self, "calculate_absorption", label="Calculate Absorption", callback=self.setAbsorption, items=["No", "Yes"], sendSelectedValue=False, orientation="horizontal")
+        self.le_normalization_factor = ShadowGui.lineEdit(box_4, self, "normalization_factor", "Normalization Factor", valueType=float, orientation="horizontal")
+
+        self.setAbsorption()
 
         #####################
 
         box_5 = ShadowGui.widgetBox(tab_reflections, "Diffraction Parameters", addSpace=True, orientation="vertical")
 
         gui.comboBox(box_5, self, "set_number_of_peaks", label="set Number of Peaks?", callback=self.setNumberOfPeaks, items=["No", "Yes"], sendSelectedValue=False, orientation="horizontal")
-        self.le_number_of_peaks = ShadowGui.lineEdit(box_5, self, "number_of_peaks", "Number of Peaks", valueType=float, orientation="horizontal")
+        self.le_number_of_peaks = ShadowGui.lineEdit(box_5, self, "number_of_peaks", "Number of Peaks", valueType=int, orientation="horizontal")
         gui.separator(box_5)
 
         self.setNumberOfPeaks()
 
-        ShadowGui.widgetBox(self.controlArea, "", addSpace=True, orientation="vertical", height=40)
+        ShadowGui.widgetBox(self.controlArea, "", addSpace=True, orientation="vertical", height=20)
 
         button = gui.button(self.controlArea, self, "Simulate", callback=self.simulate)
         button.setFixedHeight(45)
@@ -135,6 +139,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         gui.rubber(self.mainArea)
 
+    def setAbsorption(self):
+        self.le_normalization_factor.setEnabled(self.calculate_absorption==1)
 
     def setNumberOfPeaks(self):
         self.le_number_of_peaks.setEnabled(self.set_number_of_peaks==1)
@@ -304,6 +310,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                         P_1 = ShadowMath.vector_sum(origin_point, ShadowMath.vector_multiply(v_out, t_0-a))
                         P_2 = ShadowMath.vector_sum(origin_point, ShadowMath.vector_multiply(v_out, t_0+a))
 
+
+                        #TODO: RICONTROLLARE ALGORITMO CON LOG
                         absorption = 1
                         if (self.calculate_absorption == 1):
                             absorption = self.calculateAbsorption(k_mod, entry_point, origin_point, v_out, capillary_radius, displacement_h, displacement_v)
@@ -339,7 +347,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                             diffracted_ray[16] = go_input_beam.beam.rays[rayIndex,15] # Ep_y
                             diffracted_ray[17] = go_input_beam.beam.rays[rayIndex,16] # Ep_z
 
-                            ray_intensity = 0 #TODO: CALCOLARE
+                            ray_intensity = diffracted_ray[6]**2 + diffracted_ray[7]**2 + diffracted_ray[8]**2 + \
+                                            diffracted_ray[15]**2 + diffracted_ray[16]**2 + diffracted_ray[17]**2
 
                             diffracted_ray[18] = ray_intensity*reflection.relative_intensity*absorption
 
@@ -401,13 +410,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             v_y_i = diffracted_ray[4]
             v_z_i = diffracted_ray[5]
 
-            Es_x_i = diffracted_ray[6]
-            Es_y_i = diffracted_ray[7]
-            Es_z_i = diffracted_ray[8]
-
-            Ep_x_i = diffracted_ray[15]
-            Ep_y_i = diffracted_ray[16]
-            Ep_z_i = diffracted_ray[17]
+            intensity_i = diffracted_ray[18]
 
             #
             # calcolo dell'angolo di intercettato dal vettore con il piano xy
@@ -430,23 +433,10 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                 for n_step in steps_between_limits:
                     twotheta_angle = self.start_angle + (n_steps_inf + n_step)*self.step
 
-                    intensity = self.calculateIntensity(math.radians(twotheta_angle),
-                                                        x_0_i,
-                                                        y_0_i,
-                                                        z_0_i,
-                                                        v_x_i,
-                                                        v_y_i,
-                                                        v_z_i,
-                                                        Es_x_i,
-                                                        Es_y_i,
-                                                        Es_z_i,
-                                                        Ep_x_i,
-                                                        Ep_y_i,
-                                                        Ep_z_i)
+                    if (self.isCollectedRay(math.radians(twotheta_angle), x_0_i, y_0_i, z_0_i, v_x_i, v_y_i, v_z_i)):
+                        position = min(n_steps_inf + n_step, max_position)
 
-                    position = min(n_steps_inf + n_step, max_position)
-
-                    counts[position]=counts[position]+intensity
+                        counts[position]=counts[position]+intensity_i
 
             bar_value += percentage_fraction
             self.progressBarSet(bar_value)
@@ -538,7 +528,10 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             y_sol = 0
             z_sol = 0
 
-            if (numpy.sign((x_1))==numpy.sign(direction_versor[0])): # solo semiretta in avanti -> t > 0
+            # se y-y0 > 0 allora il versore deve avere y > 0
+            # se y-y0 < 0 allora il versore deve avere y < 0
+
+            if (numpy.sign((k_1*x_1))==numpy.sign(direction_versor[1])): # solo semiretta in avanti -> t > 0
                 x_sol = x_1 + x_0
                 y_sol = y_0 + k_1*x_1
                 z_sol = z_0 + k_2*x_1
@@ -550,29 +543,21 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
             exit_point = [x_sol, y_sol, z_sol]
 
-            distance = ShadowMath.point_distance(entry_point, origin_point) + ShadowMath.point_distance(origin_point, exit_point) #in cm
+            distance = (ShadowMath.point_distance(entry_point, origin_point) + ShadowMath.point_distance(origin_point, exit_point))*10 #in mm
             wavelength = (2*math.pi/k_mod)*1e+8 # in Angstrom
 
-            mass_attenuation_coefficient = self.getMassAttenuationCoefficient(distance*10, wavelength)
+            mass_attenuation_coefficient = self.getMassAttenuationCoefficient(distance, wavelength)
 
-        return math.exp(-2*mass_attenuation_coefficient*distance*10)
+        return math.exp(-2*mass_attenuation_coefficient)*self.normalization_factor
 
-
-    # TODO: RICALCOLARE! intensity passata da raggio diffratto
-    def calculateIntensity(self, twotheta_angle, 
+    def isCollectedRay(self, twotheta_angle,
                            x_0, 
                            y_0, 
                            z_0, 
                            v_x, 
                            v_y, 
-                           v_z,                                                           
-                           Es_x,
-                           Es_y,
-                           Es_z,                                                        
-                           Ep_x,
-                           Ep_y,
-                           Ep_z):
-        intensity = 0
+                           v_z):
+        is_collected_ray = False
 
         sin_twotheta = math.sin(twotheta_angle)
         cos_twotheta = math.cos(twotheta_angle)
@@ -612,9 +597,9 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             dist_x  = abs(d_2_x)
 
             if dist_x <= self.horizontal_acceptance_2 and dist_yz <= self.vertical_acceptance_2:
-                intensity = (Es_x*Es_x + Es_y*Es_y + Es_z*Es_z) + (Ep_x*Ep_x + Ep_y*Ep_y + Ep_z*Ep_z)
+                is_collected_ray= True
 
-        return intensity
+        return is_collected_ray
 
 
     def getMassAttenuationCoefficient(self, path, wavelength):
