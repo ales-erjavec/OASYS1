@@ -8,7 +8,7 @@ import sys
 
 import numpy as np
 
-import Orange.widgets.shadow_experimental_elements.Element as Element
+import shadow.argonne11bm_absorption.Element as Element
 
 class Absorb():
     ''' '''
@@ -19,7 +19,6 @@ class Absorb():
     Wres = 0.004094    #plot resolution step size as const delta-lam/lam - gives 1000 steps for Wmin to Wmax
     Eres = 1.5e-4      #typical energy resolution for synchrotron x-ray sources
     Energy = Kev/Wave
-    #ifWave = False   # broken
     Volume = 0
     ifVol = False
     Zcell = 1
@@ -81,9 +80,7 @@ class Absorb():
             raise Exception("No valid elements found in chemical formula")
 
     def ComputeMu(self):
-        #Gkmu = unichr(0x3bc)
         Gkmu = 'mu'
-        #Pwr3 = unichr(0x0b3)
         Pwr3 = "<sup>3</sup>"
         self.Energy = self.Kev/self.Wave
         self.Energy = round(self.Energy,4)
@@ -201,3 +198,52 @@ class Absorb():
                 pass
 #                wx.EndBusyCursor()
         self.FPPS = FPPS
+
+    ########################################################
+    #
+    # METHOD ADDED FOR ONLINE COMPUTATION OF TRANSMITTANCE
+    #
+    ########################################################
+
+    def ComputeMassAttenuationCoefficient(self):
+        coefficient = 0.0
+
+        self.Energy = self.Kev/self.Wave
+        self.Energy = round(self.Energy,4)
+        E = self.Energy
+        DE = E*self.Eres                         #smear by defined source resolution
+        self.Volume = 0
+        for Elem in self.Elems:
+            self.Volume += 10.*Elem[2]
+        muT = 0
+        Mass = 0
+        Fo = 0
+        Fop = 0
+        for Elem in self.Elems:
+            Mass += self.Zcell*Elem[2]*Elem[5]['Mass']
+            r1 = Element.FPcalc(Elem[4],E+DE)
+            r2 = Element.FPcalc(Elem[4],E-DE)
+            Els = Elem[0]
+            Els = Els.ljust(2).lower().capitalize()
+            mu = 0
+            Fo += Elem[2]*Elem[1]
+            if Elem[1] > 78 and self.Energy+DE > self.Kev/0.16:
+                mu = self.Zcell*Elem[2]*(r1[2]+r2[2])/2.0
+            elif Elem[1] > 94 and self.Energy-DE < self.Kev/2.67:
+                mu = 0
+            else:
+                mu = self.Zcell*Elem[2]*(r1[2]+r2[2])/2.0
+                Fop += Elem[2]*(Elem[1]+(r1[0]+r2[0])/2.0)
+            muT += mu
+
+        if self.Volume:
+
+            if self.InputDensity:
+                den = Mass/(0.602*self.Volume)
+                self.Pack = self.InputDensity/den
+
+            coefficient = self.Pack*muT/(10.0*self.Volume)
+        else:
+            raise Exception('error in Volume computation')
+
+        return coefficient
