@@ -217,32 +217,25 @@ class Absorb():
             self.Volume += 10.*Elem[2]
         muT = 0
         Mass = 0
-        Fo = 0
-        Fop = 0
         for Elem in self.Elems:
             Mass += self.Zcell*Elem[2]*Elem[5]['Mass']
             r1 = Element.FPcalc(Elem[4],E+DE)
             r2 = Element.FPcalc(Elem[4],E-DE)
-            Els = Elem[0]
-            Els = Els.ljust(2).lower().capitalize()
             mu = 0
-            Fo += Elem[2]*Elem[1]
             if Elem[1] > 78 and self.Energy+DE > self.Kev/0.16:
                 mu = self.Zcell*Elem[2]*(r1[2]+r2[2])/2.0
             elif Elem[1] > 94 and self.Energy-DE < self.Kev/2.67:
                 mu = 0
             else:
                 mu = self.Zcell*Elem[2]*(r1[2]+r2[2])/2.0
-                Fop += Elem[2]*(Elem[1]+(r1[0]+r2[0])/2.0)
             muT += mu
 
         if self.Volume:
-
             if self.InputDensity:
                 den = Mass/(0.602*self.Volume)
                 self.Pack = self.InputDensity/den
 
-            coefficient = self.Pack*muT/(10.0*self.Volume)
+            coefficient = self.Radius*self.Pack*muT/(10.0*self.Volume)
         else:
             raise Exception('error in Volume computation')
 

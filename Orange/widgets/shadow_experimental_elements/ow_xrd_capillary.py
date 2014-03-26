@@ -193,20 +193,13 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         rays = range(0, number_of_rays)
 
-        capillary_radius = self.capillary_diameter*0.5
+        capillary_radius = self.capillary_diameter*0.1*0.5
         distance = self.detector_distance
         displacement_h = self.horizontal_displacement*0.0001
         displacement_v = self.vertical_displacement*0.0001
 
         log_file.write("1: inzio calcolo\n")
         log_file.flush()
-
-        massAttenuationCoefficient = 1.0
-
-        if self.calculate_absorption :
-            k_avg = numpy.average(numpy.array(go_input_beam.beam.rays[:, 9]))
-            wavelength = 2*math.pi/k_avg
-            massAttenuationCoefficient = self.getMassAttenuationCoefficient(capillary_radius, wavelength, self.packing_factor)
 
         self.information(0, "Calculating intersections with capillary")
         qApp.processEvents()
@@ -233,9 +226,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
             Discriminant = b**2 - 4*a*c
 
-            if Discriminant <= 0.0:
-                rejected = rejected+1
-            else:
+            if Discriminant > 0.0:
                 y1 = ((-b) - math.sqrt(Discriminant))/(2*a)
                 x1 = alfa*y1 + X_pr
                 z1 = gamma*y1 + Z_pr
@@ -315,18 +306,19 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
                         absorption = 1
                         if (self.calculate_absorption == 1):
-                            absorption = self.calculateAbsorption(massAttenuationCoefficient, entry_point, origin_point, v_out, capillary_radius)
+                            absorption = self.calculateAbsorption(k_mod, entry_point, origin_point, v_out, capillary_radius, displacement_h, displacement_v)
+
+                            log_file.write("2: absorption " + str(absorption) + "\n")
+                            log_file.flush()
 
                         # ok se P2 con z > 0
-
-                        attenuation_factor = math.sqrt(reflection.relative_intensity*absorption)
 
                         if (P_2[2] >= 0):
                             #
                             # genesi del nuovo raggio diffratto attenuato dell'intensità relativa e dell'assorbimento
                             #
 
-                            diffracted_ray = numpy.zeros(18)
+                            diffracted_ray = numpy.zeros(19)
 
                             diffracted_ray[0]  = origin_point[0]                                                                # X
                             diffracted_ray[1]  = origin_point[1]                                                                # Y
@@ -334,18 +326,22 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                             diffracted_ray[3]  = v_out[0]                                                               # director cos x
                             diffracted_ray[4]  = v_out[1]                                                               # director cos y
                             diffracted_ray[5]  = v_out[2]                                                               # director cos z
-                            diffracted_ray[6]  = go_input_beam.beam.rays[rayIndex,6]*attenuation_factor  # Es_x
-                            diffracted_ray[7]  = go_input_beam.beam.rays[rayIndex,7]*attenuation_factor  # Es_y
-                            diffracted_ray[8]  = go_input_beam.beam.rays[rayIndex,8]*attenuation_factor  # Es_z
+                            diffracted_ray[6]  = go_input_beam.beam.rays[rayIndex,6]  # Es_x
+                            diffracted_ray[7]  = go_input_beam.beam.rays[rayIndex,7]  # Es_y
+                            diffracted_ray[8]  = go_input_beam.beam.rays[rayIndex,8]  # Es_z
                             diffracted_ray[9]  = go_input_beam.beam.rays[rayIndex,9]                                # good/lost
                             diffracted_ray[10] = go_input_beam.beam.rays[rayIndex,10]                               # |k|
                             diffracted_ray[11] = go_input_beam.beam.rays[rayIndex,11]                               # ray index
                             diffracted_ray[12] = 1                                                                  # good only
                             diffracted_ray[13] = go_input_beam.beam.rays[rayIndex,12]                               # Es_phi
                             diffracted_ray[14] = go_input_beam.beam.rays[rayIndex,13]                               # Ep_phi
-                            diffracted_ray[15] = go_input_beam.beam.rays[rayIndex,14]*attenuation_factor # Ep_x
-                            diffracted_ray[16] = go_input_beam.beam.rays[rayIndex,15]*attenuation_factor # Ep_y
-                            diffracted_ray[17] = go_input_beam.beam.rays[rayIndex,16]*attenuation_factor # Ep_z
+                            diffracted_ray[15] = go_input_beam.beam.rays[rayIndex,14] # Ep_x
+                            diffracted_ray[16] = go_input_beam.beam.rays[rayIndex,15] # Ep_y
+                            diffracted_ray[17] = go_input_beam.beam.rays[rayIndex,16] # Ep_z
+
+                            ray_intensity = 0 #TODO: CALCOLARE
+
+                            diffracted_ray[18] = ray_intensity*reflection.relative_intensity*absorption
 
                             diffracted_rays.append(diffracted_ray)
 
@@ -417,7 +413,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             # calcolo dell'angolo di intercettato dal vettore con il piano xy
             #
 
-            theta_ray = math.atan(v_z_i/math.sqrt(v_x_i*v_x_i + v_y_i*v_y_i))
+            theta_ray = math.atan(v_z_i/math.sqrt(v_x_i**2 + v_y_i**2))
 
             theta_lim_inf = math.degrees(theta_ray-3*theta_slit)
             theta_lim_sup = math.degrees(theta_ray+3*theta_slit)
@@ -499,9 +495,9 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         wl = (2*math.pi/k_modulus)*1e+8
 
-        return math.asin((wl*math.sqrt(h*h+k*k+l*l))/(2*a))
+        return math.asin((wl*math.sqrt(h**2+k**2+l**2))/(2*a))
 
-    def calculateAbsorption(self, mass_attenuation_coefficient, entry_point, origin_point, direction_versor, capillary_radius):
+    def calculateAbsorption(self, k_mod, entry_point, origin_point, direction_versor, capillary_radius, displacement_h, displacement_v):
 
         distance = 0
 
@@ -519,9 +515,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         y_0 = origin_point[1]
         z_0 = origin_point[2]
 
-        d_h = self.horizontal_displacement
-        d_v = self.vertical_displacement
-
         k_1 = direction_versor[1]/direction_versor[0]
         k_2 = direction_versor[2]/direction_versor[0]
 
@@ -529,13 +522,13 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         # parametri a b c per l'equazione a(x-x0)^2 + b(x-x0) + c = 0
         #
 
-        a = (k_1*k_1 + k_2*k_2)
-        b = 2*(k_1*(y_0+d_h) + k_2*(z_0+d_v))
-        c = (y_0*y_0 + z_0*z_0 + 2*d_h*y_0 + 2*d_v*z_0) - capillary_radius*capillary_radius + (d_h*d_h + d_v*d_v)
+        a = (k_1**2 + k_2**2)
+        b = 2*(k_1*(y_0+displacement_h) + k_2*(z_0+displacement_v))
+        c = (y_0**2 + z_0**2 + 2*displacement_h*y_0 + 2*displacement_v*z_0) - capillary_radius*capillary_radius + (displacement_h**2 + displacement_v**2)
 
         discriminant = b*b - 4*a*c
 
-        if (discriminant < 0):
+        if (discriminant > 0):
 
             # equazioni risolte per x-x0
             x_1 = (-b + math.sqrt(discriminant))/(2*a) # (x-x0)_1
@@ -557,10 +550,15 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
             exit_point = [x_sol, y_sol, z_sol]
 
-            distance = ShadowMath.point_distance(entry_point, origin_point) + ShadowMath.point_distance(origin_point, exit_point)
+            distance = ShadowMath.point_distance(entry_point, origin_point) + ShadowMath.point_distance(origin_point, exit_point) #in cm
+            wavelength = (2*math.pi/k_mod)*1e+8 # in Angstrom
 
-        return math.exp(-mass_attenuation_coefficient*distance)
+            mass_attenuation_coefficient = self.getMassAttenuationCoefficient(distance*10, wavelength)
 
+        return math.exp(-2*mass_attenuation_coefficient*distance*10)
+
+
+    # TODO: RICALCOLARE! intensity passata da raggio diffratto
     def calculateIntensity(self, twotheta_angle, 
                            x_0, 
                            y_0, 
@@ -619,9 +617,9 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         return intensity
 
 
-    def getMassAttenuationCoefficient(self, capillary_radius, wavelength, packing_factor):
+    def getMassAttenuationCoefficient(self, path, wavelength):
 
-        absorption = Absorption.Absorb(Radius=capillary_radius, Wave=wavelength, Packing=packing_factor)
+        absorption = Absorption.Absorb(Radius=path, Wave=wavelength, Packing=self.packing_factor)
         absorption.SetElems(self.getChemicalFormula(self.sample_material))
 
         return absorption.ComputeMassAttenuationCoefficient()
