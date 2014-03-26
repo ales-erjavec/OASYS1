@@ -206,7 +206,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         if self.calculate_absorption :
             k_avg = numpy.average(numpy.array(go_input_beam.beam.rays[:, 9]))
             wavelength = 2*math.pi/k_avg
-            massAttenuationCoefficient = self.getMassAttenuationCoefficient(wavelength, self.packing_factor)
+            massAttenuationCoefficient = self.getMassAttenuationCoefficient(capillary_radius, wavelength, self.packing_factor)
 
         self.information(0, "Calculating intersections with capillary")
         qApp.processEvents()
@@ -503,6 +503,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     def calculateAbsorption(self, mass_attenuation_coefficient, entry_point, origin_point, direction_versor, capillary_radius):
 
+        distance = 0
+
         #
         # calcolo intersezione con superficie del capillare:
         #
@@ -513,32 +515,49 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         # (y-dh)^2 + (z-dv)^2 = (Dc/2)^2
         #
 
-        c_1 = direction_versor[1]/direction_versor[0]
-        c_2 = direction_versor[2]/direction_versor[0]
+        x_0 = origin_point[0]
+        y_0 = origin_point[1]
+        z_0 = origin_point[2]
 
-        k_1 = origin_point[1]-c_1*origin_point[0]
-        k_2 = origin_point[2]-c_2*origin_point[0]
+        d_h = self.horizontal_displacement
+        d_v = self.vertical_displacement
 
-        a = (c_1*c_1 + c_2*c_2)
-        b = 2*(c_1*k_1 + c_2*k_2)
-        c = k_1*k_1 + k_2*k_2 - capillary_radius*capillary_radius
+        k_1 = direction_versor[1]/direction_versor[0]
+        k_2 = direction_versor[2]/direction_versor[0]
 
-        x_1 = (-b + math.sqrt(b*b + 4*a*c))/(2*a)
-        x_2 = (-b - math.sqrt(b*b + 4*a*c))/(2*a)
+        #
+        # parametri a b c per l'equazione a(x-x0)^2 + b(x-x0) + c = 0
+        #
 
-        exit_point = [0, 0, 0]
-        x_sol = 0
+        a = (k_1*k_1 + k_2*k_2)
+        b = 2*(k_1*(y_0+d_h) + k_2*(z_0+d_v))
+        c = (y_0*y_0 + z_0*z_0 + 2*d_h*y_0 + 2*d_v*z_0) - capillary_radius*capillary_radius + (d_h*d_h + d_v*d_v)
 
-        if (numpy.sign((x_1-origin_point[0]))==numpy.sign(direction_versor[0])): # solo semiretta in avanti -> t > 0
-            x_sol = x_1
-        else:
-            x_sol = x_2
+        discriminant = b*b - 4*a*c
 
-        exit_point[0] = x_sol
-        exit_point[1] = origin_point[1] + c_1 * x_sol
-        exit_point[2] = origin_point[2] + c_2 * x_sol
+        if (discriminant < 0):
 
-        distance = ShadowMath.point_distance(entry_point, origin_point) + ShadowMath.point_distance(origin_point, exit_point)
+            # equazioni risolte per x-x0
+            x_1 = (-b + math.sqrt(discriminant))/(2*a) # (x-x0)_1
+            x_2 = (-b - math.sqrt(discriminant))/(2*a) # (x-x0)_2
+
+            x_sol = 0
+            y_sol = 0
+            z_sol = 0
+
+            if (numpy.sign((x_1))==numpy.sign(direction_versor[0])): # solo semiretta in avanti -> t > 0
+                x_sol = x_1 + x_0
+                y_sol = y_0 + k_1*x_1
+                z_sol = z_0 + k_2*x_1
+            else:
+                x_sol = x_2 + x_0
+                y_sol = y_0 + k_1*x_2
+                z_sol = z_0 + k_2*x_2
+
+
+            exit_point = [x_sol, y_sol, z_sol]
+
+            distance = ShadowMath.point_distance(entry_point, origin_point) + ShadowMath.point_distance(origin_point, exit_point)
 
         return math.exp(-mass_attenuation_coefficient*distance)
 
@@ -600,9 +619,9 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         return intensity
 
 
-    def getMassAttenuationCoefficient(self, wavelength, packing_factor):
+    def getMassAttenuationCoefficient(self, capillary_radius, wavelength, packing_factor):
 
-        absorption = Absorption.Absorb(Wave=wavelength, Packing=packing_factor)
+        absorption = Absorption.Absorb(Radius=capillary_radius, Wave=wavelength, Packing=packing_factor)
         absorption.SetElems(self.getChemicalFormula(self.sample_material))
 
         return absorption.ComputeMassAttenuationCoefficient()

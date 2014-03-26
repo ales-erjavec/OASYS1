@@ -2,12 +2,10 @@
    Copyright: 2008, Robert B. Von Dreele (Argonne National Laboratory)
 """
 
-#import wx
+
 import math
 import sys
 import os.path
-#import  wx.lib.colourselect as wscs
-#import wx.lib.buttons as wlb
 
 def GetFormFactorCoeff(El):
     """Read form factor coefficients from atomdata.asc file
@@ -22,12 +20,17 @@ def GetFormFactorCoeff(El):
     """
     ElS = El.upper()
     ElS = ElS.rjust(2)
-    filename = os.path.join(sys.path[0],'atmdata.dat')
+
+    # TODO: inserire una directory di installazione o simili
+    #filename = os.path.join(sys.path[0],'atmdata.dat')
+
+    filename = "atmdata.dat"
+
     try:
         FFdata = open(filename,'Ur')
     except:
         print("File atmdata.dat not found in directory %s" % sys.path[0])
-        sys.exit()
+        #sys.exit()
     S = '1'
     FormFactors = []
     while S:
@@ -46,14 +49,17 @@ def GetFormFactorCoeff(El):
         
 def GetAtomInfo(El):
     ElS = El.upper().rjust(2)
-    filename = os.path.join(sys.path[0],'atmdata.dat')
+
+    # TODO: inserire una directory di installazione o simili
+    #filename = os.path.join(sys.path[0],'atmdata.dat')
+
+    filename = "atmdata.dat"
+
     try:
         FFdata = open(filename,'Ur')
     except:
         print("File atmdata.dat not found in directory %s" % sys.path[0])
-        #wx.MessageBox(message="File atmdata.dat not found in directory %s" % sys.path[0],
-        #    caption="No atmdata.dat file",style=wx.OK | wx.ICON_EXCLAMATION | wx.STAY_ON_TOP)
-        sys.exit()
+        #sys.exit()
     S = '1'
     AtomInfo = {}
     Mass = []
@@ -92,14 +98,17 @@ def GetXsectionCoeff(El):
     C1 = 0.02721
     ElS = El.upper()
     ElS = ElS.ljust(2)
-    filename = os.path.join(sys.path[0],'Xsect.dat')
+
+    # TODO: inserire una directory di installazione o simili
+    #filename = os.path.join(sys.path[0],'Xsect.dat')
+
+    filename = "Xsect.dat"
+
     try:
         xsec = open(filename,'Ur')
     except:
         print("File Xsect.dat not found in directory %s" % sys.path[0])
-        #wx.MessageBox(message="File Xsect.dat not found in directory %s" % sys.path[0],
-        #    caption="No Xsect.dat file",style=wx.OK | wx.ICON_EXCLAMATION |wx.STAY_ON_TOP)
-        sys.exit()
+        #sys.exit()
     S = '1'
     Orbs = []
     while S:
@@ -168,14 +177,18 @@ def GetMagFormFacCoeff(El):
     """
     ElS = El.upper()
     ElS = ElS.rjust(2)
-    filename = os.path.join(sys.path[0],'atmdata.dat')
+
+    # TODO: inserire una directory di installazione o simili
+    #filename = os.path.join(sys.path[0],'atmdata.dat')
+
+    filename = "atmdata.dat"
+
     try:
         FFdata = open(filename,'Ur')
     except:
         print("File atmdata.dat not found in directory %s" % sys.path[0])
-        #wx.MessageBox(message="File atmdata.dat not found in directory %s" % sys.path[0],
-        #    caption="No atmdata.dat file",style=wx.OK | wx.ICON_EXCLAMATION |wx.STAY_ON_TOP)
-        sys.exit()
+        #sys.exit()
+
     S = '1'
     MagFormFactors = []
     while S:
