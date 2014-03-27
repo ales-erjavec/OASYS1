@@ -98,8 +98,9 @@ class ShadowBeam:
         history_shadow_oe = shadow_oe.duplicate()
 
         shadow_oe.oe.write("start.0" + str(self.oe_number))
-        self.beam.write("star"+str(self.oe_number)+".dat")
+
         self.beam.traceOE(shadow_oe.oe, self.oe_number)
+
         shadow_oe.oe.write("end.0" + str(self.oe_number))
 
         if len(self.history) < self.oe_number:
