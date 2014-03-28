@@ -75,6 +75,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     incremental = Setting(0)
     number_of_executions = Setting(1)
     current_execution = 0
+    keep_result = Setting(0)
 
     add_background = Setting(0)
     n_sigma=Setting(0)
@@ -99,7 +100,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     expd_decayp_3 = Setting(0)
     expd_decayp_4 = Setting(0)
     expd_decayp_5 = Setting(0)
-
 
     want_main_area=1
     plot_canvas=None
@@ -231,7 +231,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         box_simulation = ShadowGui.widgetBox(self.controlArea, "Simulation", addSpace=True, orientation="vertical", height=145)
 
-        gui.checkBox(box_simulation, self, "incremental", "Incremental Simulation", callback=self.setIncremental)
+        gui.checkBox(box_simulation, self, "keep_result", "Keep Result (Diffraction + Background")
+        gui.checkBox(box_simulation, self, "incremental", "Incremental Diffraction Simulation", callback=self.setIncremental)
         self.le_number_of_executions = ShadowGui.lineEdit(box_simulation, self, "number_of_executions", "Number of Executions", valueType=int, orientation="horizontal")
 
         self.setIncremental()
@@ -378,18 +379,19 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         steps = range(0, math.floor((self.stop_angle_na-self.start_angle_na)/self.step))
 
-        self.twotheta_angles = []
-        self.counts = []
-
         self.start_angle = self.start_angle_na + self.shift_2theta
         self.stop_angle = self.stop_angle_na + self.shift_2theta
 
-        for step_index in steps:
-            self.twotheta_angles.append(self.start_angle + step_index*self.step)
-            self.counts.append(0)
+        if self.keep_result == 0 or len(self.twotheta_angles) == 0:
+            self.twotheta_angles = []
+            self.counts = []
 
-        self.twotheta_angles = numpy.array(self.twotheta_angles)
-        self.counts = numpy.array(self.counts)
+            for step_index in steps:
+                self.twotheta_angles.append(self.start_angle + step_index*self.step)
+                self.counts.append(0)
+
+            self.twotheta_angles = numpy.array(self.twotheta_angles)
+            self.counts = numpy.array(self.counts)
 
         ################################
         # EXECUTION CYCLES
