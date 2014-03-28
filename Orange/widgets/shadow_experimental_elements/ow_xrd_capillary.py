@@ -8,7 +8,7 @@ from PyQt4.QtGui import QApplication, qApp
 import Shadow.ShadowTools as ST
 
 from Orange.widgets.shadow_gui import ow_automatic_element
-from Orange.shadow.shadow_util import ShadowGui, ShadowMath
+from Orange.shadow.shadow_util import ShadowGui, ShadowMath, ShadowPhysics
 from Orange.shadow.argonne11bm_absorption import Absorb as Absorption
 
 from PyMca.widgets.PlotWindow import PlotWindow
@@ -31,7 +31,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 #                "doc":"Shadow Beam",
 #                "id":"beam"}]
 
-    TABS_AREA_HEIGHT = 480
+    TABS_AREA_HEIGHT = 550
     TABS_AREA_WIDTH = 442
     CONTROL_AREA_WIDTH = 450
 
@@ -74,6 +74,32 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     incremental = Setting(0)
     number_of_executions = Setting(1)
+    current_execution = 0
+
+    add_background = Setting(0)
+    n_sigma=Setting(0)
+    add_chebyshev = Setting(0)
+    cheb_coeff_0 = Setting(0)
+    cheb_coeff_1 = Setting(0)
+    cheb_coeff_2 = Setting(0)
+    cheb_coeff_3 = Setting(0)
+    cheb_coeff_4 = Setting(0)
+    cheb_coeff_5 = Setting(0)
+
+    add_expdecay = Setting(0)
+    expd_coeff_0 = Setting(0)
+    expd_coeff_1 = Setting(0)
+    expd_coeff_2 = Setting(0)
+    expd_coeff_3 = Setting(0)
+    expd_coeff_4 = Setting(0)
+    expd_coeff_5 = Setting(0)
+    expd_decayp_0 = Setting(0)
+    expd_decayp_1 = Setting(0)
+    expd_decayp_2 = Setting(0)
+    expd_decayp_3 = Setting(0)
+    expd_decayp_4 = Setting(0)
+    expd_decayp_5 = Setting(0)
+
 
     want_main_area=1
     plot_canvas=None
@@ -93,7 +119,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         self.tab_diffraction = ShadowGui.createTabPage(tabs, "Diffraction")
         self.tab_goniometer = ShadowGui.createTabPage(tabs, "Goniometer")
         self.tab_aberrations = ShadowGui.createTabPage(tabs, "Aberrations")
-        self.tab_backbround = ShadowGui.createTabPage(tabs, "Background")
+        self.tab_background = ShadowGui.createTabPage(tabs, "Background")
 
         box_2theta_arm = ShadowGui.widgetBox(self.tab_goniometer, "2Theta Arm Parameters", addSpace=True, orientation="vertical")
 
@@ -158,12 +184,61 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         #####################
 
-        box_simulation = ShadowGui.widgetBox(self.controlArea, "Simulation", addSpace=True, orientation="vertical")
+        box_background = ShadowGui.widgetBox(self.tab_background, "Background Parameters", addSpace=True, orientation="vertical", height=510, width=420)
+
+        gui.comboBox(box_background, self, "add_background", label="Add Background", items=["No", "Yes"], callback=self.setAddBackground, sendSelectedValue=False, orientation="horizontal")
+
+        gui.separator(box_background)
+
+        self.box_background_1 = ShadowGui.widgetBox(box_background, "", addSpace=True, orientation="vertical")
+
+        gui.comboBox(self.box_background_1, self, "n_sigma", label="Noise (Nr. Sigma)", items=["0.5", "1", "1.5", "2", "2.5", "3"], sendSelectedValue=False, orientation="horizontal")
+
+        self.box_background_2 = ShadowGui.widgetBox(box_background, "", addSpace=True, orientation="horizontal")
+
+        self.box_chebyshev = ShadowGui.widgetBox(self.box_background_2, "Chebyshev", addSpace=True, orientation="vertical")
+        gui.checkBox(self.box_chebyshev, self, "add_chebyshev", "add Background", callback=self.setChebyshev)
+        gui.separator(self.box_chebyshev)
+        self.box_chebyshev_2 = ShadowGui.widgetBox(self.box_chebyshev, "", addSpace=True, orientation="vertical")
+        ShadowGui.lineEdit(self.box_chebyshev_2, self, "cheb_coeff_0", "A0", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_chebyshev_2, self, "cheb_coeff_1", "A1", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_chebyshev_2, self, "cheb_coeff_2", "A2", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_chebyshev_2, self, "cheb_coeff_3", "A3", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_chebyshev_2, self, "cheb_coeff_4", "A4", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_chebyshev_2, self, "cheb_coeff_5", "A5", valueType=float, orientation="horizontal")
+         
+        self.box_expdecay = ShadowGui.widgetBox(self.box_background_2, "Exp Decay", addSpace=True, orientation="vertical")
+        gui.checkBox(self.box_expdecay, self, "add_expdecay", "add Background", callback=self.setExpDecay)
+        gui.separator(self.box_expdecay)
+        self.box_expdecay_2 = ShadowGui.widgetBox(self.box_expdecay, "", addSpace=True, orientation="vertical")
+        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_coeff_0", "A0", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_coeff_1", "A1", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_coeff_2", "A2", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_coeff_3", "A3", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_coeff_4", "A4", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_coeff_5", "A5", valueType=float, orientation="horizontal")
+        gui.separator(self.box_expdecay_2)
+        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_decayp_0", "H0", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_decayp_1", "H1", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_decayp_2", "H2", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_decayp_3", "H3", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_decayp_4", "H4", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_decayp_5", "H5", valueType=float, orientation="horizontal")
+
+        self.setAddBackground()
+
+        #####################
+
+        box_simulation = ShadowGui.widgetBox(self.controlArea, "Simulation", addSpace=True, orientation="vertical", height=145)
 
         gui.checkBox(box_simulation, self, "incremental", "Incremental Simulation", callback=self.setIncremental)
         self.le_number_of_executions = ShadowGui.lineEdit(box_simulation, self, "number_of_executions", "Number of Executions", valueType=int, orientation="horizontal")
 
         self.setIncremental()
+
+        gui.separator(box_simulation, height=10)
+        self.le_current_execution = ShadowGui.lineEdit(box_simulation, self, "current_execution", "Current Execution", valueType=int, orientation="horizontal")
+        self.le_current_execution.setReadOnly(True)
 
         button = gui.button(self.controlArea, self, "Simulate", callback=self.simulate)
         button.setFixedHeight(45)
@@ -186,21 +261,32 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     # GUI MANAGEMENT METHODS
     ############################################################
 
+    def setTabsEnabled(self, enabled=True):
+        self.tab_diffraction.setEnabled(enabled)
+        self.tab_goniometer.setEnabled(enabled)
+        self.tab_aberrations.setEnabled(enabled)
+        self.tab_background.setEnabled(enabled)
+
     def setIncremental(self):
-        not_incremental = self.incremental==0
-
-        self.tab_diffraction.setEnabled(not_incremental)
-
-        self.tab_goniometer.setEnabled(not_incremental)
-        self.tab_aberrations.setEnabled(not_incremental)
-
-        self.le_number_of_executions.setEnabled(not not_incremental)
+        self.le_number_of_executions.setEnabled(self.incremental==1)
 
     def setAbsorption(self):
         self.le_normalization_factor.setEnabled(self.calculate_absorption==1)
 
     def setNumberOfPeaks(self):
         self.le_number_of_peaks.setEnabled(self.set_number_of_peaks==1)
+
+    def setAddBackground(self):
+        self.box_background_1.setVisible(self.add_background==1)
+        self.box_background_2.setVisible(self.add_background==1)
+        self.setChebyshev()
+        self.setExpDecay()
+    
+    def setChebyshev(self):
+        self.box_chebyshev_2.setEnabled(self.add_chebyshev==1)
+        
+    def setExpDecay(self):
+        self.box_expdecay_2.setEnabled(self.add_expdecay==1)
 
     def replaceObject(self, object):
         if self.plot_canvas is not None:
@@ -217,13 +303,13 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             ST.plt.close("all")
             gc.collect()
 
-    def plotResult(self, tth, counts):
+    def plotResult(self):
 
-        if not len(tth)==0:
+        if not len(self.twotheta_angles)==0:
             plot = PlotWindow(roi=True, control=True, position=True)
             plot.setDefaultPlotLines(True)
             plot.setActiveCurveColor(color='darkblue')
-            plot.addCurve(tth, counts, "XRD Diffraction pattern", symbol=',', color='blue') #'+', '^',
+            plot.addCurve(self.twotheta_angles, self.counts, "XRD Diffraction pattern", symbol=',', color='blue') #'+', '^',
             plot.setGraphXLabel("2Theta (deg)")
             plot.setGraphYLabel("Intensity (arbitrary units)")
             plot.setDrawModeEnabled(True, 'rectangle')
@@ -237,9 +323,12 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     def simulate(self):
 
+        self.setTabsEnabled(False)
+
         executions = range(0,1)
 
-        if (self.incremental==1):  executions = range(0, self.number_of_executions)
+        if (self.incremental==1):
+            executions = range(0, self.number_of_executions)
 
         self.log_file = open("log.txt", "w")
 
@@ -306,6 +395,9 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         # EXECUTION CYCLES
 
         for execution in executions:
+
+            self.le_current_execution.setText(str(execution+1))
+
             self.progressBarInit()
 
             self.information(0, "Running XRD Capillary Simulation")
@@ -528,20 +620,29 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                     bar_value += percentage_fraction
                     self.progressBarSet(bar_value)
 
-                self.plotResult(self.twotheta_angles, self.counts)
+                self.plotResult()
+
+
+        if self.add_background ==  1:
+            self.information(0, "Adding Background")
+            qApp.processEvents()
+
+            self.calculateBackground(0)
+            self.plotResult()
 
         out_file = open("XRD_Profile.xy","w")
 
         cursor = range(0, len(self.twotheta_angles))
 
-        for angleIndex in cursor:
-            out_file.write(str(self.twotheta_angles[angleIndex]) + " " + str(self.counts[angleIndex]) + "\n")
+        for angle_index in cursor:
+            out_file.write(str(self.twotheta_angles[angle_index]) + " " + str(self.counts[angle_index]) + "\n")
             out_file.flush()
 
         self.log_file.close()
         out_file.close()
 
         self.progressBarSet(100)
+        self.setTabsEnabled(True)
 
         self.information()
         qApp.processEvents()
@@ -789,6 +890,43 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                 is_collected_ray= True
 
         return is_collected_ray
+
+    ############################################################
+        
+    def calculateBackground(self, bar_value):
+
+        percentage_fraction = 50/len(self.twotheta_angles)
+
+        cursor = range(0, len(self.twotheta_angles))
+        random_generator = random.Random()
+
+        self.n_sigma = 0.5*(1 + self.n_sigma)
+
+        for angle_index in cursor:
+            
+            background = 0
+            if (self.add_chebyshev==1):
+                coefficients = [self.cheb_coeff_0, self.cheb_coeff_1, self.cheb_coeff_2, self.cheb_coeff_3, self.cheb_coeff_4, self.cheb_coeff_5]
+                
+                background += ShadowPhysics.ChebyshevBackgroundNoised(coefficients=coefficients, 
+                                                                      twotheta=self.twotheta_angles[angle_index],
+                                                                      n_sigma=self.n_sigma,
+                                                                      random_generator=random_generator)
+                
+            if (self.add_expdecay==1):
+                coefficients = [self.expd_coeff_0, self.expd_coeff_1, self.expd_coeff_2, self.expd_coeff_3, self.expd_coeff_4, self.expd_coeff_5]
+                decayparams = [self.expd_decayp_0, self.expd_decayp_1, self.expd_decayp_2, self.expd_decayp_3, self.expd_decayp_4, self.expd_decayp_5]
+                
+                background += ShadowPhysics.ExpDecayBackgroundNoised(coefficients=coefficients,
+                                                                     decayparams=decayparams,
+                                                                     twotheta=self.twotheta_angles[angle_index],
+                                                                     n_sigma=self.n_sigma,
+                                                                     random_generator=random_generator)
+            self.counts[angle_index] += background
+
+        bar_value += percentage_fraction
+        self.progressBarSet(bar_value)
+
 
     ############################################################
 

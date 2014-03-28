@@ -3,8 +3,7 @@ __author__ = 'labx'
 from PyQt4.QtCore import Qt
 from Orange.widgets import gui
 
-import numpy, math
-import Shadow.ShadowLibExtensions as sd
+import numpy, math, random
 import sys
 try:
     import matplotlib
@@ -20,7 +19,7 @@ import Shadow.ShadowTools as ST
 import Shadow.ShadowToolsPrivate as stp
 from Shadow.ShadowToolsPrivate import Histo1_Ticket as Histo1_Ticket
 from Shadow.ShadowToolsPrivate import plotxy_Ticket as plotxy_Ticket
-import os
+
 
 class ShadowGui():
 
@@ -220,3 +219,81 @@ class ShadowMath:
     @classmethod
     def point_distance(cls, point1, point2):
         return cls.vector_modulus(cls.vector_difference(point1, point2))
+
+
+class ShadowPhysics:
+
+    @classmethod
+    def Chebyshev(cls, n, x):
+        if n==0: return 1
+        elif n==1: return x
+        else: return 2*x*cls.Chebyshev(n-1, x)-cls.Chebyshev(n-2, x)
+
+    @classmethod
+    def ChebyshevBackground(cls, coefficients=[0,0,0,0,0,0], twotheta=0):
+        coefficients_set = range(0, len(coefficients))
+        background = 0
+
+        for index in coefficients_set:
+            background += coefficients[index]*cls.Chebyshev(index, twotheta)
+
+        return background
+
+    @classmethod
+    def ChebyshevBackgroundNoised(cls, coefficients=[0,0,0,0,0,0], twotheta=0.0, n_sigma=1.0, random_generator=random.Random()):
+        background = cls.ChebyshevBackground(coefficients, twotheta)
+        sigma = math.sqrt(background) # poisson statistic
+
+        noise = (n_sigma*sigma)*random_generator.random()
+        sign_marker = random_generator.random()
+
+        if sign_marker > 0.5:
+            return int(round(background+noise, 0))
+        else:
+            return int(round(background-noise, 0))
+
+    @classmethod
+    def ExpDecay(cls, h, x):
+      return math.exp(-h*x)
+
+    @classmethod
+    def ExpDecayBackground(cls, coefficients=[0,0,0,0,0,0], decayparams=[0,0,0,0,0,0], twotheta=0):
+        coefficients_set = range(0, len(coefficients))
+        background = 0
+
+        for index in coefficients_set:
+            background += coefficients[index]*cls.ExpDecay(decayparams[index], twotheta)
+
+        return background
+
+    @classmethod
+    def ExpDecayBackgroundNoised(cls, coefficients=[0,0,0,0,0,0], decayparams=[0,0,0,0,0,0], twotheta=0, n_sigma=1, random_generator=random.Random()):
+        background = cls.ExpDecayBackground(coefficients, decayparams, twotheta)
+        sigma = math.sqrt(background) # poisson statistic
+
+        noise = (n_sigma*sigma)*random_generator.random()
+        sign_marker = random_generator.random()
+
+        if sign_marker > 0.5:
+            return int(round(background+noise, 0))
+        else:
+            return int(round(background-noise, 0))
+
+if __name__ == "__main__":
+    print(ShadowPhysics.Chebyshev(4, 21))
+    print(ShadowPhysics.Chebyshev(0, 35))
+
+    coefficients = [5.530814e+002, 2.487256e+000, -2.004860e-001, 2.246427e-003, -1.044517e-005, 1.721576e-008]
+    random_generator=random.Random()
+
+    print(ShadowPhysics.ChebyshevBackgroundNoised(coefficients, 10, random_generator=random_generator))
+    print(ShadowPhysics.ChebyshevBackgroundNoised(coefficients, 11, random_generator=random_generator))
+    print(ShadowPhysics.ChebyshevBackgroundNoised(coefficients, 12, random_generator=random_generator))
+    print(ShadowPhysics.ChebyshevBackgroundNoised(coefficients, 13, random_generator=random_generator))
+    print(ShadowPhysics.ChebyshevBackgroundNoised(coefficients, 14, random_generator=random_generator))
+    print(ShadowPhysics.ChebyshevBackgroundNoised(coefficients, 15, random_generator=random_generator))
+    print(ShadowPhysics.ChebyshevBackgroundNoised(coefficients, 16, random_generator=random_generator))
+    print(ShadowPhysics.ChebyshevBackgroundNoised(coefficients, 17, random_generator=random_generator))
+    print(ShadowPhysics.ChebyshevBackgroundNoised(coefficients, 18, random_generator=random_generator))
+    print(ShadowPhysics.ChebyshevBackgroundNoised(coefficients, 19, random_generator=random_generator))
+    print(ShadowPhysics.ChebyshevBackgroundNoised(coefficients, 20, random_generator=random_generator))
