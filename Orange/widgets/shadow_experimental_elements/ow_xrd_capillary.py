@@ -3,7 +3,8 @@ import Orange
 import Orange.shadow
 from Orange.widgets import gui
 from Orange.widgets.settings import Setting
-from PyQt4.QtGui import QApplication, qApp
+from PyQt4.QtGui import QApplication, qApp, QPalette, QColor
+
 
 import Shadow.ShadowTools as ST
 
@@ -26,10 +27,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     inputs = [("Input Beam", Orange.shadow.ShadowBeam, "setBeam")]
 
-#    outputs = [{"name":"Beam",
-#                "type":Orange.shadow.ShadowBeam,
-#                "doc":"Shadow Beam",
-#                "id":"beam"}]
+    input_beam = None
 
     TABS_AREA_HEIGHT = 550
     TABS_AREA_WIDTH = 442
@@ -100,6 +98,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     expd_decayp_3 = Setting(0)
     expd_decayp_4 = Setting(0)
     expd_decayp_5 = Setting(0)
+
+    run_simulation=True
 
     want_main_area=1
     plot_canvas=None
@@ -186,10 +186,12 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         box_background = ShadowGui.widgetBox(self.tab_background, "Background Parameters", addSpace=True, orientation="vertical", height=510, width=420)
 
-        gui.comboBox(box_background, self, "add_background", label="Add Background", items=["No", "Yes"], callback=self.setAddBackground, sendSelectedValue=False, orientation="horizontal")
+        gui.comboBox(box_background, self, "add_background", label="Add Background", items=["No", "Yes"],
+                     callback=self.setAddBackground, sendSelectedValue=False, orientation="horizontal")
 
         gui.separator(box_background)
 
+        self.box_background_1_hidden = ShadowGui.widgetBox(box_background, "", addSpace=True, orientation="vertical", width=410)
         self.box_background_1 = ShadowGui.widgetBox(box_background, "", addSpace=True, orientation="vertical")
 
         gui.comboBox(self.box_background_1, self, "n_sigma", label="Noise (Nr. Sigma)", items=["0.5", "1", "1.5", "2", "2.5", "3"], sendSelectedValue=False, orientation="horizontal")
@@ -241,8 +243,16 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         self.le_current_execution = ShadowGui.lineEdit(box_simulation, self, "current_execution", "Current Execution", valueType=int, orientation="horizontal")
         self.le_current_execution.setReadOnly(True)
 
-        button = gui.button(self.controlArea, self, "Simulate", callback=self.simulate)
+        button_box = ShadowGui.widgetBox(self.controlArea, "", addSpace=True, orientation="horizontal", height=45)
+
+        button = gui.button(button_box, self, "Simulate", callback=self.simulate)
         button.setFixedHeight(45)
+
+        stop_button = gui.button(button_box, self, "Interrupt", callback=self.stopSimulation)
+        stop_button.setFixedHeight(45)
+        palette = QPalette(stop_button.palette()) # make a copy of the palette
+        palette.setColor(QPalette.ButtonText, QColor('red'))
+        stop_button.setPalette(palette) # assign new palette
 
         gui.rubber(self.controlArea)
 
@@ -278,6 +288,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         self.le_number_of_peaks.setEnabled(self.set_number_of_peaks==1)
 
     def setAddBackground(self):
+        self.box_background_1_hidden.setVisible(self.add_background==0)
         self.box_background_1.setVisible(self.add_background==1)
         self.box_background_2.setVisible(self.add_background==1)
         self.setChebyshev()
@@ -322,8 +333,14 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     # MAIN METHOD - SIMULATION ALGORITHM
     ############################################################
 
-    def simulate(self):
+    def stopSimulation(self):
+        self.run_simulation = False
 
+    def simulate(self):
+        #TODO: ERROR MANAGEMENT WITH MESSAGES
+        if self.input_beam is None: return
+
+        self.run_simulation = True
         self.setTabsEnabled(False)
 
         executions = range(0,1)
@@ -397,6 +414,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         # EXECUTION CYCLES
 
         for execution in executions:
+            if not self.run_simulation: break
 
             self.le_current_execution.setText(str(execution+1))
 
@@ -422,6 +440,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             self.log_file.flush()
 
             for ray_index in input_rays:
+                if not self.run_simulation: break
                 # costruzione intersezione con capillare + displacement del capillare
 
                 x_0 = go_input_beam.beam.rays[ray_index, 0]
@@ -476,6 +495,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                         asse_rot = ShadowMath.vector_normalize(ShadowMath.vectorial_product(v_in, z_axis))
 
                         for reflection in reflections:
+                            if not self.run_simulation: break
+
                             reflection_index = reflection_index +1
 
                             # calcolo rotazione del vettore d'onda pari all'angolo di bragg
@@ -581,6 +602,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                 max_position = len(self.twotheta_angles) - 1
 
                 for ray_index in diffracted_rays_set:
+                    if not self.run_simulation: break
+
                     diffracted_ray = diffracted_rays[ray_index]
 
                     x_0_i = diffracted_ray[0]
@@ -612,6 +635,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                         steps_between_limits = range(0, n_steps_sup - n_steps_inf)
 
                         for n_step in steps_between_limits:
+                            if not self.run_simulation: break
+
                             twotheta_angle = self.start_angle + (n_steps_inf + n_step)*self.step
 
                             if (self.isCollectedRay(math.radians(twotheta_angle), x_0_i, y_0_i, z_0_i, v_x_i, v_y_i, v_z_i)):
@@ -637,6 +662,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         cursor = range(0, len(self.twotheta_angles))
 
         for angle_index in cursor:
+            if not self.run_simulation: break
             out_file.write(str(self.twotheta_angles[angle_index]) + " " + str(self.counts[angle_index]) + "\n")
             out_file.flush()
 
@@ -905,7 +931,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         self.n_sigma = 0.5*(1 + self.n_sigma)
 
         for angle_index in cursor:
-            
+            if not self.run_simulation: break
+
             background = 0
             if (self.add_chebyshev==1):
                 coefficients = [self.cheb_coeff_0, self.cheb_coeff_1, self.cheb_coeff_2, self.cheb_coeff_3, self.cheb_coeff_4, self.cheb_coeff_5]

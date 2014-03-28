@@ -1051,7 +1051,6 @@ class OpticalElement(ow_generic_element.GenericElement):
             self.calculate_reflection_angle_deg()
 
     def completeOperations(self, shadow_oe=None):
-
         self.information(0, "Running SHADOW")
         qApp.processEvents()
 
@@ -1083,7 +1082,7 @@ class OpticalElement(ow_generic_element.GenericElement):
 
     def traceOpticalElement(self):
 
-        if not self.input_beam == None:
+        if not self.input_beam is None:
             self.error()
 
             self.progressBarInit()
