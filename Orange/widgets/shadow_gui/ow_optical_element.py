@@ -60,7 +60,6 @@ class OpticalElement(ow_generic_element.GenericElement):
     TWO_ROW_HEIGHT = 110
     THREE_ROW_HEIGHT = 170
 
-
     TABS_AREA_HEIGHT = 480
     CONTROL_AREA_HEIGHT = 450
     CONTROL_AREA_WIDTH = 450
@@ -844,10 +843,10 @@ class OpticalElement(ow_generic_element.GenericElement):
     ############################################################
 
     def calculate_incidence_angle_mrad(self):
-        self.incidence_angle_mrad = round((0.5*math.pi-math.radians(self.incidence_angle_deg))*1000, 2)
+        self.incidence_angle_mrad = round(math.radians(90-self.incidence_angle_deg)*1000, 2)
 
     def calculate_reflection_angle_mrad(self):
-        self.reflection_angle_mrad = round((0.5*math.pi - math.radians(self.reflection_angle_deg))*1000, 2)
+        self.reflection_angle_mrad = round(math.radians(90-self.reflection_angle_deg)*1000, 2)
 
     def calculate_incidence_angle_deg(self):
         self.incidence_angle_deg = round(math.degrees(0.5*math.pi-(self.incidence_angle_mrad/1000)), 3)
@@ -883,14 +882,31 @@ class OpticalElement(ow_generic_element.GenericElement):
                shadow_oe.oe.unsetCylinder()
 
             if self.surface_shape_parameters == 0:
-               if self.focii_and_continuation_plane == 0:
-                  shadow_oe.oe.setAutoFocus(f_default=1)
+
+               #IMPLEMENTATION OF THE AUTOMATIC CALCULATION OF THE SAGITTAL FOCUSING FOR CYLINDERS
+               if (self.is_cylinder and self.cylinder_orientation==90):
+                   if self.graphical_options.is_spheric:
+                       shadow_oe.oe.F_EXT=1
+
+                       # RADIUS = (2 F1 F2 sin (theta)) /( F1+F2)
+
+                       if self.focii_and_continuation_plane == 0:
+                          self.spherical_radius = ((2*self.source_plane_distance*self.image_plane_distance)/(self.source_plane_distance+self.image_plane_distance))*math.sin(self.reflection_angle_mrad)
+                       else:
+                          self.spherical_radius = ((2*self.object_side_focal_distance*self.image_side_focal_distance)/(self.object_side_focal_distance+self.image_side_focal_distance))*math.sin(round(math.radians(90-self.incidence_angle_respect_to_normal), 2))
+
+                       shadow_oe.oe.RMIRR = self.spherical_radius
+                   else:
+                       print("ERROR") #TODO: ERROR MANAGEMENT - OPERATION NOT SUPPORTED
                else:
-                  shadow_oe.oe.setAutoFocus(f_default=0, \
-                                            ssour=self.object_side_focal_distance, \
-                                            simag=self.image_side_focal_distance, \
-                                            theta=self.incidence_angle_respect_to_normal)
-               if self.graphical_options.is_paraboloid: shadow_oe.oe.F_SIDE=self.focus_location
+                   if self.focii_and_continuation_plane == 0:
+                      shadow_oe.oe.setAutoFocus(f_default=1)
+                   else:
+                      shadow_oe.oe.setAutoFocus(f_default=0, \
+                                                ssour=self.object_side_focal_distance, \
+                                                simag=self.image_side_focal_distance, \
+                                                theta=self.incidence_angle_respect_to_normal)
+                   if self.graphical_options.is_paraboloid: shadow_oe.oe.F_SIDE=self.focus_location
             else:
                shadow_oe.oe.F_EXT=1
                if self.graphical_options.is_spheric:
@@ -1045,8 +1061,8 @@ class OpticalElement(ow_generic_element.GenericElement):
                 self.torus_major_radius = shadow_oe.oe.RMAJ
                 self.torus_minor_radius = shadow_oe.oe.RMIN
         if self.crystal_auto_setting == 1:
-            self.incidence_angle_mrad = math.pi*0.5-shadow_oe.oe.T_INCIDENCE*1000
-            self.reflection_angle_mrad = math.pi*0.5-shadow_oe.oe.T_REFLECTION*1000
+            self.incidence_angle_mrad = round((math.pi*0.5-shadow_oe.oe.T_INCIDENCE)*1000, 2)
+            self.reflection_angle_mrad = round((math.pi*0.5-shadow_oe.oe.T_REFLECTION)*1000, 2)
             self.calculate_incidence_angle_deg()
             self.calculate_reflection_angle_deg()
 

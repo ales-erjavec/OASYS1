@@ -227,13 +227,11 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_decayp_4", "H4", valueType=float, orientation="horizontal")
         ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_decayp_5", "H5", valueType=float, orientation="horizontal")
 
-        self.setAddBackground()
-
         #####################
 
         box_simulation = ShadowGui.widgetBox(self.controlArea, "Simulation", addSpace=True, orientation="vertical", height=145)
 
-        gui.checkBox(box_simulation, self, "keep_result", "Keep Result (Diffraction + Background")
+        gui.checkBox(box_simulation, self, "keep_result", "Keep Result (Diffraction + Background)")
         gui.checkBox(box_simulation, self, "incremental", "Incremental Diffraction Simulation", callback=self.setIncremental)
         self.le_number_of_executions = ShadowGui.lineEdit(box_simulation, self, "number_of_executions", "Number of Executions", valueType=int, orientation="horizontal")
 
@@ -245,14 +243,22 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         button_box = ShadowGui.widgetBox(self.controlArea, "", addSpace=True, orientation="horizontal", height=45)
 
-        button = gui.button(button_box, self, "Simulate", callback=self.simulate)
+        button = gui.button(button_box, self, "Simulate Diffraction", callback=self.simulate)
         button.setFixedHeight(45)
+
+        self.backgroundButton = gui.button(button_box, self, "Simulate Background", callback=self.simulateBackground)
+        self.backgroundButton.setFixedHeight(45)
+        palette = QPalette(self.backgroundButton.palette()) # make a copy of the palette
+        palette.setColor(QPalette.ButtonText, QColor('blue'))
+        self.backgroundButton.setPalette(palette) # assign new palette
 
         stop_button = gui.button(button_box, self, "Interrupt", callback=self.stopSimulation)
         stop_button.setFixedHeight(45)
         palette = QPalette(stop_button.palette()) # make a copy of the palette
         palette.setColor(QPalette.ButtonText, QColor('red'))
         stop_button.setPalette(palette) # assign new palette
+
+        self.setAddBackground()
 
         gui.rubber(self.controlArea)
 
@@ -293,6 +299,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         self.box_background_2.setVisible(self.add_background==1)
         self.setChebyshev()
         self.setExpDecay()
+        self.backgroundButton.setEnabled(self.add_background==1)
     
     def setChebyshev(self):
         self.box_chebyshev_2.setEnabled(self.add_chebyshev==1)
@@ -649,13 +656,36 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
                 self.plotResult()
 
+        self.writeOutFile()
 
+        self.log_file.close()
+
+        self.progressBarSet(100)
+        self.setTabsEnabled(True)
+
+        self.information()
+        qApp.processEvents()
+
+        self.progressBarFinished()
+        qApp.processEvents()
+
+    def simulateBackground(self):
         if self.add_background ==  1:
             self.information(0, "Adding Background")
             qApp.processEvents()
 
             self.calculateBackground(0)
             self.plotResult()
+
+            self.writeOutFile()
+
+        self.information()
+        qApp.processEvents()
+
+        self.progressBarFinished()
+        qApp.processEvents()
+
+    def writeOutFile(self):
 
         out_file = open("XRD_Profile.xy","w")
 
@@ -668,15 +698,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         self.log_file.close()
         out_file.close()
-
-        self.progressBarSet(100)
-        self.setTabsEnabled(True)
-
-        self.information()
-        qApp.processEvents()
-
-        self.progressBarFinished()
-        qApp.processEvents()
 
 
     ############################################################
