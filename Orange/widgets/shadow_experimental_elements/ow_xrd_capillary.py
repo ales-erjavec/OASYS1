@@ -3,7 +3,7 @@ import Orange
 import Orange.shadow
 from Orange.widgets import gui
 from Orange.widgets.settings import Setting
-from PyQt4.QtGui import QApplication, qApp, QPalette, QColor
+from PyQt4.QtGui import QApplication, qApp, QPalette, QColor, QFont
 
 
 import Shadow.ShadowTools as ST
@@ -106,8 +106,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     twotheta_angles = []
     counts = []
-
-    log_file = None
+    noise = []
 
     def __init__(self):
         super().__init__()
@@ -229,34 +228,62 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         #####################
 
-        box_simulation = ShadowGui.widgetBox(self.controlArea, "Simulation", addSpace=True, orientation="vertical", height=145)
+        box_simulation = ShadowGui.widgetBox(self.controlArea, "Simulation", addSpace=True, orientation="vertical", height=125)
 
-        gui.checkBox(box_simulation, self, "keep_result", "Keep Result (Diffraction + Background)")
-        gui.checkBox(box_simulation, self, "incremental", "Incremental Diffraction Simulation", callback=self.setIncremental)
-        self.le_number_of_executions = ShadowGui.lineEdit(box_simulation, self, "number_of_executions", "Number of Executions", valueType=int, orientation="horizontal")
+        box_simulation_1 = ShadowGui.widgetBox(box_simulation, "", addSpace=True, orientation="horizontal")
+
+        gui.checkBox(box_simulation_1, self, "incremental", "Incremental Simulation", callback=self.setIncremental)
+        gui.checkBox(box_simulation_1, self, "keep_result", "Keep Result")
+
+        box_simulation_2 = ShadowGui.widgetBox(box_simulation, "", addSpace=False, orientation="vertical")
+
+        self.le_number_of_executions = ShadowGui.lineEdit(box_simulation_2, self, "number_of_executions", "Number of Executions", valueType=int, orientation="horizontal")
 
         self.setIncremental()
 
-        gui.separator(box_simulation, height=10)
-        self.le_current_execution = ShadowGui.lineEdit(box_simulation, self, "current_execution", "Current Execution", valueType=int, orientation="horizontal")
+        gui.separator(box_simulation)
+        self.le_current_execution = ShadowGui.lineEdit(box_simulation_2, self, "current_execution", "Current Execution", valueType=int, orientation="horizontal")
         self.le_current_execution.setReadOnly(True)
 
-        button_box = ShadowGui.widgetBox(self.controlArea, "", addSpace=True, orientation="horizontal", height=45)
+        button_box = ShadowGui.widgetBox(self.controlArea, "", addSpace=True, orientation="horizontal", height=30)
 
         button = gui.button(button_box, self, "Simulate Diffraction", callback=self.simulate)
-        button.setFixedHeight(45)
+        button.setFixedHeight(30)
 
-        self.backgroundButton = gui.button(button_box, self, "Simulate Background", callback=self.simulateBackground)
-        self.backgroundButton.setFixedHeight(45)
-        palette = QPalette(self.backgroundButton.palette()) # make a copy of the palette
-        palette.setColor(QPalette.ButtonText, QColor('blue'))
-        self.backgroundButton.setPalette(palette) # assign new palette
+        self.background_button = gui.button(button_box, self, "Simulate Background", callback=self.simulateBackground)
+        self.background_button.setFixedHeight(30)
+        palette = QPalette(self.background_button.palette()) # make a copy of the palette
+        palette.setColor(QPalette.ButtonText, QColor('dark blue'))
+        self.background_button.setPalette(palette) # assign new palette
 
         stop_button = gui.button(button_box, self, "Interrupt", callback=self.stopSimulation)
-        stop_button.setFixedHeight(45)
+        stop_button.setFixedHeight(30)
+        font = QFont(stop_button.font())
+        font.setBold(True)
+        stop_button.setFont(font)
         palette = QPalette(stop_button.palette()) # make a copy of the palette
         palette.setColor(QPalette.ButtonText, QColor('red'))
         stop_button.setPalette(palette) # assign new palette
+
+        button_box_2 = ShadowGui.widgetBox(self.controlArea, "", addSpace=False, orientation="horizontal", height=30)
+
+        load_button = gui.button(button_box_2, self, "Load Data", callback=self.loadSimulation)
+        load_button.setFixedHeight(30)
+        font = QFont(load_button.font())
+        font.setItalic(True)
+        load_button.setFont(font)
+
+        self.reset_bkg_Button = gui.button(button_box_2, self, "Reset Background", callback=self.resetBackground)
+        self.reset_bkg_Button.setFixedHeight(30)
+        palette = QPalette(self.reset_bkg_Button.palette()) # make a copy of the palette
+        palette.setColor(QPalette.ButtonText, QColor('dark blue'))
+        self.reset_bkg_Button.setPalette(palette) # assign new palette
+
+        reset_button = gui.button(button_box_2, self, "Reset Data", callback=self.resetSimulation)
+        reset_button.setFixedHeight(30)
+        palette = QPalette(reset_button.palette()) # make a copy of the palette
+        palette.setColor(QPalette.ButtonText, QColor('dark red'))
+        reset_button.setPalette(palette) # assign new palette
 
         self.setAddBackground()
 
@@ -299,7 +326,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         self.box_background_2.setVisible(self.add_background==1)
         self.setChebyshev()
         self.setExpDecay()
-        self.backgroundButton.setEnabled(self.add_background==1)
+        self.background_button.setEnabled(self.add_background==1)
+        self.reset_bkg_Button.setEnabled(self.add_background==1)
     
     def setChebyshev(self):
         self.box_chebyshev_2.setEnabled(self.add_chebyshev==1)
@@ -328,7 +356,10 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             plot = PlotWindow(roi=True, control=True, position=True)
             plot.setDefaultPlotLines(True)
             plot.setActiveCurveColor(color='darkblue')
-            plot.addCurve(self.twotheta_angles, self.counts, "XRD Diffraction pattern", symbol=',', color='blue') #'+', '^',
+
+            data = numpy.add(self.counts, self.noise)
+
+            plot.addCurve(self.twotheta_angles, data, "XRD Diffraction pattern", symbol=',', color='blue') #'+', '^',
             plot.setGraphXLabel("2Theta (deg)")
             plot.setGraphYLabel("Intensity (arbitrary units)")
             plot.setDrawModeEnabled(True, 'rectangle')
@@ -343,6 +374,35 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     def stopSimulation(self):
         self.run_simulation = False
 
+    def loadSimulation(self):
+
+        #TODO: LETTURA DEL FILE - VERIFICARE SE NECESSARIA
+
+        a=1
+
+    def resetBackground(self):
+        cursor = range(0, len(self.noise))
+
+        for angle_index in cursor:
+            self.noise[angle_index] = 0
+
+        self.plotResult()
+        self.writeOutFile()
+
+    def resetSimulation(self):
+        cursor = range(0, len(self.counts))
+
+        for angle_index in cursor:
+            self.counts[angle_index] = 0
+
+        cursor = range(0, len(self.noise))
+
+        for angle_index in cursor:
+            self.noise[angle_index] = 0
+
+        self.plotResult()
+        self.writeOutFile()
+
     def simulate(self):
         #TODO: ERROR MANAGEMENT WITH MESSAGES
         if self.input_beam is None: return
@@ -354,8 +414,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         if (self.incremental==1):
             executions = range(0, self.number_of_executions)
-
-        self.log_file = open("log.txt", "w")
 
         ################################
         # VALUE CALCULATED ONCE
@@ -372,9 +430,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         number_of_input_rays = len(go_input_beam.beam.rays)
         input_rays = range(0, number_of_input_rays)
-
-        self.log_file.write("numero raggi input: " + str(number_of_input_rays) +  "\n")
-        self.log_file.flush()
 
         # distances in CM
 
@@ -409,13 +464,16 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         if self.keep_result == 0 or len(self.twotheta_angles) == 0:
             self.twotheta_angles = []
             self.counts = []
+            self.noise = []
 
             for step_index in steps:
                 self.twotheta_angles.append(self.start_angle + step_index*self.step)
                 self.counts.append(0)
+                self.noise.append(0)
 
             self.twotheta_angles = numpy.array(self.twotheta_angles)
             self.counts = numpy.array(self.counts)
+            self.noise = numpy.array(self.noise)
 
         ################################
         # EXECUTION CYCLES
@@ -432,9 +490,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
             self.progressBarSet(0)
 
-            self.log_file.write(str(execution) + ": inizio calcolo\n")
-            self.log_file.flush()
-
             self.information(0, "Calculating intersections with capillary")
             qApp.processEvents()
 
@@ -442,9 +497,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
             percentage_fraction = 50/number_of_input_rays
             bar_value = 0
-
-            self.log_file.write(str(execution) + ": reflections " + str(len(reflections)) + "\n")
-            self.log_file.flush()
 
             for ray_index in input_rays:
                 if not self.run_simulation: break
@@ -592,9 +644,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                 bar_value += percentage_fraction
                 self.progressBarSet(bar_value)
 
-            self.log_file.write(str(execution) + ": numero raggi diffratti: " + str(len(diffracted_rays)) +  "\n")
-            self.log_file.flush()
-
             ################################
 
             number_of_diffracted_rays=len(diffracted_rays)
@@ -658,8 +707,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         self.writeOutFile()
 
-        self.log_file.close()
-
         self.progressBarSet(100)
         self.setTabsEnabled(True)
 
@@ -693,10 +740,9 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         for angle_index in cursor:
             if not self.run_simulation: break
-            out_file.write(str(self.twotheta_angles[angle_index]) + " " + str(self.counts[angle_index]) + "\n")
+            out_file.write(str(self.twotheta_angles[angle_index]) + " " + str(self.counts[angle_index] + self.noise[angle_index]) + "\n")
             out_file.flush()
 
-        self.log_file.close()
         out_file.close()
 
 
@@ -881,9 +927,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                 absorption = math.exp(-2*mass_attenuation_coefficient)*self.normalization_factor
             else:
                 absorption = 0 # kill the ray
-                self.log_file.write("WARNING: ray gives no solutions for absorption - typing entry point and origin point\n")
-                self.log_file.write(str(entry_point[0]) + " " + str(entry_point[1]) + " " + str(entry_point[2]) + "\n")
-                self.log_file.write(str(x_0) + " " + str(y_0) + " " + str(z_0) + "\n")
 
         return absorption
 
@@ -972,7 +1015,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                                                      twotheta=self.twotheta_angles[angle_index],
                                                                      n_sigma=self.n_sigma,
                                                                      random_generator=random_generator)
-            self.counts[angle_index] += background
+            self.noise[angle_index] += background
 
         bar_value += percentage_fraction
         self.progressBarSet(bar_value)
