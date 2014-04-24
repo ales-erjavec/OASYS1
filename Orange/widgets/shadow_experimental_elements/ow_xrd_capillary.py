@@ -1,4 +1,4 @@
-import sys, math, copy, numpy, random, gc
+import os, sys, math, copy, numpy, random, gc
 import Orange
 import Orange.shadow
 from Orange.widgets import gui
@@ -734,7 +734,11 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     def writeOutFile(self):
 
-        out_file = open("XRD_Profile.xy","w")
+        directory_out = os.getcwd() + '/Output'
+
+        if not os.path.exists(directory_out): os.mkdir(directory_out)
+
+        out_file = open(directory_out + '/XRD_Profile.xy',"w")
 
         cursor = range(0, len(self.twotheta_angles))
 

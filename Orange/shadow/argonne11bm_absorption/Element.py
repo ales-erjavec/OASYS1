@@ -22,15 +22,13 @@ def GetFormFactorCoeff(El):
     ElS = ElS.rjust(2)
 
     # TODO: inserire una directory di installazione o simili
-    #filename = os.path.join(sys.path[0],'atmdata.dat')
-
-    filename = "atmdata.dat"
+    filename = os.path.abspath('Absorption/atmdata.dat')
 
     try:
         FFdata = open(filename,'Ur')
     except:
-        print("File atmdata.dat not found in directory %s" % sys.path[0])
-        #sys.exit()
+        print("File atmdata.dat not found in directory " + os.path.abspath('Absorption'))
+
     S = '1'
     FormFactors = []
     while S:
@@ -51,15 +49,13 @@ def GetAtomInfo(El):
     ElS = El.upper().rjust(2)
 
     # TODO: inserire una directory di installazione o simili
-    #filename = os.path.join(sys.path[0],'atmdata.dat')
-
-    filename = "atmdata.dat"
+    filename = os.path.abspath('Absorption/atmdata.dat')
 
     try:
         FFdata = open(filename,'Ur')
     except:
-        print("File atmdata.dat not found in directory %s" % sys.path[0])
-        #sys.exit()
+        print("File atmdata.dat not found in directory " + os.path.abspath('Absorption'))
+
     S = '1'
     AtomInfo = {}
     Mass = []
@@ -100,9 +96,7 @@ def GetXsectionCoeff(El):
     ElS = ElS.ljust(2)
 
     # TODO: inserire una directory di installazione o simili
-    #filename = os.path.join(sys.path[0],'Xsect.dat')
-
-    filename = "Xsect.dat"
+    filename = os.path.abspath('Absorption/Xsect.dat')
 
     try:
         xsec = open(filename,'Ur')
@@ -179,15 +173,13 @@ def GetMagFormFacCoeff(El):
     ElS = ElS.rjust(2)
 
     # TODO: inserire una directory di installazione o simili
-    #filename = os.path.join(sys.path[0],'atmdata.dat')
 
-    filename = "atmdata.dat"
+    filename = os.path.abspath('Absorption/atmdata.dat')
 
     try:
         FFdata = open(filename,'Ur')
     except:
-        print("File atmdata.dat not found in directory %s" % sys.path[0])
-        #sys.exit()
+        print("File atmdata.dat not found in directory " + os.path.abspath('Absorption'))
 
     S = '1'
     MagFormFactors = []
