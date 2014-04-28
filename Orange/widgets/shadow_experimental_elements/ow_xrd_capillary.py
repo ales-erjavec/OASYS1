@@ -100,6 +100,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     expd_decayp_5 = Setting(0)
 
     run_simulation=True
+    reset_button_pressed=False
 
     want_main_area=1
     plot_canvas=None
@@ -403,6 +404,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         self.plotResult()
         self.writeOutFile()
 
+        self.reset_button_pressed = True
+
     def simulate(self):
         #TODO: ERROR MANAGEMENT WITH MESSAGES
         if self.input_beam is None: return
@@ -461,7 +464,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         self.start_angle = self.start_angle_na + self.shift_2theta
         self.stop_angle = self.stop_angle_na + self.shift_2theta
 
-        if self.keep_result == 0 or len(self.twotheta_angles) == 0:
+        if self.keep_result == 0 or len(self.twotheta_angles) == 0 or self.reset_button_pressed:
             self.twotheta_angles = []
             self.counts = []
             self.noise = []
@@ -474,6 +477,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             self.twotheta_angles = numpy.array(self.twotheta_angles)
             self.counts = numpy.array(self.counts)
             self.noise = numpy.array(self.noise)
+
+        self.reset_button_pressed = False
 
         ################################
         # EXECUTION CYCLES
@@ -704,6 +709,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                     self.progressBarSet(bar_value)
 
                 self.plotResult()
+                self.writeOutFile()
 
         self.writeOutFile()
 

@@ -250,8 +250,7 @@ class OpticalElement(ow_generic_element.GenericElement):
         ShadowGui.lineEdit(upper_box, self, "image_plane_distance", "Image Plane Distance [cm]", valueType=float, orientation="horizontal")
 
         if self.graphical_options.is_screen_slit:
-
-            box_aperturing = ShadowGui.widgetBox(self.controlArea, "Screen/Slit Shape", addSpace=False, orientation="vertical", width=self.INNER_BOX_WIDTH_L0, height=240)
+            box_aperturing = ShadowGui.widgetBox(self.controlArea, "Screen/Slit Shape", addSpace=True, orientation="vertical", width=self.INNER_BOX_WIDTH_L0, height=240)
 
             gui.comboBox(box_aperturing, self, "aperturing", label="Aperturing", \
                          items=["No", "Yes"], \
@@ -350,7 +349,6 @@ class OpticalElement(ow_generic_element.GenericElement):
                     ShadowGui.lineEdit(self.surface_box_ext, self, "paraboloid_parameter", "Paraboloid parameter", valueType=float, orientation="horizontal")
 
                 #TODO ALTRE FORME ATTENZIONE!!!!!
-                #TODO CONTROLLARE DIMENSIONE DEI BOX!!!!!
 
                 self.surface_box_int = ShadowGui.widgetBox(surface_box, "", addSpace=True, orientation="vertical", height=150)
 

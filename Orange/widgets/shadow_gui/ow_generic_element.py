@@ -149,10 +149,6 @@ class GenericElement(ow_automatic_element.AutomaticElement):
             self.progressBarSet(progressBarValue)
 
     def plot_results(self, beam_out, progressBarValue=80):
-
-        #TODO BOX A SCOMPARSA CON BOTTONE SHOW CONTROLS CON LE OPZIONI
-
-
         if not self.view_type == 2:
 
             self.view_type_combo.setEnabled(False)
