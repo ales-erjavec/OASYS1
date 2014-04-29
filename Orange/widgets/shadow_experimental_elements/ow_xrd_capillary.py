@@ -1,4 +1,4 @@
-import os, sys, math, copy, numpy, random, gc
+import os, sys, math, copy, numpy, random, gc, shutil
 import Orange
 import Orange.shadow
 from Orange.widgets import gui
@@ -108,6 +108,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     twotheta_angles = []
     counts = []
     noise = []
+
+    random_generator = random.Random()
 
     def __init__(self):
         super().__init__()
@@ -410,6 +412,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         #TODO: ERROR MANAGEMENT WITH MESSAGES
         if self.input_beam is None: return
 
+        self.backupOutFile()
+
         self.run_simulation = True
         self.setTabsEnabled(False)
 
@@ -425,8 +429,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         go_input_beam = Orange.shadow.ShadowBeam()
         go_input_beam.beam.rays = copy.deepcopy(self.input_beam.beam.rays[go])
-
-        random_generator = random.Random()
 
         lattice_parameter = self.getLatticeParameter(self.sample_material)
         reflections = self.getReflections(self.sample_material, self.number_of_peaks)
@@ -538,7 +540,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
                         entry_point = [x_1, y_1, z_1]
 
-                        random_value = random_generator.random()
+                        random_value = self.random_generator.random()
 
                         # calcolo di un punto casuale sul segmento congiungente.
 
@@ -755,6 +757,18 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         out_file.close()
 
+    def backupOutFile(self):
+
+        directory_out = os.getcwd() + '/Output'
+
+        srcfile = directory_out + '/XRD_Profile.xy'
+        bkpfile = directory_out + '/XRD_Profile_BKP.xy'
+
+        if not os.path.exists(directory_out): return
+        if not os.path.exists(srcfile): return
+        if os.path.exists(bkpfile): os.remove(bkpfile)
+
+        shutil.copyfile(srcfile, bkpfile)
 
     ############################################################
     # ACCESSORY METHODS
@@ -1000,7 +1014,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         percentage_fraction = 50/len(self.twotheta_angles)
 
         cursor = range(0, len(self.twotheta_angles))
-        random_generator = random.Random()
 
         self.n_sigma = 0.5*(1 + self.n_sigma)
 
@@ -1014,7 +1027,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                 background += ShadowPhysics.ChebyshevBackgroundNoised(coefficients=coefficients, 
                                                                       twotheta=self.twotheta_angles[angle_index],
                                                                       n_sigma=self.n_sigma,
-                                                                      random_generator=random_generator)
+                                                                      random_generator=self.random_generator)
                 
             if (self.add_expdecay==1):
                 coefficients = [self.expd_coeff_0, self.expd_coeff_1, self.expd_coeff_2, self.expd_coeff_3, self.expd_coeff_4, self.expd_coeff_5]
@@ -1024,7 +1037,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                                                      decayparams=decayparams,
                                                                      twotheta=self.twotheta_angles[angle_index],
                                                                      n_sigma=self.n_sigma,
-                                                                     random_generator=random_generator)
+                                                                     random_generator=self.random_generator)
             self.noise[angle_index] += background
 
         bar_value += percentage_fraction
