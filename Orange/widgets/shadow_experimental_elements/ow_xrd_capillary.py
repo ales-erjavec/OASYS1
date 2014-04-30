@@ -111,6 +111,12 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     random_generator = random.Random()
 
+    out_file = None
+    out_file_2 = None
+    out_file_3 = None
+    out_file_4 = None
+    out_file_5 = None
+
     def __init__(self):
         super().__init__()
 
@@ -412,6 +418,9 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         #TODO: ERROR MANAGEMENT WITH MESSAGES
         if self.input_beam is None: return
 
+        self.out_file = open(os.getcwd() + '/Output/intersections.dat', 'w')
+        self.out_file_3 = open(os.getcwd() + '/Output/diffracted.dat', 'w')
+
         self.backupOutFile()
 
         self.run_simulation = True
@@ -553,6 +562,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                         k_mod = go_input_beam.beam.rays[ray_index,10]
 
                         v_in = [v_0_x, v_0_y, v_0_z]
+
                         z_axis = [0, 0, 1]
 
                         #
@@ -573,17 +583,18 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                 #
                                 # calcolo del vettore ruotato di 2theta bragg, con la formula di Rodrigues:
                                 #
-                                # k_diffracted = k * cos(2th) + (k x asse_rot) * sin(2th) + k(k . asse_rot)(1 - cos(2th))
+                                # k_diffracted = k * cos(2th) + (asse_rot x k) * sin(2th) + asse_rot*(asse_rot . k)(1 - cos(2th))
                                 #                                                                       |
                                 #                                                                       =0
                                 # vx vy vz
                                 # ax ay az
                                 #
 
+                                #v_out = ShadowMath.vector_sum(ShadowMath.vector_multiply(v_in, math.cos(twotheta_reflection)),
+                                #                              ShadowMath.vector_multiply(ShadowMath.vectorial_product(asse_rot, v_in), math.sin(twotheta_reflection)))
+
                                 v_out = ShadowMath.vector_sum(ShadowMath.vector_multiply(v_in, math.cos(twotheta_reflection)),
                                                               ShadowMath.vector_multiply(ShadowMath.vectorial_product(asse_rot, v_in), math.sin(twotheta_reflection)))
-
-                                k_out = ShadowMath.vector_multiply(v_out, k_mod)
 
                                 # intersezione raggi con sfera di raggio distanza con il detector. le intersezioni con Z < 0 vengono rigettate
 
@@ -646,7 +657,83 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
                                     diffracted_ray[18] = ray_intensity*reduction_factor
 
-                                    diffracted_rays.append(diffracted_ray)
+                                    #
+                                    # non appendo il centrale - forzatura
+                                    #
+                                    #diffracted_rays.append(diffracted_ray)
+
+                                    # genero altri 20 raggi nel'arco di cerchio +-delta (10 e 10)
+
+                                    delta = self.calculateDeltaAngle(twotheta_reflection)
+
+                                    delta_angles = [self.random_generator.random()*delta,
+                                                    self.random_generator.random()*delta,
+                                                    self.random_generator.random()*delta,
+                                                    self.random_generator.random()*delta,
+                                                    self.random_generator.random()*delta,
+                                                    self.random_generator.random()*delta,
+                                                    self.random_generator.random()*delta,
+                                                    self.random_generator.random()*delta,
+                                                    self.random_generator.random()*delta,
+                                                    self.random_generator.random()*delta,
+                                                    2*math.pi-self.random_generator.random()*delta,
+                                                    2*math.pi-self.random_generator.random()*delta,
+                                                    2*math.pi-self.random_generator.random()*delta,
+                                                    2*math.pi-self.random_generator.random()*delta,
+                                                    2*math.pi-self.random_generator.random()*delta,
+                                                    2*math.pi-self.random_generator.random()*delta,
+                                                    2*math.pi-self.random_generator.random()*delta,
+                                                    2*math.pi-self.random_generator.random()*delta,
+                                                    2*math.pi-self.random_generator.random()*delta,
+                                                    2*math.pi-self.random_generator.random()*delta]
+
+                                    delta_range = range(0, len(delta_angles))
+
+                                    for delta_index in delta_range:
+
+                                        diffracted_ray_new = numpy.zeros(19)
+
+                                        diffracted_ray_new[0] = diffracted_ray[0]
+                                        diffracted_ray_new[1] = diffracted_ray[1]
+                                        diffracted_ray_new[2] = diffracted_ray[2]
+
+                                        diffracted_ray_new[6] = diffracted_ray[6]
+                                        diffracted_ray_new[7] = diffracted_ray[7]
+                                        diffracted_ray_new[8] = diffracted_ray[8]
+                                        diffracted_ray_new[9] = diffracted_ray[9]
+                                        diffracted_ray_new[10] = diffracted_ray[10]
+                                        diffracted_ray_new[11] = diffracted_ray[11]
+                                        diffracted_ray_new[12] = diffracted_ray[12]
+                                        diffracted_ray_new[13] = diffracted_ray[13]
+                                        diffracted_ray_new[14] = diffracted_ray[14]
+                                        diffracted_ray_new[15] = diffracted_ray[15]
+                                        diffracted_ray_new[16] = diffracted_ray[16]
+                                        diffracted_ray_new[17] = diffracted_ray[17]
+                                        diffracted_ray_new[18] = diffracted_ray[18]
+
+                                        delta_angle = delta_angles[delta_index]
+
+                                        #
+                                        # calcolo del vettore ruotato di delta, con la formula di Rodrigues:
+                                        #
+                                        # v_out_new = v_out * cos(delta) + (asse_rot x v_out ) * sin(delta) + asse_rot*(asse_rot . v_out )(1 - cos(delta))
+                                        #
+                                        # asse rot = v_in
+                                        #
+                                        v_out_new_1 = ShadowMath.vector_multiply(v_out, math.cos(delta_angle))
+                                        v_out_new_2 = ShadowMath.vector_multiply(ShadowMath.vectorial_product(v_in, v_out), math.sin(delta_angle))
+                                        v_out_new_3 = ShadowMath.vector_multiply(v_in, ShadowMath.scalar_product(v_in, v_out)*(1-math.cos(delta_angle)))
+
+                                        v_out_new = ShadowMath.vector_sum(v_out_new_1, ShadowMath.vector_sum(v_out_new_2, v_out_new_3))
+
+                                        diffracted_ray_new[3]  = v_out_new[0]                              # director cos x
+                                        diffracted_ray_new[4]  = v_out_new[1]                              # director cos y
+                                        diffracted_ray_new[5]  = v_out_new[2]                              # director cos z
+
+                                        self.out_file_3.write(str(v_out_new[0]) + " " + str(v_out_new[1]) + " " + str(v_out_new[2]) + "\n")
+                                        self.out_file_3.flush()
+
+                                        diffracted_rays.append(diffracted_ray_new)
 
                 bar_value += percentage_fraction
                 self.progressBarSet(bar_value)
@@ -712,6 +799,10 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
                 self.plotResult()
                 self.writeOutFile()
+
+        ########## to be removed
+        self.out_file.close()
+        self.out_file_3.close()
 
         self.writeOutFile()
 
@@ -956,6 +1047,18 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     ############################################################
 
+    def calculateDeltaAngle(self, twotheta_reflection):
+
+        height = self.detector_distance*math.cos(twotheta_reflection) - self.slit_2_vertical_aperture*1e-4*0.5
+        width = self.slit_2_horizontal_aperture*1e-4*0.5
+        expansion_factor=1.1
+
+        delta = expansion_factor*math.atan(width/height)
+
+        return delta
+
+    ############################################################
+
     def isCollectedRay(self, twotheta_angle,
                            x_0, 
                            y_0, 
@@ -1004,6 +1107,9 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
             if dist_x <= self.horizontal_acceptance_2 and dist_yz <= self.vertical_acceptance_2:
                 is_collected_ray= True
+
+                self.out_file.write(str(x_2_int) + " " + str(y_2_int) + " " + str(z_2_int) + "\n")
+                self.out_file.flush()
 
         return is_collected_ray
 
