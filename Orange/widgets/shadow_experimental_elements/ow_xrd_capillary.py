@@ -29,7 +29,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     input_beam = None
 
-    TABS_AREA_HEIGHT = 550
+    TABS_AREA_HEIGHT = 650
     TABS_AREA_WIDTH = 442
     CONTROL_AREA_WIDTH = 450
 
@@ -74,6 +74,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     number_of_executions = Setting(1)
     current_execution = 0
     keep_result = Setting(0)
+    number_of_origin_points = Setting(1)
+    number_of_rotated_rays = Setting(5)
 
     add_background = Setting(0)
     n_sigma=Setting(0)
@@ -111,11 +113,11 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     random_generator = random.Random()
 
-    out_file = None
-    out_file_2 = None
-    out_file_3 = None
-    out_file_4 = None
-    out_file_5 = None
+    #out_file = None
+    #out_file_2 = None
+    #out_file_3 = None
+    #out_file_4 = None
+    #out_file_5 = None
 
     def __init__(self):
         super().__init__()
@@ -124,12 +126,43 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         tabs = ShadowGui.tabWidget(self.controlArea, height=self.TABS_AREA_HEIGHT, width=self.TABS_AREA_WIDTH)
 
-        self.tab_diffraction = ShadowGui.createTabPage(tabs, "Diffraction")
-        self.tab_goniometer = ShadowGui.createTabPage(tabs, "Goniometer")
+        self.tab_simulation = ShadowGui.createTabPage(tabs, "Simulation")
+        self.tab_physical = ShadowGui.createTabPage(tabs, "Experiment")
+
         self.tab_aberrations = ShadowGui.createTabPage(tabs, "Aberrations")
         self.tab_background = ShadowGui.createTabPage(tabs, "Background")
 
-        box_2theta_arm = ShadowGui.widgetBox(self.tab_goniometer, "2Theta Arm Parameters", addSpace=True, orientation="vertical")
+        #####################
+
+        box_rays = ShadowGui.widgetBox(self.tab_simulation, "Rays Generation", addSpace=True, orientation="vertical")
+
+        ShadowGui.lineEdit(box_rays, self, "number_of_origin_points", "Number of Origin Points into the Capillary", valueType=int, orientation="horizontal")
+        ShadowGui.lineEdit(box_rays, self, "number_of_rotated_rays", "Number of Generated Rays in the Powder Diffraction Arc",  valueType=int, orientation="horizontal")
+
+        box_simulation = ShadowGui.widgetBox(self.tab_simulation, "Simulation Management", addSpace=True, orientation="vertical")
+
+        gui.checkBox(box_simulation, self, "keep_result", "Keep Result")
+        gui.separator(box_simulation)
+        gui.checkBox(box_simulation, self, "incremental", "Incremental Simulation", callback=self.setIncremental)
+
+        self.le_number_of_executions = ShadowGui.lineEdit(box_simulation, self, "number_of_executions", "Number of Executions", valueType=int, orientation="horizontal")
+
+        self.setIncremental()
+
+        gui.separator(box_simulation)
+        self.le_current_execution = ShadowGui.lineEdit(box_simulation, self, "current_execution", "Current Execution", valueType=int, orientation="horizontal")
+        self.le_current_execution.setReadOnly(True)
+
+        #####################
+
+        box_sample = ShadowGui.widgetBox(self.tab_physical, "Sample Parameters", addSpace=True, orientation="vertical")
+
+        ShadowGui.lineEdit(box_sample, self, "capillary_diameter", "Capillary Diameter [mm]", valueType=float, orientation="horizontal")
+        gui.comboBox(box_sample, self, "capillary_material", label="Capillary Material", items=["Glass", "Kapton"], sendSelectedValue=False, orientation="horizontal")
+        gui.comboBox(box_sample, self, "sample_material", label="Material", items=["LaB6", "Si", "ZnO"], sendSelectedValue=False, orientation="horizontal")
+        ShadowGui.lineEdit(box_sample, self, "packing_factor", "Packing Factor (0.0...1.0)", valueType=float, orientation="horizontal")
+
+        box_2theta_arm = ShadowGui.widgetBox(self.tab_physical, "2Theta Arm Parameters", addSpace=True, orientation="vertical")
 
         ShadowGui.lineEdit(box_2theta_arm, self, "detector_distance", "Detector Distance (cm)",  tooltip="Detector Distance (cm)", valueType=float, orientation="horizontal")
 
@@ -145,22 +178,13 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         ShadowGui.lineEdit(box_2theta_arm, self, "slit_2_vertical_aperture", "Slit 2 Vertical Aperture (um)",  valueType=float, orientation="horizontal")
         ShadowGui.lineEdit(box_2theta_arm, self, "slit_2_horizontal_aperture", "Slit 2 Horizontal Aperture (um)",  valueType=float, orientation="horizontal")
 
-        box_scan = ShadowGui.widgetBox(self.tab_goniometer, "Scan Parameters", addSpace=True, orientation="vertical")
+        box_scan = ShadowGui.widgetBox(self.tab_physical, "Scan Parameters", addSpace=True, orientation="vertical")
 
         ShadowGui.lineEdit(box_scan, self, "start_angle_na", "Start Angle (deg)", valueType=float, orientation="horizontal")
         ShadowGui.lineEdit(box_scan, self, "stop_angle_na", "Stop Angle (deg)",  valueType=float, orientation="horizontal")
         ShadowGui.lineEdit(box_scan, self, "step", "Step (deg)",  valueType=float, orientation="horizontal")
 
-        #####################
-
-        box_sample = ShadowGui.widgetBox(self.tab_diffraction, "Sample Parameters", addSpace=True, orientation="vertical")
-
-        ShadowGui.lineEdit(box_sample, self, "capillary_diameter", "Capillary Diameter [mm]", valueType=float, orientation="horizontal")
-        gui.comboBox(box_sample, self, "capillary_material", label="Capillary Material", items=["Glass", "Kapton"], sendSelectedValue=False, orientation="horizontal")
-        gui.comboBox(box_sample, self, "sample_material", label="Material", items=["LaB6", "Si", "ZnO"], sendSelectedValue=False, orientation="horizontal")
-        ShadowGui.lineEdit(box_sample, self, "packing_factor", "Packing Factor (0.0...1.0)", valueType=float, orientation="horizontal")
-
-        box_diffraction = ShadowGui.widgetBox(self.tab_diffraction, "Diffraction Parameters", addSpace=True, orientation="vertical")
+        box_diffraction = ShadowGui.widgetBox(self.tab_physical, "Diffraction Parameters", addSpace=True, orientation="vertical")
 
         gui.comboBox(box_diffraction, self, "set_number_of_peaks", label="set Number of Peaks?", callback=self.setNumberOfPeaks, items=["No", "Yes"], sendSelectedValue=False, orientation="horizontal")
         self.le_number_of_peaks = ShadowGui.lineEdit(box_diffraction, self, "number_of_peaks", "Number of Peaks", valueType=int, orientation="horizontal")
@@ -170,13 +194,13 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         #####################
 
-        box_capillary = ShadowGui.widgetBox(self.tab_aberrations, "Capillary Aberrations", addSpace=True, orientation="vertical")
+        box_cap_aberrations = ShadowGui.widgetBox(self.tab_aberrations, "Capillary Aberrations", addSpace=True, orientation="vertical")
 
-        ShadowGui.lineEdit(box_capillary, self, "horizontal_displacement", "Capillary H Displacement (um)", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(box_capillary, self, "vertical_displacement", "Capillary V Displacement (um)", valueType=float, orientation="horizontal")
-        gui.separator(box_capillary)
-        gui.comboBox(box_capillary, self, "calculate_absorption", label="Calculate Absorption", callback=self.setAbsorption, items=["No", "Yes"], sendSelectedValue=False, orientation="horizontal")
-        self.le_normalization_factor = ShadowGui.lineEdit(box_capillary, self, "normalization_factor", "Normalization Factor", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(box_cap_aberrations, self, "horizontal_displacement", "Capillary H Displacement (um)", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(box_cap_aberrations, self, "vertical_displacement", "Capillary V Displacement (um)", valueType=float, orientation="horizontal")
+        gui.separator(box_cap_aberrations)
+        gui.comboBox(box_cap_aberrations, self, "calculate_absorption", label="Calculate Absorption", callback=self.setAbsorption, items=["No", "Yes"], sendSelectedValue=False, orientation="horizontal")
+        self.le_normalization_factor = ShadowGui.lineEdit(box_cap_aberrations, self, "normalization_factor", "Normalization Factor", valueType=float, orientation="horizontal")
 
         self.setAbsorption()
 
@@ -237,22 +261,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         #####################
 
-        box_simulation = ShadowGui.widgetBox(self.controlArea, "Simulation", addSpace=True, orientation="vertical", height=125)
-
-        box_simulation_1 = ShadowGui.widgetBox(box_simulation, "", addSpace=True, orientation="horizontal")
-
-        gui.checkBox(box_simulation_1, self, "incremental", "Incremental Simulation", callback=self.setIncremental)
-        gui.checkBox(box_simulation_1, self, "keep_result", "Keep Result")
-
-        box_simulation_2 = ShadowGui.widgetBox(box_simulation, "", addSpace=False, orientation="vertical")
-
-        self.le_number_of_executions = ShadowGui.lineEdit(box_simulation_2, self, "number_of_executions", "Number of Executions", valueType=int, orientation="horizontal")
-
-        self.setIncremental()
-
-        gui.separator(box_simulation)
-        self.le_current_execution = ShadowGui.lineEdit(box_simulation_2, self, "current_execution", "Current Execution", valueType=int, orientation="horizontal")
-        self.le_current_execution.setReadOnly(True)
+        ShadowGui.widgetBox(self.controlArea, "", addSpace=True, orientation="vertical", height=25)
 
         button_box = ShadowGui.widgetBox(self.controlArea, "", addSpace=True, orientation="horizontal", height=30)
 
@@ -315,34 +324,34 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     ############################################################
 
     def setTabsEnabled(self, enabled=True):
-        self.tab_diffraction.setEnabled(enabled)
-        self.tab_goniometer.setEnabled(enabled)
+        self.tab_simulation.setEnabled(enabled)
+        self.tab_physical.setEnabled(enabled)
         self.tab_aberrations.setEnabled(enabled)
         self.tab_background.setEnabled(enabled)
 
     def setIncremental(self):
-        self.le_number_of_executions.setEnabled(self.incremental==1)
+        self.le_number_of_executions.setEnabled(self.incremental == 1)
 
     def setAbsorption(self):
-        self.le_normalization_factor.setEnabled(self.calculate_absorption==1)
+        self.le_normalization_factor.setEnabled(self.calculate_absorption == 1)
 
     def setNumberOfPeaks(self):
-        self.le_number_of_peaks.setEnabled(self.set_number_of_peaks==1)
+        self.le_number_of_peaks.setEnabled(self.set_number_of_peaks == 1)
 
     def setAddBackground(self):
-        self.box_background_1_hidden.setVisible(self.add_background==0)
-        self.box_background_1.setVisible(self.add_background==1)
-        self.box_background_2.setVisible(self.add_background==1)
+        self.box_background_1_hidden.setVisible(self.add_background == 0)
+        self.box_background_1.setVisible(self.add_background == 1)
+        self.box_background_2.setVisible(self.add_background == 1)
         self.setChebyshev()
         self.setExpDecay()
-        self.background_button.setEnabled(self.add_background==1)
-        self.reset_bkg_Button.setEnabled(self.add_background==1)
+        self.background_button.setEnabled(self.add_background == 1)
+        self.reset_bkg_Button.setEnabled(self.add_background == 1)
     
     def setChebyshev(self):
-        self.box_chebyshev_2.setEnabled(self.add_chebyshev==1)
+        self.box_chebyshev_2.setEnabled(self.add_chebyshev == 1)
         
     def setExpDecay(self):
-        self.box_expdecay_2.setEnabled(self.add_expdecay==1)
+        self.box_expdecay_2.setEnabled(self.add_expdecay == 1)
 
     def replaceObject(self, object):
         if self.plot_canvas is not None:
@@ -418,7 +427,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         #TODO: ERROR MANAGEMENT WITH MESSAGES
         if self.input_beam is None: return
 
-        self.out_file_2 = open(os.getcwd() + '/Output/good.dat', 'w')
         self.out_file_3 = open(os.getcwd() + '/Output/generated.dat', 'w')
 
         self.backupOutFile()
@@ -558,7 +566,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                         #
                         asse_rot = ShadowMath.vector_normalize(ShadowMath.vectorial_product(v_in, z_axis))
 
-                        for start_point_index in range (0, 1):
+                        for origin_point_index in range (0, int(self.number_of_origin_points)):
                             random_value = self.random_generator.random()
 
                             # calcolo di un punto casuale sul segmento congiungente.
@@ -585,8 +593,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                     # k_diffracted = k * cos(2th) + (asse_rot x k) * sin(2th) + asse_rot*(asse_rot . k)(1 - cos(2th))
                                     #                                                                       |
                                     #                                                                       =0
-                                    # vx vy vz
-                                    # ax ay az
                                     #
 
                                     v_out = ShadowMath.vector_sum(ShadowMath.vector_multiply(v_in, math.cos(twotheta_reflection)),
@@ -661,13 +667,14 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                         # genero altri 10 raggi nel'arco di cerchio +-delta (5 e 5)
 
                                         delta = self.calculateDeltaAngle(twotheta_reflection)
-                                        #delta = math.pi
 
                                         delta_angles = []
 
-                                        for index in range(0, 10):
-                                            delta_angles.append(self.random_generator.random()*delta)
-                                            delta_angles.append(2*math.pi-self.random_generator.random()*delta)
+                                        for index in range(0, int(self.number_of_rotated_rays)):
+                                            delta_temp = 2*self.random_generator.random()*delta
+
+                                            if delta_temp <= delta: delta_angles.append(delta_temp)
+                                            else : delta_angles.append(2*math.pi-(delta_temp-delta))
 
                                         delta_range = range(0, len(delta_angles))
 
@@ -711,9 +718,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                             diffracted_ray_new[4]  = v_out_new[1]                              # director cos y
                                             diffracted_ray_new[5]  = v_out_new[2]                              # director cos z
 
-                                            #self.out_file_3.write(str(v_out_new[0]) + " " + str(v_out_new[1]) + " " + str(v_out_new[2]) + "\n")
-                                            #self.out_file_3.flush()
-
                                             diffracted_rays.append(diffracted_ray_new)
 
                 bar_value += percentage_fraction
@@ -751,8 +755,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
                     theta_ray = math.atan(v_z_i/math.sqrt(v_x_i**2 + v_y_i**2))
 
-                    theta_lim_inf = math.degrees(theta_ray-30*theta_slit)
-                    theta_lim_sup = math.degrees(theta_ray+30*theta_slit)
+                    theta_lim_inf = math.degrees(theta_ray-3*theta_slit)
+                    theta_lim_sup = math.degrees(theta_ray+3*theta_slit)
 
                     # il ciclo sugli step del detector dovrebbe essere attorno a quest'angolo +- un fattore sufficiente di volte
                     # l'angolo intercettato dalla prima slit
@@ -780,7 +784,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                 self.writeOutFile()
 
         ########## to be removed
-        self.out_file_2.close()
         self.out_file_3.close()
 
         self.writeOutFile()
@@ -1028,13 +1031,19 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     def calculateDeltaAngle(self, twotheta_reflection):
 
-        height = self.detector_distance*math.cos(twotheta_reflection) - self.slit_2_vertical_aperture*1e-4*0.5
+        height = self.D_1*math.sin(twotheta_reflection) - self.slit_1_vertical_aperture*1e-4*0.5*math.cos(twotheta_reflection)
+        width = self.slit_1_horizontal_aperture*1e-4*0.5
+
+        delta_1 = math.atan(width/height)
+
+        height = self.D_2*math.sin(twotheta_reflection) - self.slit_2_vertical_aperture*1e-4*0.5*math.cos(twotheta_reflection)
         width = self.slit_2_horizontal_aperture*1e-4*0.5
+
+        delta_2 = math.atan(width/height)
+
         expansion_factor=1.1
 
-        delta = expansion_factor*math.atan(width/height)
-
-        return delta
+        return expansion_factor*min(delta_1, delta_2)
 
     ############################################################
 
@@ -1088,10 +1097,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         dist_x  = abs(d_1_x)
 
         if dist_x <= self.horizontal_acceptance_1 and dist_yz <= self.vertical_acceptance_1:
-
-            self.out_file_2.write(str(x_1_int) + " " + str(y_1_int) + " " + str(z_1_int) + "\n")
-            self.out_file_2.flush()
-
             # intersezione del raggio con il piano intercettato dalla slit
 
             z_2_int = (self.D_2 + ((v_y/v_z)*z_0 - y_0)*cos_twotheta)/(sin_twotheta + (v_y/v_z)*cos_twotheta)
@@ -1110,8 +1115,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
             if dist_x <= self.horizontal_acceptance_2 and dist_yz <= self.vertical_acceptance_2:
                 is_collected_ray= True
-                self.out_file_2.write(str(x_2_int) + " " + str(y_2_int) + " " + str(z_2_int) + "\n")
-                self.out_file_2.flush()
 
         return is_collected_ray
 
