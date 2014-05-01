@@ -186,8 +186,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         box_diffraction = ShadowGui.widgetBox(self.tab_physical, "Diffraction Parameters", addSpace=True, orientation="vertical")
 
-        gui.comboBox(box_diffraction, self, "set_number_of_peaks", label="set Number of Peaks?", callback=self.setNumberOfPeaks, items=["No", "Yes"], sendSelectedValue=False, orientation="horizontal")
-        self.le_number_of_peaks = ShadowGui.lineEdit(box_diffraction, self, "number_of_peaks", "Number of Peaks", valueType=int, orientation="horizontal")
+        gui.comboBox(box_diffraction, self, "set_number_of_peaks", label="set Last Diffraction Peak?", callback=self.setNumberOfPeaks, items=["No", "Yes"], sendSelectedValue=False, orientation="horizontal")
+        self.le_number_of_peaks = ShadowGui.lineEdit(box_diffraction, self, "number_of_peaks", "Last Diffraction Peak Number", valueType=int, orientation="horizontal")
         gui.separator(box_diffraction)
 
         self.setNumberOfPeaks()
