@@ -38,15 +38,15 @@ class BendingMagnet(ow_generic_element.GenericElement):
     emittance_x=Setting(3.8E-7)
     emittance_z=Setting(3.8E-9)
     energy=Setting(6.04)
-    distance_from_waist_x=Setting(0)
-    distance_from_waist_z=Setting(0)
+    distance_from_waist_x=Setting(0.0)
+    distance_from_waist_z=Setting(0.0)
 
     magnetic_radius=Setting(25.1772)
     magnetic_field=Setting(0.8)
     horizontal_half_divergence_from=Setting(0.0005)
     horizontal_half_divergence_to=Setting(0.0005)
-    max_vertical_half_divergence_from=Setting(1)
-    max_vertical_half_divergence_to=Setting(1)
+    max_vertical_half_divergence_from=Setting(1.0)
+    max_vertical_half_divergence_to=Setting(1.0)
 
     calculation_mode_combo=Setting(0)
 
@@ -57,33 +57,33 @@ class BendingMagnet(ow_generic_element.GenericElement):
 
         left_box_1 = gui.widgetBox(self.controlArea, "Monte Carlo and Energy Spectrum", addSpace=True, orientation="vertical")
 
-        ShadowGui.lineEdit(left_box_1, self, "number_of_rays", "Number of Rays", tooltip="Number of Rays", valueType=int, orientation="horizontal")
+        ShadowGui.lineEdit(left_box_1, self, "number_of_rays", "Number of Rays", tooltip="Number of Rays", labelWidth=300, valueType=int, orientation="horizontal")
 
-        ShadowGui.lineEdit(left_box_1, self, "seed", "Seed", tooltip="Seed", valueType=int, orientation="horizontal")
-        ShadowGui.lineEdit(left_box_1, self, "e_min", "Minimum Energy (eV)", tooltip="Minimum Energy (eV)", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(left_box_1, self, "e_max", "Maximum Energy (eV)", tooltip="Maximum Energy (eV)", valueType=float, orientation="horizontal")
-        gui.comboBox(left_box_1, self, "generate_polarization_combo", label="Generate Polarization", items=["Only Parallel", "Only Perpendicular", "Total"], orientation="horizontal")
+        ShadowGui.lineEdit(left_box_1, self, "seed", "Seed", tooltip="Seed", labelWidth=300, valueType=int, orientation="horizontal")
+        ShadowGui.lineEdit(left_box_1, self, "e_min", "Minimum Energy (eV)", tooltip="Minimum Energy (eV)", labelWidth=300, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(left_box_1, self, "e_max", "Maximum Energy (eV)", tooltip="Maximum Energy (eV)", labelWidth=300, valueType=float, orientation="horizontal")
+        gui.comboBox(left_box_1, self, "generate_polarization_combo", label="Generate Polarization", items=["Only Parallel", "Only Perpendicular", "Total"], labelWidth=300, orientation="horizontal")
 
         left_box_2 = gui.widgetBox(self.controlArea, "Machine Parameters", addSpace=True, orientation="vertical")
 
-        ShadowGui.lineEdit(left_box_2, self, "sigma_x", "Sigma X [cm]", tooltip="Sigma X [cm]", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(left_box_2, self, "sigma_z", "Sigma Z [cm]", tooltip="Sigma Z [cm]", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(left_box_2, self, "emittance_x", "Emittance X [rad.cm]", tooltip="Emittance X [rad.cm]", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(left_box_2, self, "emittance_z", "Emittance Z [rad.cm]", tooltip="Emittance Z [rad.cm]", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(left_box_2, self, "energy", "Energy [GeV]", tooltip="Energy [GeV]", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(left_box_2, self, "distance_from_waist_x", "Distance from Waist X [cm]", tooltip="Distance from Waist X [cm]", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(left_box_2, self, "distance_from_waist_z", "Distance from Waist Z [cm]", tooltip="Distance from Waist Z [cm]", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(left_box_2, self, "sigma_x", "Sigma X [cm]", labelWidth=300, tooltip="Sigma X [cm]", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(left_box_2, self, "sigma_z", "Sigma Z [cm]", labelWidth=300, tooltip="Sigma Z [cm]", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(left_box_2, self, "emittance_x", "Emittance X [rad.cm]", labelWidth=300, tooltip="Emittance X [rad.cm]", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(left_box_2, self, "emittance_z", "Emittance Z [rad.cm]", labelWidth=300, tooltip="Emittance Z [rad.cm]", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(left_box_2, self, "energy", "Energy [GeV]", tooltip="Energy [GeV]", labelWidth=300, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(left_box_2, self, "distance_from_waist_x", "Distance from Waist X [cm]", labelWidth=300, tooltip="Distance from Waist X [cm]", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(left_box_2, self, "distance_from_waist_z", "Distance from Waist Z [cm]", labelWidth=300, tooltip="Distance from Waist Z [cm]", valueType=float, orientation="horizontal")
 
         left_box_3 = gui.widgetBox(self.controlArea, "Bending Magnet Parameters", addSpace=True, orientation="vertical")
 
-        ShadowGui.lineEdit(left_box_3, self, "magnetic_radius", "Magnetic Radius [m]", callback=self.calculateMagneticField, tooltip="Magnetic Radius [m]", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(left_box_3, self, "magnetic_field", "Magnetic Field [T]", callback=self.calculateMagneticRadius, tooltip="Magnetic Field [T]", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(left_box_3, self, "magnetic_radius", "Magnetic Radius [m]", labelWidth=300, callback=self.calculateMagneticField, tooltip="Magnetic Radius [m]", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(left_box_3, self, "magnetic_field", "Magnetic Field [T]", labelWidth=300, callback=self.calculateMagneticRadius, tooltip="Magnetic Field [T]", valueType=float, orientation="horizontal")
 
-        ShadowGui.lineEdit(left_box_3, self, "horizontal_half_divergence_from", "Horizontal half-divergence [rads] From [+]", tooltip="Horizontal half-divergence [rads] From [+]", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(left_box_3, self, "horizontal_half_divergence_to", "Horizontal half-divergence [rads] To [-]", tooltip="Horizontal half-divergence [rads] To [-]", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(left_box_3, self, "max_vertical_half_divergence_from", "Max vertical half-divergence [rads] From [+]", tooltip="Max vertical half-divergence [rads] From [+]", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(left_box_3, self, "max_vertical_half_divergence_to", "Max vertical half-divergence [rads] To [-]", tooltip="Max vertical half-divergence [rads] To [-]", valueType=float, orientation="horizontal")
-        gui.comboBox(left_box_3, self, "calculation_mode_combo", label="Calculation Mode", items=["Precomputed", "Exact"], orientation="horizontal")
+        ShadowGui.lineEdit(left_box_3, self, "horizontal_half_divergence_from", "Horizontal half-divergence [rads] From [+]", labelWidth=300, tooltip="Horizontal half-divergence [rads] From [+]", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(left_box_3, self, "horizontal_half_divergence_to", "Horizontal half-divergence [rads] To [-]", labelWidth=300, tooltip="Horizontal half-divergence [rads] To [-]", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(left_box_3, self, "max_vertical_half_divergence_from", "Max vertical half-divergence [rads] From [+]", labelWidth=300, tooltip="Max vertical half-divergence [rads] From [+]", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(left_box_3, self, "max_vertical_half_divergence_to", "Max vertical half-divergence [rads] To [-]", labelWidth=300, tooltip="Max vertical half-divergence [rads] To [-]", valueType=float, orientation="horizontal")
+        gui.comboBox(left_box_3, self, "calculation_mode_combo", label="Calculation Mode", items=["Precomputed", "Exact"], labelWidth=300, orientation="horizontal")
 
         left_box_4 = gui.widgetBox(self.controlArea, "", addSpace=True, orientation="vertical")
         left_box_4.setFixedHeight(75)

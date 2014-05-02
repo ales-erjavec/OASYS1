@@ -35,19 +35,19 @@ class PlotXY(ow_automatic_element.AutomaticElement):
     input_beam=None
 
     image_plane=Setting(0)
-    image_plane_new_position=Setting(10)
+    image_plane_new_position=Setting(10.0)
     image_plane_rel_abs_position=Setting(0)
 
     x_column_index=Setting(0)
     y_column_index=Setting(2)
 
     x_range=Setting(0)
-    x_range_min=Setting(0)
+    x_range_min=Setting(0.0)
     x_range_max=Setting(0)
 
-    y_range=Setting(0)
-    y_range_min=Setting(0)
-    y_range_max=Setting(0)
+    y_range=Setting(0.0)
+    y_range_min=Setting(0.0)
+    y_range_max=Setting(0.0)
 
     rays=Setting(1)
     cartesian_axis=Setting(1)
@@ -74,103 +74,103 @@ class PlotXY(ow_automatic_element.AutomaticElement):
 
         screen_box = ShadowGui.widgetBox(tab_gen, "Screen Position Settings", addSpace=True, orientation="vertical", height=140)
 
-        self.image_plane_combo = gui.comboBox(screen_box, self, "image_plane", label="Position of the Image", \
-                                            items=["Previous OE Image Plane", "Different"], \
+        self.image_plane_combo = gui.comboBox(screen_box, self, "image_plane", label="Position of the Image",
+                                            items=["Previous OE Image Plane", "Different"],
                                             callback=self.set_ImagePlane, sendSelectedValue=False, orientation="horizontal")
 
         self.image_plane_box = ShadowGui.widgetBox(screen_box, "", addSpace=True, orientation="vertical", width=350, height=110)
         self.image_plane_box_empty = ShadowGui.widgetBox(screen_box, "", addSpace=True, orientation="vertical", width=350, height=110)
 
-        ShadowGui.lineEdit(self.image_plane_box, self, "image_plane_new_position", "Image Plane new Position", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.image_plane_box, self, "image_plane_new_position", "Image Plane new Position", labelWidth=220, valueType=float, orientation="horizontal")
 
-        gui.comboBox(self.image_plane_box, self, "image_plane_rel_abs_position", label="Position Type", \
+        gui.comboBox(self.image_plane_box, self, "image_plane_rel_abs_position", label="Position Type", labelWidth=250,
                      items=["Absolute", "Relative"], sendSelectedValue=False, orientation="horizontal")
 
         self.set_ImagePlane()
 
         general_box = ShadowGui.widgetBox(tab_gen, "General Settings", addSpace=True, orientation="vertical", height=400)
 
-        ShadowGui.lineEdit(general_box, self, "title", "Title", valueType=str, orientation="horizontal")
+        ShadowGui.lineEdit(general_box, self, "title", "Title", labelWidth=150, valueType=str, orientation="horizontal")
 
         gui.separator(general_box, width=350)
 
-        self.x_column = gui.comboBox(general_box, self, "x_column_index", label="X Column", \
-                                     items=["1: X", \
-                                            "2: Y", \
-                                            "3: Z", \
-                                            "4: X'", \
-                                            "5: Y'", \
-                                            "6: Z'", \
-                                            "11: Energy"], \
+        self.x_column = gui.comboBox(general_box, self, "x_column_index", label="X Column",labelWidth=250,
+                                     items=["1: X",
+                                            "2: Y",
+                                            "3: Z",
+                                            "4: X'",
+                                            "5: Y'",
+                                            "6: Z'",
+                                            "11: Energy"],
                                      sendSelectedValue=False, orientation="horizontal")
 
-        gui.comboBox(general_box, self, "x_range", label="X Range", \
-                                     items=["<Default>", \
-                                            "Set.."], \
+        gui.comboBox(general_box, self, "x_range", label="X Range", labelWidth=250,
+                                     items=["<Default>",
+                                            "Set.."],
                                      callback=self.set_XRange, sendSelectedValue=False, orientation="horizontal")
 
         self.xrange_box = ShadowGui.widgetBox(general_box, "", addSpace=True, orientation="vertical", width=350, height=110)
         self.xrange_box_empty = ShadowGui.widgetBox(general_box, "", addSpace=True, orientation="vertical", width=350, height=110)
 
-        ShadowGui.lineEdit(self.xrange_box, self, "x_range_min", "X min", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(self.xrange_box, self, "x_range_max", "X max", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.xrange_box, self, "x_range_min", "X min", labelWidth=220, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.xrange_box, self, "x_range_max", "X max", labelWidth=220, valueType=float, orientation="horizontal")
 
         self.set_XRange()
 
-        self.y_column = gui.comboBox(general_box, self, "y_column_index", label="Y Column", \
-                                     items=["1: X", \
-                                            "2: Y", \
-                                            "3: Z", \
-                                            "4: X'", \
-                                            "5: Y'", \
-                                            "6: Z'", \
-                                            "11: Energy"], \
+        self.y_column = gui.comboBox(general_box, self, "y_column_index", label="Y Column",labelWidth=250,
+                                     items=["1: X",
+                                            "2: Y",
+                                            "3: Z",
+                                            "4: X'",
+                                            "5: Y'",
+                                            "6: Z'",
+                                            "11: Energy"],
                                      sendSelectedValue=False, orientation="horizontal")
 
-        gui.comboBox(general_box, self, "y_range", label="Y Range", \
-                                     items=["<Default>", \
-                                            "Set.."], \
+        gui.comboBox(general_box, self, "y_range", label="Y Range",labelWidth=250,
+                                     items=["<Default>",
+                                            "Set.."],
                                      callback=self.set_YRange, sendSelectedValue=False, orientation="horizontal")
 
         self.yrange_box = ShadowGui.widgetBox(general_box, "", addSpace=True, orientation="vertical", width=350, height=150)
         self.yrange_box_empty = ShadowGui.widgetBox(general_box, "", addSpace=True, orientation="vertical", width=350, height=150)
 
-        ShadowGui.lineEdit(self.yrange_box, self, "y_range_min", "Y min", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(self.yrange_box, self, "y_range_max", "Y max", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.yrange_box, self, "y_range_min", "Y min", labelWidth=220, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.yrange_box, self, "y_range_max", "Y max", labelWidth=220, valueType=float, orientation="horizontal")
 
         self.set_YRange()
 
 
-        gui.comboBox(general_box, self, "rays", label="Rays", \
-                                     items=["All rays", \
-                                            "Good Only", \
-                                            "Lost Only"], \
+        gui.comboBox(general_box, self, "rays", label="Rays", labelWidth=250,
+                                     items=["All rays",
+                                            "Good Only",
+                                            "Lost Only"],
                                      sendSelectedValue=False, orientation="horizontal")
 
-        gui.comboBox(general_box, self, "cartesian_axis", label="Cartesian Axis", \
-                                     items=["No", \
-                                            "Yes"], \
+        gui.comboBox(general_box, self, "cartesian_axis", label="Cartesian Axis",labelWidth=300,
+                                     items=["No",
+                                            "Yes"],
                                      sendSelectedValue=False, orientation="horizontal")
 
-        gui.comboBox(general_box, self, "plot_type", label="Plot Type", \
-                                     items=["Scattered", \
-                                            "Contour without Ref", \
-                                            "Contour with Ref", \
-                                            "Color Contour without Ref", \
-                                            "Color Contour with Ref", \
-                                            "Pixelized without Ref", \
-                                            "Pixelized with Ref"], \
+        gui.comboBox(general_box, self, "plot_type", label="Plot Type",labelWidth=200,
+                                     items=["Scattered",
+                                            "Contour without Ref",
+                                            "Contour with Ref",
+                                            "Color Contour without Ref",
+                                            "Color Contour with Ref",
+                                            "Pixelized without Ref",
+                                            "Pixelized with Ref"],
                                      sendSelectedValue=False, orientation="horizontal")
 
         histograms_box = ShadowGui.widgetBox(tab_his, "Histograms settings", addSpace=True, orientation="vertical", height=550)
 
-        ShadowGui.lineEdit(histograms_box, self, "number_of_bins", "Number of Bins", valueType=int, orientation="horizontal")
+        ShadowGui.lineEdit(histograms_box, self, "number_of_bins", "Number of Bins", labelWidth=250, valueType=int, orientation="horizontal")
 
-        gui.comboBox(histograms_box, self, "histogram_fwhm", label="Histogram FWHM", \
-                     items=["No", "Yes"], \
+        gui.comboBox(histograms_box, self, "histogram_fwhm", label="Histogram FWHM",labelWidth=300,
+                     items=["No", "Yes"],
                      sendSelectedValue=False, orientation="horizontal")
 
-        ShadowGui.lineEdit(histograms_box, self, "binning_for_contour", "Binning for CONTOURS", valueType=int, orientation="horizontal")
+        ShadowGui.lineEdit(histograms_box, self, "binning_for_contour", "Binning for CONTOURS", labelWidth=250, valueType=int, orientation="horizontal")
 
 
         self.image_box = gui.widgetBox(self.mainArea, "Plot Result", addSpace=True, orientation="vertical")

@@ -7,7 +7,7 @@ from PyQt4.QtGui import QApplication, qApp
 from Orange.widgets.settings import Setting
 
 import Shadow.ShadowTools as ST
-from Orange.shadow.shadow_util import ShadowPlot
+from Orange.shadow.shadow_util import ShadowPlot, ShadowGui
 
 from Orange.widgets.shadow_gui import ow_automatic_element
 
@@ -27,10 +27,14 @@ class GenericElement(ow_automatic_element.AutomaticElement):
     def __init__(self):
         super().__init__()
 
-        view_box = gui.widgetBox(self.mainArea, "Plotting Style", addSpace=False, orientation="vertical")
+        view_box = ShadowGui.widgetBox(self.mainArea, "Plotting Style", addSpace=False, orientation="horizontal")
 
-        self.view_type_combo = gui.comboBox(view_box, self, "view_type", label="Plot quality", \
-                                            items=["Detailed Plot", "Preview", "None"], \
+        view_box_empty = ShadowGui.widgetBox(view_box, "", addSpace=False, orientation="vertical", width=520)
+        view_box_1 = ShadowGui.widgetBox(view_box, "", addSpace=False, orientation="vertical", width=350)
+
+        self.view_type_combo = gui.comboBox(view_box_1, self, "view_type", label="Select level of Plotting",
+                                            labelWidth=200,
+                                            items=["Detailed Plot", "Preview", "None"],
                                             callback=self.set_PlotQuality, sendSelectedValue=False, orientation="horizontal")
 
         self.tabs = gui.tabWidget(self.mainArea)

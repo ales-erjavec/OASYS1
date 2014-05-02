@@ -35,7 +35,7 @@ class Histogram(ow_automatic_element.AutomaticElement):
     input_beam=None
 
     image_plane=Setting(0)
-    image_plane_new_position=Setting(10)
+    image_plane_new_position=Setting(10.0)
     image_plane_rel_abs_position=Setting(0)
 
     x_column_index=Setting(11)
@@ -56,32 +56,32 @@ class Histogram(ow_automatic_element.AutomaticElement):
 
         general_box = ShadowGui.widgetBox(tab_gen, "General Settings", addSpace=True, orientation="vertical", height=200)
 
-        gui.comboBox(general_box, self, "image_plane", label="Position of the Image", \
-                     items=["Previous OE Image Plane", "Different"], \
+        gui.comboBox(general_box, self, "image_plane", label="Position of the Image",
+                     items=["Previous OE Image Plane", "Different"],
                      callback=self.set_ImagePlane, sendSelectedValue=False, orientation="horizontal")
 
 
         self.image_plane_box = ShadowGui.widgetBox(general_box, "", addSpace=True, orientation="vertical", height=110)
         self.image_plane_box_empty = ShadowGui.widgetBox(general_box, "", addSpace=True, orientation="vertical", height=110)
 
-        ShadowGui.lineEdit(self.image_plane_box, self, "image_plane_new_position", "Image Plane new Position", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.image_plane_box, self, "image_plane_new_position", "Image Plane new Position", labelWidth=220, valueType=float, orientation="horizontal")
 
-        gui.comboBox(self.image_plane_box, self, "image_plane_rel_abs_position", label="Position Type", \
+        gui.comboBox(self.image_plane_box, self, "image_plane_rel_abs_position", label="Position Type", labelWidth=250,
                      items=["Absolute", "Relative"], sendSelectedValue=False, orientation="horizontal")
 
         self.set_ImagePlane()
 
-        self.x_column = gui.comboBox(general_box, self, "x_column_index", label="Column", \
-                                     items=["1: X", \
-                                            "2: Y", \
-                                            "3: Z", \
-                                            "4: X'", \
-                                            "5: Y'", \
-                                            "6: Z'", \
-                                            "11: Energy"], \
+        self.x_column = gui.comboBox(general_box, self, "x_column_index", label="Column", labelWidth=250,
+                                     items=["1: X",
+                                            "2: Y",
+                                            "3: Z",
+                                            "4: X'",
+                                            "5: Y'",
+                                            "6: Z'",
+                                            "11: Energy"],
                                      sendSelectedValue=False, orientation="horizontal")
 
-        ShadowGui.lineEdit(general_box, self, "title", "Title", valueType=str, orientation="horizontal")
+        ShadowGui.lineEdit(general_box, self, "title", "Title", labelWidth=150, valueType=str, orientation="horizontal")
 
         self.image_box = gui.widgetBox(self.mainArea, "Plot Result", addSpace=True, orientation="vertical")
         self.image_box.setFixedHeight(self.IMAGE_HEIGHT)
