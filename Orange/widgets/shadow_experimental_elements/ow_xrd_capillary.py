@@ -465,7 +465,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         # distances in CM
 
-        capillary_radius = self.capillary_diameter*0.1*0.5
+        capillary_radius = self.capillary_diameter*(1+self.positioning_error*0.01)*0.1*0.5
         displacement_h = self.horizontal_displacement*1e-4
         displacement_v = self.vertical_displacement*1e-4
 
