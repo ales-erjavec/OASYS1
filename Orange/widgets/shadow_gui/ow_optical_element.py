@@ -24,18 +24,18 @@ class GraphicalOptions:
     is_polynomial=False
     is_conic_coefficients=False
 
-    def __init__(self, \
-                 is_curved=False, \
-                 is_mirror=False, \
-                 is_screen_slit=False, \
-                 is_spheric=False, \
-                 is_ellipsoidal=False, \
-                 is_toroidal=False, \
-                 is_paraboloid=False, \
+    def __init__(self,
+                 is_curved=False,
+                 is_mirror=False,
+                 is_screen_slit=False,
+                 is_spheric=False,
+                 is_ellipsoidal=False,
+                 is_toroidal=False,
+                 is_paraboloid=False,
                  is_hyperboloid=False,\
-                 is_cone=False, \
-                 is_codling_slit=False, \
-                 is_polynomial=False, \
+                 is_cone=False,
+                 is_codling_slit=False,
+                 is_polynomial=False,
                  is_conic_coefficients=False):
         self.is_curved = is_curved
         self.is_mirror=is_mirror
@@ -252,20 +252,20 @@ class OpticalElement(ow_generic_element.GenericElement):
         if self.graphical_options.is_screen_slit:
             box_aperturing = ShadowGui.widgetBox(self.controlArea, "Screen/Slit Shape", addSpace=True, orientation="vertical", width=self.INNER_BOX_WIDTH_L0, height=240)
 
-            gui.comboBox(box_aperturing, self, "aperturing", label="Aperturing", labelWidth=370, \
-                         items=["No", "Yes"], \
+            gui.comboBox(box_aperturing, self, "aperturing", label="Aperturing", labelWidth=370,
+                         items=["No", "Yes"],
                          callback=self.set_Aperturing, sendSelectedValue=False, orientation="horizontal")
 
             gui.separator(box_aperturing, width=self.INNER_BOX_WIDTH_L0)
 
             self.box_aperturing_shape = ShadowGui.widgetBox(box_aperturing, "", addSpace=False, orientation="vertical")
 
-            gui.comboBox(self.box_aperturing_shape, self, "open_slit_solid_stop", label="Open slit/Solid stop", labelWidth=300, \
-                         items=["aperture/slit", "obstruction/stop"], \
+            gui.comboBox(self.box_aperturing_shape, self, "open_slit_solid_stop", label="Open slit/Solid stop", labelWidth=300,
+                         items=["aperture/slit", "obstruction/stop"],
                          sendSelectedValue=False, orientation="horizontal")
 
-            gui.comboBox(self.box_aperturing_shape, self, "aperture_shape", label="Aperture shape", labelWidth=284, \
-                         items=["Rectangular", "Ellipse", "External"], \
+            gui.comboBox(self.box_aperturing_shape, self, "aperture_shape", label="Aperture shape", labelWidth=284,
+                         items=["Rectangular", "Ellipse", "External"],
                          callback=self.set_ApertureShape, sendSelectedValue=False, orientation="horizontal")
 
 
@@ -284,8 +284,8 @@ class OpticalElement(ow_generic_element.GenericElement):
 
             box_absorption = ShadowGui.widgetBox(self.controlArea, "Absorption Parameters", addSpace=True, orientation="vertical", width=self.INNER_BOX_WIDTH_L0, height=130)
 
-            gui.comboBox(box_absorption, self, "absorption", label="Absorption", labelWidth=370, \
-                         items=["No", "Yes"], \
+            gui.comboBox(box_absorption, self, "absorption", label="Absorption", labelWidth=370,
+                         items=["No", "Yes"],
                          callback=self.set_Absorption, sendSelectedValue=False, orientation="horizontal")
 
             gui.separator(box_absorption, width=self.INNER_BOX_WIDTH_L0)
@@ -371,11 +371,11 @@ class OpticalElement(ow_generic_element.GenericElement):
                 if self.graphical_options.is_toroidal:
                     surface_box_thorus = ShadowGui.widgetBox(surface_box, "", addSpace=True, orientation="vertical")
 
-                    gui.comboBox(surface_box_thorus, self, "toroidal_mirror_pole_location", label="Torus pole location", labelWidth=150, \
-                                 items=["lower/outer (concave/concave)", \
-                                        "lower/inner (concave/convex)", \
-                                        "upper/inner (convex/concave)", \
-                                        "upper/outer (convex/convex)"], \
+                    gui.comboBox(surface_box_thorus, self, "toroidal_mirror_pole_location", label="Torus pole location", labelWidth=150,
+                                 items=["lower/outer (concave/concave)",
+                                        "lower/inner (concave/convex)",
+                                        "upper/inner (convex/concave)",
+                                        "upper/outer (convex/convex)"],
                                  sendSelectedValue=False, orientation="horizontal")
 
                 surface_box_2 = ShadowGui.widgetBox(tab_bas_shape, "Cylinder Parameter", addSpace=True, orientation="vertical", height=125)
@@ -399,8 +399,8 @@ class OpticalElement(ow_generic_element.GenericElement):
             if self.graphical_options.is_mirror:
                 refl_box = ShadowGui.widgetBox(tab_bas_refl, "Reflectivity Parameter", addSpace=False, orientation="vertical", height=190)
 
-                gui.comboBox(refl_box, self, "reflectivity_type", label="Reflectivity", \
-                             items=["Not considered", "Full Polarization dependence", "No Polarization dependence (scalar)"], \
+                gui.comboBox(refl_box, self, "reflectivity_type", label="Reflectivity",
+                             items=["Not considered", "Full Polarization dependence", "No Polarization dependence (scalar)"],
                              callback=self.set_Refl_Parameters, sendSelectedValue=False, orientation="horizontal")
 
                 gui.separator(refl_box, width=self.INNER_BOX_WIDTH_L2, height=10)
@@ -408,8 +408,8 @@ class OpticalElement(ow_generic_element.GenericElement):
                 self.refl_box_pol = ShadowGui.widgetBox(refl_box, "", addSpace=True, orientation="vertical", width=self.INNER_BOX_WIDTH_L2)
                 self.refl_box_pol_empty = ShadowGui.widgetBox(refl_box, "", addSpace=True, orientation="vertical", width=self.INNER_BOX_WIDTH_L2)
 
-                gui.comboBox(self.refl_box_pol, self, "source_of_reflectivity", label="Source of Reflectivity", labelWidth=185, \
-                             items=["file generated by PREREFL", "electric susceptibility", "file generated by pre_mlayer"], \
+                gui.comboBox(self.refl_box_pol, self, "source_of_reflectivity", label="Source of Reflectivity", labelWidth=185,
+                             items=["file generated by PREREFL", "electric susceptibility", "file generated by pre_mlayer"],
                              callback=self.set_ReflSource_Parameters, sendSelectedValue=False, orientation="horizontal")
 
                 self.refl_box_pol_1 = ShadowGui.widgetBox(self.refl_box_pol, "", addSpace=True, orientation="vertical")
@@ -425,8 +425,8 @@ class OpticalElement(ow_generic_element.GenericElement):
                 self.refl_box_pol_3 = gui.widgetBox(self.refl_box_pol, "", addSpace=True, orientation="vertical")
 
                 ShadowGui.lineEdit(self.refl_box_pol_3, self, "file_prerefl_m", "File Name", labelWidth=125, valueType=str, orientation="horizontal")
-                gui.comboBox(self.refl_box_pol_3, self, "m_layer_tickness", label="Mlayer thickness vary as cosine", labelWidth=350, \
-                             items=["No", "Yes"], \
+                gui.comboBox(self.refl_box_pol_3, self, "m_layer_tickness", label="Mlayer thickness vary as cosine", labelWidth=350,
+                             items=["No", "Yes"],
                              sendSelectedValue=False, orientation="horizontal")
 
                 self.set_Refl_Parameters()
@@ -440,8 +440,8 @@ class OpticalElement(ow_generic_element.GenericElement):
 
                 ShadowGui.lineEdit(crystal_box, self, "file_crystal_parameters", "File with crystal parameters", valueType=str, orientation="horizontal")
 
-                gui.comboBox(crystal_box, self, "crystal_auto_setting", label="Auto setting", labelWidth=350, \
-                             items=["No", "Yes"], \
+                gui.comboBox(crystal_box, self, "crystal_auto_setting", label="Auto setting", labelWidth=350,
+                             items=["No", "Yes"],
                              callback=self.set_Autosetting, sendSelectedValue=False, orientation="horizontal")
 
                 gui.separator(crystal_box, width=self.INNER_BOX_WIDTH_L3, height=10)
@@ -451,8 +451,8 @@ class OpticalElement(ow_generic_element.GenericElement):
 
                 self.autosetting_box_units = ShadowGui.widgetBox(self.autosetting_box, "", addSpace=True, orientation="vertical")
 
-                gui.comboBox(self.autosetting_box_units, self, "units_in_use", label="Units in use", labelWidth=300, \
-                             items=["eV", "Angstroms"], \
+                gui.comboBox(self.autosetting_box_units, self, "units_in_use", label="Units in use", labelWidth=300,
+                             items=["eV", "Angstroms"],
                              callback=self.set_UnitsInUse, sendSelectedValue=False, orientation="horizontal")
 
                 self.autosetting_box_units_1 = ShadowGui.widgetBox(self.autosetting_box_units, "", addSpace=False, orientation="vertical")
@@ -467,8 +467,8 @@ class OpticalElement(ow_generic_element.GenericElement):
 
                 mosaic_box = ShadowGui.widgetBox(tab_cryst_2, "Geometric Parameters", addSpace=True, orientation="vertical", height=280)
 
-                gui.comboBox(mosaic_box, self, "mosaic_crystal", label="Mosaic Crystal", labelWidth=350, \
-                             items=["No", "Yes"], \
+                gui.comboBox(mosaic_box, self, "mosaic_crystal", label="Mosaic Crystal", labelWidth=350,
+                             items=["No", "Yes"],
                              callback=self.set_Mosaic, sendSelectedValue=False, orientation="horizontal")
 
                 gui.separator(mosaic_box, width=self.INNER_BOX_WIDTH_L3, height=10)
@@ -477,8 +477,8 @@ class OpticalElement(ow_generic_element.GenericElement):
 
                 self.asymmetric_cut_box = ShadowGui.widgetBox(self.mosaic_box_1, "", addSpace=False, orientation="vertical", height=110)
 
-                gui.comboBox(self.asymmetric_cut_box, self, "asymmetric_cut", label="Asymmetric cut", labelWidth=350, \
-                             items=["No", "Yes"], \
+                gui.comboBox(self.asymmetric_cut_box, self, "asymmetric_cut", label="Asymmetric cut", labelWidth=350,
+                             items=["No", "Yes"],
                              callback=self.set_AsymmetricCut, sendSelectedValue=False, orientation="horizontal")
 
                 self.asymmetric_cut_box_1 = ShadowGui.widgetBox(self.asymmetric_cut_box, "", addSpace=False, orientation="vertical", width=self.INNER_BOX_WIDTH_L3)
@@ -492,8 +492,8 @@ class OpticalElement(ow_generic_element.GenericElement):
 
                 self.johansson_box = ShadowGui.widgetBox(self.mosaic_box_1, "", addSpace=False, orientation="vertical", height=100)
 
-                gui.comboBox(self.johansson_box, self, "johansson_geometry", label="Johansson Geometry", labelWidth=350, \
-                             items=["No", "Yes"], \
+                gui.comboBox(self.johansson_box, self, "johansson_geometry", label="Johansson Geometry", labelWidth=350,
+                             items=["No", "Yes"],
                              callback=self.set_JohanssonGeometry, sendSelectedValue=False, orientation="horizontal")
 
                 self.johansson_box_1 = ShadowGui.widgetBox(self.johansson_box, "", addSpace=False, orientation="vertical", width=self.INNER_BOX_WIDTH_L3)
@@ -517,8 +517,8 @@ class OpticalElement(ow_generic_element.GenericElement):
 
             dimension_box = ShadowGui.widgetBox(tab_bas_dim, "Dimensions", addSpace=False, orientation="vertical", height=210)
 
-            gui.comboBox(dimension_box, self, "is_infinite", label="Limits Check", \
-                         items=["Infinite o.e. dimensions", "Finite o.e. dimensions"], \
+            gui.comboBox(dimension_box, self, "is_infinite", label="Limits Check",
+                         items=["Infinite o.e. dimensions", "Finite o.e. dimensions"],
                          callback=self.set_Dim_Parameters, sendSelectedValue=False, orientation="horizontal")
 
             gui.separator(dimension_box, width=self.INNER_BOX_WIDTH_L2, height=10)
@@ -526,8 +526,8 @@ class OpticalElement(ow_generic_element.GenericElement):
             self.dimdet_box = ShadowGui.widgetBox(dimension_box, "", addSpace=False, orientation="vertical", width=self.INNER_BOX_WIDTH_L2)
             self.dimdet_box_empty = ShadowGui.widgetBox(dimension_box, "", addSpace=False, orientation="vertical", width=self.INNER_BOX_WIDTH_L2)
 
-            gui.comboBox(self.dimdet_box, self, "mirror_shape", label="Shape selected", labelWidth=250, \
-                         items=["Rectangular", "Full ellipse", "Ellipse with hole"], \
+            gui.comboBox(self.dimdet_box, self, "mirror_shape", label="Shape selected", labelWidth=250,
+                         items=["Rectangular", "Full ellipse", "Ellipse with hole"],
                          sendSelectedValue=False, orientation="horizontal")
 
             ShadowGui.lineEdit(self.dimdet_box, self, "dim_x_plus", "X(+) Half Width / Int Maj Ax [cm]", labelWidth=250, valueType=float, orientation="horizontal")
@@ -558,8 +558,8 @@ class OpticalElement(ow_generic_element.GenericElement):
 
             mod_surf_box = ShadowGui.widgetBox(tab_adv_mod_surf, "Modified Surface Parameters", addSpace=False, orientation="vertical", height=370, width=self.INNER_BOX_WIDTH_L1)
 
-            gui.comboBox(mod_surf_box, self, "modified_surface", label="Modification Type", labelWidth=270, \
-                         items=["None", "Surface Error", "Faceted Surface", "Surface Roughness", "Kumakhov Lens", "Segmented Mirror"], \
+            gui.comboBox(mod_surf_box, self, "modified_surface", label="Modification Type", labelWidth=270,
+                         items=["None", "Surface Error", "Faceted Surface", "Surface Roughness", "Kumakhov Lens", "Segmented Mirror"],
                          callback=self.set_ModifiedSurface, sendSelectedValue=False, orientation="horizontal")
 
             gui.separator(mod_surf_box, width=self.INNER_BOX_WIDTH_L1, height=10)
@@ -570,8 +570,8 @@ class OpticalElement(ow_generic_element.GenericElement):
 
             type_of_defect_box = ShadowGui.widgetBox(self.surface_error_box, "", addSpace=False, orientation="vertical")
 
-            gui.comboBox(type_of_defect_box, self, "ms_type_of_defect", label="Type of Defect", labelWidth=270, \
-                         items=["sinusoidal", "gaussian", "external spline"], \
+            gui.comboBox(type_of_defect_box, self, "ms_type_of_defect", label="Type of Defect", labelWidth=270,
+                         items=["sinusoidal", "gaussian", "external spline"],
                          callback=self.set_TypeOfDefect, sendSelectedValue=False, orientation="horizontal")
 
             self.mod_surf_err_box_1 = ShadowGui.widgetBox(self.surface_error_box, "", addSpace=False, orientation="vertical")
@@ -593,13 +593,13 @@ class OpticalElement(ow_generic_element.GenericElement):
 
             ShadowGui.lineEdit(self.faceted_surface_box, self, "ms_file_facet_descr", "File w/ facet descr.", labelWidth=125, valueType=str, orientation="horizontal")
 
-            gui.comboBox(self.faceted_surface_box, self, "ms_lattice_type", label="Lattice Type", labelWidth=270, \
+            gui.comboBox(self.faceted_surface_box, self, "ms_lattice_type", label="Lattice Type", labelWidth=270,
                          items=["rectangle", "hexagonal"], sendSelectedValue=False, orientation="horizontal")
 
-            gui.comboBox(self.faceted_surface_box, self, "ms_orientation", label="Orientation", labelWidth=270, \
+            gui.comboBox(self.faceted_surface_box, self, "ms_orientation", label="Orientation", labelWidth=270,
                          items=["y-axis", "other"], sendSelectedValue=False, orientation="horizontal")
 
-            gui.comboBox(self.faceted_surface_box, self, "ms_intercept_to_use", label="Intercept to use", labelWidth=270, \
+            gui.comboBox(self.faceted_surface_box, self, "ms_intercept_to_use", label="Intercept to use", labelWidth=270,
                          items=["2nd first", "2nd closest", "closest", "farthest"], sendSelectedValue=False, orientation="horizontal")
 
 
@@ -624,7 +624,7 @@ class OpticalElement(ow_generic_element.GenericElement):
 
             self.kumakhov_lens_box =  ShadowGui.widgetBox(mod_surf_box, box="", addSpace=False, orientation="vertical")
 
-            gui.comboBox(self.kumakhov_lens_box, self, "ms_specify_rz2", label="Specify r(z)^2", labelWidth=350, \
+            gui.comboBox(self.kumakhov_lens_box, self, "ms_specify_rz2", label="Specify r(z)^2", labelWidth=350,
                          items=["No", "Yes"], callback=self.set_SpecifyRz2, sendSelectedValue=False, orientation="horizontal")
 
             self.kumakhov_lens_box_1 =  ShadowGui.widgetBox(self.kumakhov_lens_box, box="", addSpace=False, orientation="vertical")
@@ -633,7 +633,7 @@ class OpticalElement(ow_generic_element.GenericElement):
             ShadowGui.lineEdit(self.kumakhov_lens_box_1, self, "ms_file_with_parameters_rz", "File with parameters (r(z))", labelWidth=185, valueType=str, orientation="horizontal")
             ShadowGui.lineEdit(self.kumakhov_lens_box_2, self, "ms_file_with_parameters_rz2", "File with parameters (r(z)^2)", labelWidth=185, valueType=str, orientation="horizontal")
 
-            gui.comboBox(self.kumakhov_lens_box, self, "ms_save_intercept_bounces", label="Save intercept and bounces", labelWidth=350, \
+            gui.comboBox(self.kumakhov_lens_box, self, "ms_save_intercept_bounces", label="Save intercept and bounces", labelWidth=350,
                          items=["No", "Yes"], sendSelectedValue=False, orientation="horizontal")
 
             # SEGMENTED MIRROR
@@ -657,8 +657,8 @@ class OpticalElement(ow_generic_element.GenericElement):
 
             mir_mov_box = ShadowGui.widgetBox(tab_adv_mir_mov, "Mirror Movement Parameters", addSpace=False, orientation="vertical", height=230, width=self.INNER_BOX_WIDTH_L1)
 
-            gui.comboBox(mir_mov_box, self, "mirror_movement", label="Mirror Movement", labelWidth=350, \
-                         items=["No", "Yes"], \
+            gui.comboBox(mir_mov_box, self, "mirror_movement", label="Mirror Movement", labelWidth=350,
+                         items=["No", "Yes"],
                          callback=self.set_MirrorMovement, sendSelectedValue=False, orientation="horizontal")
 
             gui.separator(mir_mov_box, width=self.INNER_BOX_WIDTH_L1, height=10)
@@ -682,8 +682,8 @@ class OpticalElement(ow_generic_element.GenericElement):
 
             sou_mov_box = ShadowGui.widgetBox(tab_adv_sou_mov, "Source Movement Parameters", addSpace=False, orientation="vertical", height=400, width=self.INNER_BOX_WIDTH_L1)
 
-            gui.comboBox(sou_mov_box, self, "source_movement", label="Source Movement", labelWidth=350, \
-                         items=["No", "Yes"], \
+            gui.comboBox(sou_mov_box, self, "source_movement", label="Source Movement", labelWidth=350,
+                         items=["No", "Yes"],
                          callback=self.set_SourceMovement, sendSelectedValue=False, orientation="horizontal")
 
             gui.separator(sou_mov_box, width=self.INNER_BOX_WIDTH_L1, height=10)
@@ -713,12 +713,12 @@ class OpticalElement(ow_generic_element.GenericElement):
 
             adv_other_box = ShadowGui.widgetBox(tab_adv_misc, "Optional file output", addSpace=False, orientation="vertical")
 
-            gui.comboBox(adv_other_box, self, "file_to_write_out", label="Files to write out", labelWidth=310, \
-                         items=["All", "Mirror", "Image", "None"], \
+            gui.comboBox(adv_other_box, self, "file_to_write_out", label="Files to write out", labelWidth=310,
+                         items=["All", "Mirror", "Image", "None"],
                          sendSelectedValue=False, orientation="horizontal")
 
-            gui.comboBox(adv_other_box, self, "write_out_inc_ref_angles", label="Write out Incident/Reflected angles [angle.xx]", labelWidth=350, \
-                         items=["No", "Yes"], \
+            gui.comboBox(adv_other_box, self, "write_out_inc_ref_angles", label="Write out Incident/Reflected angles [angle.xx]", labelWidth=350,
+                         items=["No", "Yes"],
                          sendSelectedValue=False, orientation="horizontal")
 
         button = gui.button(self.controlArea, self, "Run Shadow/trace", callback=self.traceOpticalElement)
@@ -859,16 +859,16 @@ class OpticalElement(ow_generic_element.GenericElement):
     def populateFields(self, shadow_oe = Orange.shadow.ShadowOpticalElement.create_empty_oe()):
 
         if self.graphical_options.is_screen_slit:
-            shadow_oe.oe.setFrameOfReference(self.source_plane_distance, \
-                                             self.image_plane_distance, \
-                                             0, \
-                                             180, \
+            shadow_oe.oe.setFrameOfReference(self.source_plane_distance,
+                                             self.image_plane_distance,
+                                             0,
+                                             180,
                                              0)
         else:
-            shadow_oe.oe.setFrameOfReference(self.source_plane_distance, \
-                                             self.image_plane_distance, \
-                                             self.incidence_angle_deg, \
-                                             self.reflection_angle_deg, \
+            shadow_oe.oe.setFrameOfReference(self.source_plane_distance,
+                                             self.image_plane_distance,
+                                             self.incidence_angle_deg,
+                                             self.reflection_angle_deg,
                                              self.mirror_orientation_angle)
 
             #####################################
@@ -904,9 +904,9 @@ class OpticalElement(ow_generic_element.GenericElement):
                    if self.focii_and_continuation_plane == 0:
                       shadow_oe.oe.setAutoFocus(f_default=1)
                    else:
-                      shadow_oe.oe.setAutoFocus(f_default=0, \
-                                                ssour=self.object_side_focal_distance, \
-                                                simag=self.image_side_focal_distance, \
+                      shadow_oe.oe.setAutoFocus(f_default=0,
+                                                ssour=self.object_side_focal_distance,
+                                                simag=self.image_side_focal_distance,
                                                 theta=self.incidence_angle_respect_to_normal)
                    if self.graphical_options.is_paraboloid: shadow_oe.oe.F_SIDE=self.focus_location
             else:
@@ -973,7 +973,7 @@ class OpticalElement(ow_generic_element.GenericElement):
             if self.is_infinite == 0:
                 shadow_oe.oe.FHIT_C = 0
             else:
-                shadow_oe.oe.setDimensions(fshape=(self.mirror_shape+1), \
+                shadow_oe.oe.setDimensions(fshape=(self.mirror_shape+1),
                                            params=array([self.dim_y_plus, self.dim_y_minus,self.dim_x_plus, self.dim_x_minus]))
 
             #####################################
@@ -984,11 +984,11 @@ class OpticalElement(ow_generic_element.GenericElement):
 
             if self.modified_surface == 1:
                  if self.ms_type_of_defect == 0:
-                     shadow_oe.oe.setRipple(f_g_s=0, xyAmpWavPha=array([self.ms_ripple_ampli_x, \
-                                                                        self.ms_ripple_wavel_x, \
-                                                                        self.ms_ripple_phase_x, \
-                                                                        self.ms_ripple_ampli_y, \
-                                                                        self.ms_ripple_wavel_y, \
+                     shadow_oe.oe.setRipple(f_g_s=0, xyAmpWavPha=array([self.ms_ripple_ampli_x,
+                                                                        self.ms_ripple_wavel_x,
+                                                                        self.ms_ripple_phase_x,
+                                                                        self.ms_ripple_ampli_y,
+                                                                        self.ms_ripple_wavel_y,
                                                                         self.ms_ripple_phase_y]))
                  else:
                      shadow_oe.oe.setRipple(f_g_s=self.ms_type_of_defect, file_rip=bytes(self.ms_defect_file_name, 'utf-8'))
