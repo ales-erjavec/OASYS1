@@ -33,7 +33,7 @@ class ShadowGui():
         lEdit = gui.lineEdit(widget, master, value, label, labelWidth, orientation, box, callback, valueType, validator, controlWidth, callbackOnType, focusInCallback, enterPlaceholder, **misc)
 
         if value:
-            if (isinstance(value, str)):
+            if (valueType != str):
                 lEdit.setAlignment(Qt.AlignRight)
 
         return lEdit

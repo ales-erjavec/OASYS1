@@ -3,7 +3,7 @@ import Orange
 import Orange.shadow
 from Orange.widgets import gui
 from Orange.widgets.settings import Setting
-from PyQt4.QtGui import QApplication, qApp, QPalette, QColor, QFont
+from PyQt4.QtGui import QApplication, qApp, QPalette, QColor, QFont, QGraphicsEffect
 
 
 import Shadow.ShadowTools as ST
@@ -15,6 +15,8 @@ from Orange.shadow.argonne11bm_absorption import Absorb as Absorption
 from PyMca.widgets.PlotWindow import PlotWindow
 
 class XRDCapillary(ow_automatic_element.AutomaticElement):
+
+    debug_mode = False
 
     name = "XRD Capillary"
     description = "Shadow OE: XRD Capillary"
@@ -40,32 +42,33 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     capillary_material = Setting(0)
     sample_material = Setting(0)
     packing_factor = Setting(0.6)
+    positioning_error = Setting(0.0)
 
-    horizontal_displacement = Setting(0)
-    vertical_displacement = Setting(0)
-    calculate_absorption = Setting(0)
-    normalization_factor = Setting(100)
+    horizontal_displacement = Setting(0.0)
+    vertical_displacement = Setting(0.0)
+    calculate_absorption = Setting(0.0)
+    normalization_factor = Setting(100.0)
 
-    shift_2theta = Setting(0)
+    shift_2theta = Setting(0.000)
 
-    slit_1_vertical_displacement = Setting(0)
-    slit_2_vertical_displacement = Setting(0)
-    slit_1_horizontal_displacement = Setting(0)
-    slit_2_horizontal_displacement = Setting(0)
+    slit_1_vertical_displacement = Setting(0.0)
+    slit_2_vertical_displacement = Setting(0.0)
+    slit_1_horizontal_displacement = Setting(0.0)
+    slit_2_horizontal_displacement = Setting(0.0)
 
-    detector_distance = Setting(95)
-    slit_1_distance = Setting(0)
-    slit_1_vertical_aperture = Setting(0)
-    slit_1_horizontal_aperture = Setting(0)
-    slit_2_distance = Setting(0)
-    slit_2_vertical_aperture = Setting(0)
-    slit_2_horizontal_aperture = Setting(0)
+    detector_distance = Setting(95.0)
+    slit_1_distance = Setting(0.0)
+    slit_1_vertical_aperture = Setting(0.0)
+    slit_1_horizontal_aperture = Setting(0.0)
+    slit_2_distance = Setting(0.0)
+    slit_2_vertical_aperture = Setting(0.0)
+    slit_2_horizontal_aperture = Setting(0.0)
 
-    start_angle_na = Setting(10)
-    stop_angle_na = Setting(120)
+    start_angle_na = Setting(10.0)
+    stop_angle_na = Setting(120.0)
     step = Setting(0.002)
-    start_angle = 0
-    stop_angle = 0
+    start_angle = 0.0
+    stop_angle = 0.0
 
     set_number_of_peaks = Setting(0)
     number_of_peaks = Setting(1)
@@ -76,30 +79,31 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     keep_result = Setting(0)
     number_of_origin_points = Setting(1)
     number_of_rotated_rays = Setting(5)
+    output_file_name = Setting('XRD_Profile.xy')
 
     add_background = Setting(0)
-    n_sigma=Setting(0)
+    n_sigma=Setting(0.0)
     add_chebyshev = Setting(0)
-    cheb_coeff_0 = Setting(0)
-    cheb_coeff_1 = Setting(0)
-    cheb_coeff_2 = Setting(0)
-    cheb_coeff_3 = Setting(0)
-    cheb_coeff_4 = Setting(0)
-    cheb_coeff_5 = Setting(0)
+    cheb_coeff_0 = Setting(0.0)
+    cheb_coeff_1 = Setting(0.0)
+    cheb_coeff_2 = Setting(0.0)
+    cheb_coeff_3 = Setting(0.0)
+    cheb_coeff_4 = Setting(0.0)
+    cheb_coeff_5 = Setting(0.0)
 
-    add_expdecay = Setting(0)
-    expd_coeff_0 = Setting(0)
-    expd_coeff_1 = Setting(0)
-    expd_coeff_2 = Setting(0)
-    expd_coeff_3 = Setting(0)
-    expd_coeff_4 = Setting(0)
-    expd_coeff_5 = Setting(0)
-    expd_decayp_0 = Setting(0)
-    expd_decayp_1 = Setting(0)
-    expd_decayp_2 = Setting(0)
-    expd_decayp_3 = Setting(0)
-    expd_decayp_4 = Setting(0)
-    expd_decayp_5 = Setting(0)
+    add_expdecay = Setting(0.0)
+    expd_coeff_0 = Setting(0.0)
+    expd_coeff_1 = Setting(0.0)
+    expd_coeff_2 = Setting(0.0)
+    expd_coeff_3 = Setting(0.0)
+    expd_coeff_4 = Setting(0.0)
+    expd_coeff_5 = Setting(0.0)
+    expd_decayp_0 = Setting(0.0)
+    expd_decayp_1 = Setting(0.0)
+    expd_decayp_2 = Setting(0.0)
+    expd_decayp_3 = Setting(0.0)
+    expd_decayp_4 = Setting(0.0)
+    expd_decayp_5 = Setting(0.0)
 
     run_simulation=True
     reset_button_pressed=False
@@ -113,11 +117,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     random_generator = random.Random()
 
-    #out_file = None
-    #out_file_2 = None
-    #out_file_3 = None
-    #out_file_4 = None
-    #out_file_5 = None
+    debug_file_1 = None
 
     def __init__(self):
         super().__init__()
@@ -136,58 +136,66 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         box_rays = ShadowGui.widgetBox(self.tab_simulation, "Rays Generation", addSpace=True, orientation="vertical")
 
-        ShadowGui.lineEdit(box_rays, self, "number_of_origin_points", "Number of Origin Points into the Capillary", valueType=int, orientation="horizontal")
+        ShadowGui.lineEdit(box_rays, self, "number_of_origin_points", "Number of Origin Points into the Capillary", labelWidth=355, valueType=int, orientation="horizontal")
         ShadowGui.lineEdit(box_rays, self, "number_of_rotated_rays", "Number of Generated Rays in the Powder Diffraction Arc",  valueType=int, orientation="horizontal")
 
         box_simulation = ShadowGui.widgetBox(self.tab_simulation, "Simulation Management", addSpace=True, orientation="vertical")
 
+        ShadowGui.lineEdit(box_simulation, self, "output_file_name", "Output File Name", labelWidth=120, valueType=str, orientation="horizontal")
+        gui.separator(box_simulation)
+
         gui.checkBox(box_simulation, self, "keep_result", "Keep Result")
         gui.separator(box_simulation)
-        gui.checkBox(box_simulation, self, "incremental", "Incremental Simulation", callback=self.setIncremental)
 
-        self.le_number_of_executions = ShadowGui.lineEdit(box_simulation, self, "number_of_executions", "Number of Executions", valueType=int, orientation="horizontal")
+        gui.checkBox(box_simulation, self, "incremental", "Incremental Simulation", callback=self.setIncremental)
+        self.le_number_of_executions = ShadowGui.lineEdit(box_simulation, self, "number_of_executions", "Number of Executions", labelWidth=350, valueType=int, orientation="horizontal")
 
         self.setIncremental()
-
-        gui.separator(box_simulation)
-        self.le_current_execution = ShadowGui.lineEdit(box_simulation, self, "current_execution", "Current Execution", valueType=int, orientation="horizontal")
+        self.le_current_execution = ShadowGui.lineEdit(box_simulation, self, "current_execution", "Current Execution", labelWidth=350, valueType=int, orientation="horizontal")
         self.le_current_execution.setReadOnly(True)
+        font = QFont(self.le_current_execution.font())
+        font.setBold(True)
+        self.le_current_execution.setFont(font)
+        palette = QPalette(self.le_current_execution.palette()) # make a copy of the palette
+        palette.setColor(QPalette.Text, QColor('dark blue'))
+        palette.setColor(QPalette.Base, QColor(243, 240, 160))
+        self.le_current_execution.setPalette(palette)
 
         #####################
 
         box_sample = ShadowGui.widgetBox(self.tab_physical, "Sample Parameters", addSpace=True, orientation="vertical")
 
-        ShadowGui.lineEdit(box_sample, self, "capillary_diameter", "Capillary Diameter [mm]", valueType=float, orientation="horizontal")
-        gui.comboBox(box_sample, self, "capillary_material", label="Capillary Material", items=["Glass", "Kapton"], sendSelectedValue=False, orientation="horizontal")
-        gui.comboBox(box_sample, self, "sample_material", label="Material", items=["LaB6", "Si", "ZnO"], sendSelectedValue=False, orientation="horizontal")
-        ShadowGui.lineEdit(box_sample, self, "packing_factor", "Packing Factor (0.0...1.0)", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(box_sample, self, "capillary_diameter", "Capillary Diameter [mm]", labelWidth=350, valueType=float, orientation="horizontal")
+        gui.comboBox(box_sample, self, "capillary_material", label="Capillary Material", labelWidth=300, items=["Glass", "Kapton"], sendSelectedValue=False, orientation="horizontal")
+        gui.comboBox(box_sample, self, "sample_material", label="Material", items=["LaB6", "Si", "ZnO"], labelWidth=300, sendSelectedValue=False, orientation="horizontal")
+        ShadowGui.lineEdit(box_sample, self, "packing_factor", "Packing Factor (0.0...1.0)", labelWidth=350, valueType=float, orientation="horizontal")
 
         box_2theta_arm = ShadowGui.widgetBox(self.tab_physical, "2Theta Arm Parameters", addSpace=True, orientation="vertical")
 
-        ShadowGui.lineEdit(box_2theta_arm, self, "detector_distance", "Detector Distance (cm)",  tooltip="Detector Distance (cm)", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(box_2theta_arm, self, "detector_distance", "Detector Distance (cm)", labelWidth=300, tooltip="Detector Distance (cm)", valueType=float, orientation="horizontal")
 
         gui.separator(box_2theta_arm)
 
-        ShadowGui.lineEdit(box_2theta_arm, self, "slit_1_distance", "Slit 1 Distance from Goniometer Center (cm)", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(box_2theta_arm, self, "slit_1_vertical_aperture", "Slit 1 Vertical Aperture (um)",  valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(box_2theta_arm, self, "slit_1_horizontal_aperture", "Slit 1 Horizontal Aperture (um)",  valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(box_2theta_arm, self, "slit_1_distance", "Slit 1 Distance from Goniometer Center (cm)", labelWidth=300, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(box_2theta_arm, self, "slit_1_vertical_aperture", "Slit 1 Vertical Aperture (um)",  labelWidth=300, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(box_2theta_arm, self, "slit_1_horizontal_aperture", "Slit 1 Horizontal Aperture (um)",  labelWidth=300, valueType=float, orientation="horizontal")
 
         gui.separator(box_2theta_arm)
 
-        ShadowGui.lineEdit(box_2theta_arm, self, "slit_2_distance", "Slit 2 Distance from Goniometer Center (cm)", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(box_2theta_arm, self, "slit_2_vertical_aperture", "Slit 2 Vertical Aperture (um)",  valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(box_2theta_arm, self, "slit_2_horizontal_aperture", "Slit 2 Horizontal Aperture (um)",  valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(box_2theta_arm, self, "slit_2_distance", "Slit 2 Distance from Goniometer Center (cm)", labelWidth=300, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(box_2theta_arm, self, "slit_2_vertical_aperture", "Slit 2 Vertical Aperture (um)", labelWidth=300, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(box_2theta_arm, self, "slit_2_horizontal_aperture", "Slit 2 Horizontal Aperture (um)", labelWidth=300, valueType=float, orientation="horizontal")
 
         box_scan = ShadowGui.widgetBox(self.tab_physical, "Scan Parameters", addSpace=True, orientation="vertical")
 
-        ShadowGui.lineEdit(box_scan, self, "start_angle_na", "Start Angle (deg)", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(box_scan, self, "stop_angle_na", "Stop Angle (deg)",  valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(box_scan, self, "step", "Step (deg)",  valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(box_scan, self, "start_angle_na", "Start Angle (deg)", labelWidth=350, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(box_scan, self, "stop_angle_na", "Stop Angle (deg)", labelWidth=350, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(box_scan, self, "step", "Step (deg)", labelWidth=340, valueType=float, orientation="horizontal")
 
         box_diffraction = ShadowGui.widgetBox(self.tab_physical, "Diffraction Parameters", addSpace=True, orientation="vertical")
 
-        gui.comboBox(box_diffraction, self, "set_number_of_peaks", label="set Last Diffraction Peak?", callback=self.setNumberOfPeaks, items=["No", "Yes"], sendSelectedValue=False, orientation="horizontal")
-        self.le_number_of_peaks = ShadowGui.lineEdit(box_diffraction, self, "number_of_peaks", "Last Diffraction Peak Number", valueType=int, orientation="horizontal")
+        gui.comboBox(box_diffraction, self, "set_number_of_peaks", label="set Last Diffraction Peak?", labelWidth=370, callback=self.setNumberOfPeaks, items=["No", "Yes"], sendSelectedValue=False, orientation="horizontal")
+        self.le_number_of_peaks = ShadowGui.lineEdit(box_diffraction, self, "number_of_peaks", "Last Diffraction Peak Number", labelWidth=358, valueType=int, orientation="horizontal")
         gui.separator(box_diffraction)
 
         self.setNumberOfPeaks()
@@ -196,29 +204,31 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         box_cap_aberrations = ShadowGui.widgetBox(self.tab_aberrations, "Capillary Aberrations", addSpace=True, orientation="vertical")
 
-        ShadowGui.lineEdit(box_cap_aberrations, self, "horizontal_displacement", "Capillary H Displacement (um)", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(box_cap_aberrations, self, "vertical_displacement", "Capillary V Displacement (um)", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(box_cap_aberrations, self, "positioning_error", "Position Error % (wobbling)", labelWidth=350, valueType=float, orientation="horizontal")
         gui.separator(box_cap_aberrations)
-        gui.comboBox(box_cap_aberrations, self, "calculate_absorption", label="Calculate Absorption", callback=self.setAbsorption, items=["No", "Yes"], sendSelectedValue=False, orientation="horizontal")
-        self.le_normalization_factor = ShadowGui.lineEdit(box_cap_aberrations, self, "normalization_factor", "Normalization Factor", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(box_cap_aberrations, self, "horizontal_displacement", "Horizontal Displacement (um)", labelWidth=300, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(box_cap_aberrations, self, "vertical_displacement", "Vertical Displacement (um)", labelWidth=300, valueType=float, orientation="horizontal")
+        gui.separator(box_cap_aberrations)
+        gui.comboBox(box_cap_aberrations, self, "calculate_absorption", label="Calculate Absorption", labelWidth=370, callback=self.setAbsorption, items=["No", "Yes"], sendSelectedValue=False, orientation="horizontal")
+        self.le_normalization_factor = ShadowGui.lineEdit(box_cap_aberrations, self, "normalization_factor", "Normalization Factor", labelWidth=340, valueType=float, orientation="horizontal")
 
         self.setAbsorption()
 
         box_gon_aberrations = ShadowGui.widgetBox(self.tab_aberrations, "Goniometer Aberrations", addSpace=True, orientation="vertical")
 
-        ShadowGui.lineEdit(box_gon_aberrations, self, "shift_2theta", "Shift 2Theta (deg)", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(box_gon_aberrations, self, "shift_2theta", "Shift 2Theta (deg)", labelWidth=300, valueType=float, orientation="horizontal")
         gui.separator(box_gon_aberrations)
-        ShadowGui.lineEdit(box_gon_aberrations, self, "slit_1_vertical_displacement", "Slit 1 V Displacement (um)", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(box_gon_aberrations, self, "slit_2_vertical_displacement", "Slit 2 V Displacement (um)", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(box_gon_aberrations, self, "slit_1_vertical_displacement", "Slit 1 V Displacement (um)", labelWidth=300, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(box_gon_aberrations, self, "slit_2_vertical_displacement", "Slit 2 V Displacement (um)", labelWidth=300, valueType=float, orientation="horizontal")
         gui.separator(box_gon_aberrations)
-        ShadowGui.lineEdit(box_gon_aberrations, self, "slit_1_horizontal_displacement", "Slit 1 H Displacement (um)", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(box_gon_aberrations, self, "slit_2_horizontal_displacement", "Slit 2 H Displacement (um)", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(box_gon_aberrations, self, "slit_1_horizontal_displacement", "Slit 1 H Displacement (um)", labelWidth=300, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(box_gon_aberrations, self, "slit_2_horizontal_displacement", "Slit 2 H Displacement (um)", labelWidth=300, valueType=float, orientation="horizontal")
 
         #####################
 
         box_background = ShadowGui.widgetBox(self.tab_background, "Background Parameters", addSpace=True, orientation="vertical", height=510, width=420)
 
-        gui.comboBox(box_background, self, "add_background", label="Add Background", items=["No", "Yes"],
+        gui.comboBox(box_background, self, "add_background", label="Add Background", labelWidth=370, items=["No", "Yes"],
                      callback=self.setAddBackground, sendSelectedValue=False, orientation="horizontal")
 
         gui.separator(box_background)
@@ -226,7 +236,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         self.box_background_1_hidden = ShadowGui.widgetBox(box_background, "", addSpace=True, orientation="vertical", width=410)
         self.box_background_1 = ShadowGui.widgetBox(box_background, "", addSpace=True, orientation="vertical")
 
-        gui.comboBox(self.box_background_1, self, "n_sigma", label="Noise (Nr. Sigma)", items=["0.5", "1", "1.5", "2", "2.5", "3"], sendSelectedValue=False, orientation="horizontal")
+        gui.comboBox(self.box_background_1, self, "n_sigma", label="Noise (Nr. Sigma)", labelWidth=347, items=["0.5", "1", "1.5", "2", "2.5", "3"], sendSelectedValue=False, orientation="horizontal")
 
         self.box_background_2 = ShadowGui.widgetBox(box_background, "", addSpace=True, orientation="horizontal")
 
@@ -234,30 +244,30 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         gui.checkBox(self.box_chebyshev, self, "add_chebyshev", "add Background", callback=self.setChebyshev)
         gui.separator(self.box_chebyshev)
         self.box_chebyshev_2 = ShadowGui.widgetBox(self.box_chebyshev, "", addSpace=True, orientation="vertical")
-        ShadowGui.lineEdit(self.box_chebyshev_2, self, "cheb_coeff_0", "A0", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(self.box_chebyshev_2, self, "cheb_coeff_1", "A1", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(self.box_chebyshev_2, self, "cheb_coeff_2", "A2", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(self.box_chebyshev_2, self, "cheb_coeff_3", "A3", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(self.box_chebyshev_2, self, "cheb_coeff_4", "A4", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(self.box_chebyshev_2, self, "cheb_coeff_5", "A5", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_chebyshev_2, self, "cheb_coeff_0", "A0", labelWidth=70, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_chebyshev_2, self, "cheb_coeff_1", "A1", labelWidth=70, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_chebyshev_2, self, "cheb_coeff_2", "A2", labelWidth=70, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_chebyshev_2, self, "cheb_coeff_3", "A3", labelWidth=70, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_chebyshev_2, self, "cheb_coeff_4", "A4", labelWidth=70, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_chebyshev_2, self, "cheb_coeff_5", "A5", labelWidth=70, valueType=float, orientation="horizontal")
          
         self.box_expdecay = ShadowGui.widgetBox(self.box_background_2, "Exp Decay", addSpace=True, orientation="vertical")
         gui.checkBox(self.box_expdecay, self, "add_expdecay", "add Background", callback=self.setExpDecay)
         gui.separator(self.box_expdecay)
         self.box_expdecay_2 = ShadowGui.widgetBox(self.box_expdecay, "", addSpace=True, orientation="vertical")
-        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_coeff_0", "A0", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_coeff_1", "A1", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_coeff_2", "A2", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_coeff_3", "A3", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_coeff_4", "A4", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_coeff_5", "A5", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_coeff_0", "A0", labelWidth=70, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_coeff_1", "A1", labelWidth=70, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_coeff_2", "A2", labelWidth=70, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_coeff_3", "A3", labelWidth=70, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_coeff_4", "A4", labelWidth=70, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_coeff_5", "A5", labelWidth=70, valueType=float, orientation="horizontal")
         gui.separator(self.box_expdecay_2)
-        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_decayp_0", "H0", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_decayp_1", "H1", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_decayp_2", "H2", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_decayp_3", "H3", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_decayp_4", "H4", valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_decayp_5", "H5", valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_decayp_0", "H0", labelWidth=70, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_decayp_1", "H1", labelWidth=70, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_decayp_2", "H2", labelWidth=70, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_decayp_3", "H3", labelWidth=70, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_decayp_4", "H4", labelWidth=70, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_expdecay_2, self, "expd_decayp_5", "H5", labelWidth=70, valueType=float, orientation="horizontal")
 
         #####################
 
@@ -427,7 +437,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         #TODO: ERROR MANAGEMENT WITH MESSAGES
         if self.input_beam is None: return
 
-        self.out_file_3 = open(os.getcwd() + '/Output/generated.dat', 'w')
+        if (self.debug_mode): self.debug_file_1 = open(os.getcwd() + '/Output/generated_rays.dat', 'w')
 
         self.backupOutFile()
 
@@ -783,8 +793,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                 self.plotResult()
                 self.writeOutFile()
 
-        ########## to be removed
-        self.out_file_3.close()
+        if (self.debug_mode): self.debug_file_1.close()
 
         self.writeOutFile()
 
@@ -819,7 +828,13 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         if not os.path.exists(directory_out): os.mkdir(directory_out)
 
-        out_file = open(directory_out + '/XRD_Profile.xy',"w")
+        out_file = None
+        output_file_name = str(self.output_file_name).strip()
+
+        if output_file_name == "":
+            out_file = open(directory_out + '/XRD_Profile.xy',"w")
+        else:
+            out_file = open(directory_out + '/' + output_file_name,"w")
 
         cursor = range(0, len(self.twotheta_angles))
 
@@ -1086,15 +1101,16 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         y_1_int = (self.D_1 - z_1_int*sin_twotheta)/cos_twotheta
         x_1_int = x_0 + (v_x/v_z)*(z_1_int-z_0)
 
-        self.out_file_3.write(str(x_1_int) + " " + str(y_1_int) + " " + str(z_1_int) + "\n")
-        self.out_file_3.flush()
-
         d_1_x = x_1_int-x_c_s1
         d_1_y = y_1_int-y_c_s1
         d_1_z = z_1_int-z_c_s1
 
         dist_yz = math.sqrt(d_1_y*d_1_y + d_1_z*d_1_z)
         dist_x  = abs(d_1_x)
+
+        if (self.debug_mode):
+            self.debug_file_1.write(str(x_1_int) + " " + str(y_1_int) + " " + str(z_1_int) + "\n")
+            self.debug_file_1.flush()
 
         if dist_x <= self.horizontal_acceptance_1 and dist_yz <= self.vertical_acceptance_1:
             # intersezione del raggio con il piano intercettato dalla slit
@@ -1103,15 +1119,16 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             y_2_int = (self.D_2 - z_2_int*sin_twotheta)/cos_twotheta
             x_2_int = x_0 + (v_x/v_z)*(z_2_int-z_0)
 
-            self.out_file_3.write(str(x_2_int) + " " + str(y_2_int) + " " + str(z_2_int) + "\n")
-            self.out_file_3.flush()
-
             d_2_x = x_2_int-x_c_s2
             d_2_y = y_2_int-y_c_s2
             d_2_z = z_2_int-z_c_s2
 
             dist_yz = math.sqrt(d_2_y*d_2_y + d_2_z*d_2_z)
             dist_x  = abs(d_2_x)
+
+            if (self.debug_mode):
+                self.debug_file_1.write(str(x_2_int) + " " + str(y_2_int) + " " + str(z_2_int) + "\n")
+                self.debug_file_1.flush()
 
             if dist_x <= self.horizontal_acceptance_2 and dist_yz <= self.vertical_acceptance_2:
                 is_collected_ray= True
