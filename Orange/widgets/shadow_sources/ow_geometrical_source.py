@@ -53,6 +53,7 @@ class GeometricalSource(ow_generic_element.GenericElement):
     gauss_sigma_x = Setting(0.001)
     gauss_sigma_z = Setting(0.001)
 
+
     angular_distribution = Setting(0)
 
     horizontal_div_x_plus = Setting(5.0e-7)
