@@ -29,6 +29,11 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     inputs = [("Input Beam", Orange.shadow.ShadowBeam, "setBeam")]
 
+    outputs = [{"name":"Send New Beam",
+                "type": int,
+                "doc":"Feedback signal to start a new beam simulation",
+                "id":"send_new_beam"}]
+
     input_beam = None
 
     TABS_AREA_HEIGHT = 650
@@ -76,6 +81,11 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     incremental = Setting(0)
     number_of_executions = Setting(1)
     current_execution = 0
+
+    send_new_beam = Setting(0)
+    number_of_new_beams = Setting(1)
+    current_new_beam = 0
+
     keep_result = Setting(0)
     number_of_origin_points = Setting(1)
     number_of_rotated_rays = Setting(5)
@@ -160,6 +170,23 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         palette.setColor(QPalette.Text, QColor('dark blue'))
         palette.setColor(QPalette.Base, QColor(243, 240, 160))
         self.le_current_execution.setPalette(palette)
+
+        gui.separator(box_simulation)
+
+        gui.checkBox(box_simulation, self, "send_new_beam", "Send new beam at end", callback=self.setSendNewBeam)
+        self.le_number_of_new_beams = ShadowGui.lineEdit(box_simulation, self, "number_of_new_beams", "Number of new Beams", labelWidth=350, valueType=int, orientation="horizontal")
+
+        self.setSendNewBeam()
+
+        self.le_current_new_beam = ShadowGui.lineEdit(box_simulation, self, "current_new_beam", "Current New Beam", labelWidth=350, valueType=int, orientation="horizontal")
+        self.le_current_new_beam.setReadOnly(True)
+        font = QFont(self.le_current_new_beam.font())
+        font.setBold(True)
+        self.le_current_new_beam.setFont(font)
+        palette = QPalette(self.le_current_new_beam.palette()) # make a copy of the palette
+        palette.setColor(QPalette.Text, QColor('dark blue'))
+        palette.setColor(QPalette.Base, QColor(243, 240, 160))
+        self.le_current_new_beam.setPalette(palette)
 
         #####################
 
@@ -341,6 +368,9 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     def setIncremental(self):
         self.le_number_of_executions.setEnabled(self.incremental == 1)
+
+    def setSendNewBeam(self):
+        self.le_number_of_new_beams.setEnabled(self.send_new_beam == 1)
 
     def setAbsorption(self):
         self.le_normalization_factor.setEnabled(self.calculate_absorption == 1)
@@ -805,6 +835,15 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         self.progressBarFinished()
         qApp.processEvents()
+
+        if self.send_new_beam == 1:
+            if self.current_new_beam < self.number_of_new_beams:
+                self.send("send_new_beam", 1)
+                self.current_new_beam += 1
+            else:
+                self.send("send_new_beam", 0)
+        else:
+            self.send("send_new_beam", 0)
 
     def simulateBackground(self):
         if self.add_background ==  1:

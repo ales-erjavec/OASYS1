@@ -20,6 +20,8 @@ class BendingMagnet(ow_generic_element.GenericElement):
     category = "Sources"
     keywords = ["data", "file", "load", "read"]
 
+    inputs = [("Send New Beam", int, "sendNewBeam")]
+
     outputs = [{"name":"Beam",
                 "type":Orange.shadow.ShadowBeam,
                 "doc":"Shadow Beam",
@@ -169,6 +171,10 @@ class BendingMagnet(ow_generic_element.GenericElement):
         self.send("Beam", beam_out)
 
         self.progressBarFinished()
+
+    def sendNewBeam(self, send_new_signal):
+        if send_new_signal == 1:
+            self.runShadowSource()
 
 if __name__ == "__main__":
     a = QApplication(sys.argv)
