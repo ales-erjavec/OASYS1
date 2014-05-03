@@ -29,7 +29,7 @@ class BendingMagnet(ow_generic_element.GenericElement):
     seed=Setting(6775431)
     e_min=Setting(5000)
     e_max=Setting(100000)
-    optical_paths_combo=Setting(1) # REMOVED FROM GUI: 1 AS DEFAULT
+    store_optical_paths=Setting(1) # REMOVED FROM GUI: 1 AS DEFAULT
     sample_distribution_combo=Setting(0) # REMOVED FROM GUI: 0 AS DEFAULT
     generate_polarization_combo=Setting(2)
 
@@ -55,7 +55,7 @@ class BendingMagnet(ow_generic_element.GenericElement):
     def __init__(self):
         super().__init__()
 
-        left_box_1 = gui.widgetBox(self.controlArea, "Monte Carlo and Energy Spectrum", addSpace=True, orientation="vertical")
+        left_box_1 = ShadowGui.widgetBox(self.controlArea, "Monte Carlo and Energy Spectrum", addSpace=True, orientation="vertical")
 
         ShadowGui.lineEdit(left_box_1, self, "number_of_rays", "Number of Rays", tooltip="Number of Rays", labelWidth=300, valueType=int, orientation="horizontal")
 
@@ -64,7 +64,7 @@ class BendingMagnet(ow_generic_element.GenericElement):
         ShadowGui.lineEdit(left_box_1, self, "e_max", "Maximum Energy (eV)", tooltip="Maximum Energy (eV)", labelWidth=300, valueType=float, orientation="horizontal")
         gui.comboBox(left_box_1, self, "generate_polarization_combo", label="Generate Polarization", items=["Only Parallel", "Only Perpendicular", "Total"], labelWidth=300, orientation="horizontal")
 
-        left_box_2 = gui.widgetBox(self.controlArea, "Machine Parameters", addSpace=True, orientation="vertical")
+        left_box_2 = ShadowGui.widgetBox(self.controlArea, "Machine Parameters", addSpace=True, orientation="vertical")
 
         ShadowGui.lineEdit(left_box_2, self, "sigma_x", "Sigma X [cm]", labelWidth=300, tooltip="Sigma X [cm]", valueType=float, orientation="horizontal")
         ShadowGui.lineEdit(left_box_2, self, "sigma_z", "Sigma Z [cm]", labelWidth=300, tooltip="Sigma Z [cm]", valueType=float, orientation="horizontal")
@@ -74,7 +74,7 @@ class BendingMagnet(ow_generic_element.GenericElement):
         ShadowGui.lineEdit(left_box_2, self, "distance_from_waist_x", "Distance from Waist X [cm]", labelWidth=300, tooltip="Distance from Waist X [cm]", valueType=float, orientation="horizontal")
         ShadowGui.lineEdit(left_box_2, self, "distance_from_waist_z", "Distance from Waist Z [cm]", labelWidth=300, tooltip="Distance from Waist Z [cm]", valueType=float, orientation="horizontal")
 
-        left_box_3 = gui.widgetBox(self.controlArea, "Bending Magnet Parameters", addSpace=True, orientation="vertical")
+        left_box_3 = ShadowGui.widgetBox(self.controlArea, "Bending Magnet Parameters", addSpace=True, orientation="vertical")
 
         ShadowGui.lineEdit(left_box_3, self, "magnetic_radius", "Magnetic Radius [m]", labelWidth=300, callback=self.calculateMagneticField, tooltip="Magnetic Radius [m]", valueType=float, orientation="horizontal")
         ShadowGui.lineEdit(left_box_3, self, "magnetic_field", "Magnetic Field [T]", labelWidth=300, callback=self.calculateMagneticRadius, tooltip="Magnetic Field [T]", valueType=float, orientation="horizontal")
@@ -85,7 +85,7 @@ class BendingMagnet(ow_generic_element.GenericElement):
         ShadowGui.lineEdit(left_box_3, self, "max_vertical_half_divergence_to", "Max vertical half-divergence [rads] To [-]", labelWidth=300, tooltip="Max vertical half-divergence [rads] To [-]", valueType=float, orientation="horizontal")
         gui.comboBox(left_box_3, self, "calculation_mode_combo", label="Calculation Mode", items=["Precomputed", "Exact"], labelWidth=300, orientation="horizontal")
 
-        left_box_4 = gui.widgetBox(self.controlArea, "", addSpace=True, orientation="vertical")
+        left_box_4 = ShadowGui.widgetBox(self.controlArea, "", addSpace=True, orientation="vertical")
         left_box_4.setFixedHeight(75)
 
         button = gui.button(self.controlArea, self, "Run Shadow/source", callback=self.runShadowSource)
@@ -118,7 +118,7 @@ class BendingMagnet(ow_generic_element.GenericElement):
         shadow_src.src.ISTAR1=self.seed
         shadow_src.src.PH1=self.e_min
         shadow_src.src.PH2=self.e_max
-        shadow_src.src.F_OPD=self.optical_paths_combo
+        shadow_src.src.F_OPD=self.store_optical_paths
         shadow_src.src.F_SR_TYPE=self.sample_distribution_combo
         shadow_src.src.F_POL=1+self.generate_polarization_combo
 

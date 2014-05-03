@@ -453,17 +453,17 @@ class OpticalElement(ow_generic_element.GenericElement):
 
                 self.autosetting_box_units = ShadowGui.widgetBox(self.autosetting_box, "", addSpace=True, orientation="vertical")
 
-                gui.comboBox(self.autosetting_box_units, self, "units_in_use", label="Units in use", labelWidth=280,
+                gui.comboBox(self.autosetting_box_units, self, "units_in_use", label="Units in use", labelWidth=260,
                              items=["eV", "Angstroms"],
                              callback=self.set_UnitsInUse, sendSelectedValue=False, orientation="horizontal")
 
                 self.autosetting_box_units_1 = ShadowGui.widgetBox(self.autosetting_box_units, "", addSpace=False, orientation="vertical")
 
-                ShadowGui.lineEdit(self.autosetting_box_units_1, self, "photon_energy", "Set photon energy [eV]", labelWidth=280, valueType=float, orientation="horizontal")
+                ShadowGui.lineEdit(self.autosetting_box_units_1, self, "photon_energy", "Set photon energy [eV]", labelWidth=260, valueType=float, orientation="horizontal")
 
                 self.autosetting_box_units_2 = ShadowGui.widgetBox(self.autosetting_box_units, "", addSpace=False, orientation="vertical")
 
-                ShadowGui.lineEdit(self.autosetting_box_units_2, self, "photon_wavelength", "Set wavelength [Å]", labelWidth=280, valueType=float, orientation="horizontal")
+                ShadowGui.lineEdit(self.autosetting_box_units_2, self, "photon_wavelength", "Set wavelength [Å]", labelWidth=260, valueType=float, orientation="horizontal")
 
                 self.set_Autosetting()
 
