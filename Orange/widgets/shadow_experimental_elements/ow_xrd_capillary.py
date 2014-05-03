@@ -271,7 +271,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         #####################
 
-        ShadowGui.widgetBox(self.controlArea, "", addSpace=True, orientation="vertical", height=25)
+        gui.separator(self.controlArea, height=25)
 
         button_box = ShadowGui.widgetBox(self.controlArea, "", addSpace=True, orientation="horizontal", height=30)
 

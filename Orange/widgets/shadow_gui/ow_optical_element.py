@@ -1,4 +1,4 @@
-import sys, math
+import sys, math, os
 from numpy import array
 import Orange
 import Orange.shadow
@@ -1051,10 +1051,48 @@ class OpticalElement(ow_generic_element.GenericElement):
             shadow_oe.oe.FWRITE=self.file_to_write_out
             shadow_oe.oe.F_ANGLE=self.write_out_inc_ref_angles
 
+    def checkFile(self, fileName):
+        filePath = os.getcwd() + '/' + fileName
+
+        if not os.path.exists(filePath):
+            self.error(0, "File " + filePath + " not found in path")
+            return False
+        else: return True
+
     def doSpecificSetting(self, shadow_oe):
         return None
 
     def checkFields(self):
+
+        if not self.graphical_options.is_screen_slit:
+            if self.graphical_options.is_mirror:
+                if self.reflectivity_type == 1:
+                    if self.source_of_reflectivity == 0:
+                        if not self.checkFile(self.file_prerefl): return False
+                    elif self.source_of_reflectivity == 2:
+                        if not self.checkFile(self.file_prerefl_m): return False
+                elif self.reflectivity_type == 2:
+                    if self.source_of_reflectivity == 0:
+                        if not self.checkFile(self.file_prerefl): return False
+                    elif self.source_of_reflectivity == 2:
+                        if not self.checkFile(self.file_prerefl_m): return False
+            else:
+                if not self.checkFile(self.file_crystal_parameters): return False
+
+            if self.modified_surface == 1:
+                 if self.ms_type_of_defect != 0:
+                     if not self.checkFile(self.ms_defect_file_name): return False
+            elif self.modified_surface == 2:
+                if not self.checkFile(self.ms_file_facet_descr): return False
+            elif self.modified_surface == 3:
+                if not self.checkFile(self.ms_file_surf_roughness): return False
+            elif self.modified_surface == 4:
+                if self.ms_specify_rz2==0 and not self.checkFile(self.ms_file_with_parameters_rz): return False
+                if self.ms_specify_rz2==0 and not self.checkFile(self.ms_file_with_parameters_rz2): return False
+            elif self.modified_surface == 5:
+                if not self.checkFile(self.ms_file_orientations): return False
+                if not self.checkFile(self.ms_file_polynomial): return False
+
         return True
 
     def writeCalculatedFields(self, shadow_oe):
@@ -1115,8 +1153,6 @@ class OpticalElement(ow_generic_element.GenericElement):
 
             if self.checkFields():
                 self.completeOperations(shadow_oe)
-            else:
-                self.error(0, "Error on input")
 
             self.progressBarFinished()
         else:

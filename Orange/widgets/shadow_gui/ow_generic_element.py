@@ -29,11 +29,11 @@ class GenericElement(ow_automatic_element.AutomaticElement):
 
         view_box = ShadowGui.widgetBox(self.mainArea, "Plotting Style", addSpace=False, orientation="horizontal")
 
-        view_box_empty = ShadowGui.widgetBox(view_box, "", addSpace=False, orientation="vertical", width=520)
         view_box_1 = ShadowGui.widgetBox(view_box, "", addSpace=False, orientation="vertical", width=350)
+        view_box_empty = ShadowGui.widgetBox(view_box, "", addSpace=False, orientation="vertical", width=450)
 
         self.view_type_combo = gui.comboBox(view_box_1, self, "view_type", label="Select level of Plotting",
-                                            labelWidth=200,
+                                            labelWidth=220,
                                             items=["Detailed Plot", "Preview", "None"],
                                             callback=self.set_PlotQuality, sendSelectedValue=False, orientation="horizontal")
 
