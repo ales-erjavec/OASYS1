@@ -250,7 +250,13 @@ class OpticalElement(ow_generic_element.GenericElement):
         ShadowGui.lineEdit(upper_box, self, "image_plane_distance", "Image Plane Distance [cm]", labelWidth=300, valueType=float, orientation="horizontal")
 
         if self.graphical_options.is_screen_slit:
-            box_aperturing = ShadowGui.widgetBox(self.controlArea, "Screen/Slit Shape", addSpace=True, orientation="vertical", height=240)
+            tabs_setting = ShadowGui.tabWidget(self.controlArea)
+
+            # graph tab
+            tab_bas = ShadowGui.createTabPage(tabs_setting, "Basic Setting")
+            tab_adv = ShadowGui.createTabPage(tabs_setting, "Advanced Setting")
+
+            box_aperturing = ShadowGui.widgetBox(tab_bas, "Screen/Slit Shape", addSpace=True, orientation="vertical", height=240)
 
             gui.comboBox(box_aperturing, self, "aperturing", label="Aperturing", labelWidth=350,
                          items=["No", "Yes"],
@@ -260,11 +266,11 @@ class OpticalElement(ow_generic_element.GenericElement):
 
             self.box_aperturing_shape = ShadowGui.widgetBox(box_aperturing, "", addSpace=False, orientation="vertical")
 
-            gui.comboBox(self.box_aperturing_shape, self, "open_slit_solid_stop", label="Open slit/Solid stop", labelWidth=300,
+            gui.comboBox(self.box_aperturing_shape, self, "open_slit_solid_stop", label="Open slit/Solid stop", labelWidth=260,
                          items=["aperture/slit", "obstruction/stop"],
                          sendSelectedValue=False, orientation="horizontal")
 
-            gui.comboBox(self.box_aperturing_shape, self, "aperture_shape", label="Aperture shape", labelWidth=284,
+            gui.comboBox(self.box_aperturing_shape, self, "aperture_shape", label="Aperture shape", labelWidth=260,
                          items=["Rectangular", "Ellipse", "External"],
                          callback=self.set_ApertureShape, sendSelectedValue=False, orientation="horizontal")
 
@@ -275,14 +281,14 @@ class OpticalElement(ow_generic_element.GenericElement):
 
             self.box_aperturing_shape_2 = ShadowGui.widgetBox(self.box_aperturing_shape, "", addSpace=False, orientation="vertical")
 
-            ShadowGui.lineEdit(self.box_aperturing_shape_2, self, "slit_width_xaxis", "Slit width/x-axis", labelWidth=300, valueType=float, orientation="horizontal")
-            ShadowGui.lineEdit(self.box_aperturing_shape_2, self, "slit_height_zaxis", "Slit height/z-axis", labelWidth=300, valueType=float, orientation="horizontal")
-            ShadowGui.lineEdit(self.box_aperturing_shape_2, self, "slit_center_xaxis", "Slit center/x-axis", labelWidth=300, valueType=float, orientation="horizontal")
-            ShadowGui.lineEdit(self.box_aperturing_shape_2, self, "slit_center_zaxis", "Slit center/z-axis", labelWidth=300, valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.box_aperturing_shape_2, self, "slit_width_xaxis", "Slit width/x-axis", labelWidth=260, valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.box_aperturing_shape_2, self, "slit_height_zaxis", "Slit height/z-axis", labelWidth=260, valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.box_aperturing_shape_2, self, "slit_center_xaxis", "Slit center/x-axis", labelWidth=260, valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.box_aperturing_shape_2, self, "slit_center_zaxis", "Slit center/z-axis", labelWidth=260, valueType=float, orientation="horizontal")
 
             self.set_Aperturing()
 
-            box_absorption = ShadowGui.widgetBox(self.controlArea, "Absorption Parameters", addSpace=True, orientation="vertical", height=130)
+            box_absorption = ShadowGui.widgetBox(tab_bas, "Absorption Parameters", addSpace=True, orientation="vertical", height=130)
 
             gui.comboBox(box_absorption, self, "absorption", label="Absorption", labelWidth=350,
                          items=["No", "Yes"],
@@ -298,7 +304,73 @@ class OpticalElement(ow_generic_element.GenericElement):
 
             self.set_Absorption()
 
-            ShadowGui.widgetBox(self.controlArea, "", addSpace=False, orientation="vertical", height=225)
+            ##########################################
+            # ADVANCED SETTINGS
+            ##########################################
+
+            tabs_advanced_setting = gui.tabWidget(tab_adv)
+
+            tab_adv_mir_mov = ShadowGui.createTabPage(tabs_advanced_setting, "Mirror Movement")
+            tab_adv_sou_mov = ShadowGui.createTabPage(tabs_advanced_setting, "Source Movement")
+
+            ##########################################
+            #
+            # TAB 2.2 - Mirror Movement
+            #
+            ##########################################
+
+            mir_mov_box = ShadowGui.widgetBox(tab_adv_mir_mov, "Mirror Movement Parameters", addSpace=False, orientation="vertical", height=230)
+
+            gui.comboBox(mir_mov_box, self, "mirror_movement", label="Mirror Movement", labelWidth=350,
+                         items=["No", "Yes"],
+                         callback=self.set_MirrorMovement, sendSelectedValue=False, orientation="horizontal")
+
+            gui.separator(mir_mov_box, width=self.INNER_BOX_WIDTH_L1, height=10)
+
+            self.mir_mov_box_1 = ShadowGui.widgetBox(mir_mov_box, "", addSpace=False, orientation="vertical")
+
+            ShadowGui.lineEdit(self.mir_mov_box_1, self, "mm_mirror_offset_x", "Mirror Offset X", labelWidth=260, valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.mir_mov_box_1, self, "mm_mirror_rotation_x", "Mirror Rotation X", labelWidth=260, valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.mir_mov_box_1, self, "mm_mirror_offset_y", "Mirror Offset Y", labelWidth=260, valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.mir_mov_box_1, self, "mm_mirror_rotation_y", "Mirror Rotation Z", labelWidth=260, valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.mir_mov_box_1, self, "mm_mirror_offset_z", "Mirror Offset Z", labelWidth=260, valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.mir_mov_box_1, self, "mm_mirror_rotation_z", "Mirror Rotation Z", labelWidth=260, valueType=float, orientation="horizontal")
+
+            self.set_MirrorMovement()
+
+            ##########################################
+            #
+            # TAB 2.3 - Source Movement
+            #
+            ##########################################
+
+            sou_mov_box = ShadowGui.widgetBox(tab_adv_sou_mov, "Source Movement Parameters", addSpace=False, orientation="vertical", height=400)
+
+            gui.comboBox(sou_mov_box, self, "source_movement", label="Source Movement", labelWidth=350,
+                         items=["No", "Yes"],
+                         callback=self.set_SourceMovement, sendSelectedValue=False, orientation="horizontal")
+
+            gui.separator(sou_mov_box, width=self.INNER_BOX_WIDTH_L1, height=10)
+
+            self.sou_mov_box_1 = ShadowGui.widgetBox(sou_mov_box, "", addSpace=False, orientation="vertical")
+
+            ShadowGui.lineEdit(self.sou_mov_box_1, self, "sm_angle_of_incidence", "Angle of Incidence [deg]", labelWidth=260, valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.sou_mov_box_1, self, "sm_distance_from_mirror", "Distance from mirror [cm]", labelWidth=260, valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.sou_mov_box_1, self, "sm_z_rotation", "Z-rotation [deg]", labelWidth=260, valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.sou_mov_box_1, self, "sm_offset_x_mirr_ref_frame", "offset X [cm] in MIRROR reference frame", labelWidth=260, valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.sou_mov_box_1, self, "sm_offset_y_mirr_ref_frame", "offset Y [cm] in MIRROR reference frame", labelWidth=260, valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.sou_mov_box_1, self, "sm_offset_z_mirr_ref_frame", "offset Z [cm] in MIRROR reference frame", labelWidth=260, valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.sou_mov_box_1, self, "sm_offset_x_source_ref_frame", "offset X [cm] in SOURCE reference frame", labelWidth=260, valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.sou_mov_box_1, self, "sm_offset_y_source_ref_frame", "offset Y [cm] in SOURCE reference frame", labelWidth=260, valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.sou_mov_box_1, self, "sm_offset_z_source_ref_frame", "offset Z [cm] in SOURCE reference frame", labelWidth=260, valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.sou_mov_box_1, self, "sm_rotation_around_x", "rotation [CCW, deg] around X", labelWidth=260, valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.sou_mov_box_1, self, "sm_rotation_around_y", "rotation [CCW, deg] around Y", labelWidth=260, valueType=float, orientation="horizontal")
+            ShadowGui.lineEdit(self.sou_mov_box_1, self, "sm_rotation_around_z", "rotation [CCW, deg] around Z", labelWidth=260, valueType=float, orientation="horizontal")
+
+            self.set_SourceMovement()
+
+
+            ShadowGui.widgetBox(self.controlArea, "", addSpace=False, orientation="vertical", height=125)
 
         else:
             self.calculate_incidence_angle_mrad()
@@ -866,6 +938,30 @@ class OpticalElement(ow_generic_element.GenericElement):
                                              0,
                                              180,
                                              0)
+
+            if self.mirror_movement == 1:
+                 shadow_oe.oe.F_MOVE=1
+                 shadow_oe.oe.OFFX=self.mm_mirror_offset_x
+                 shadow_oe.oe.OFFY=self.mm_mirror_offset_y
+                 shadow_oe.oe.OFFZ=self.mm_mirror_offset_z
+                 shadow_oe.oe.X_ROT=self.mm_mirror_rotation_x
+                 shadow_oe.oe.Y_ROT=self.mm_mirror_rotation_y
+                 shadow_oe.oe.Z_ROT=self.mm_mirror_rotation_z
+
+            if self.source_movement == 1:
+                 shadow_oe.oe.FSTAT=1
+                 shadow_oe.oe.RTHETA=self.sm_angle_of_incidence
+                 shadow_oe.oe.RDSOUR=self.sm_distance_from_mirror
+                 shadow_oe.oe.ALPHA_S=self.sm_z_rotation
+                 shadow_oe.oe.OFF_SOUX=self.sm_offset_x_mirr_ref_frame
+                 shadow_oe.oe.OFF_SOUY=self.sm_offset_y_mirr_ref_frame
+                 shadow_oe.oe.OFF_SOUZ=self.sm_offset_z_mirr_ref_frame
+                 shadow_oe.oe.X_SOUR=self.sm_offset_x_source_ref_frame
+                 shadow_oe.oe.Y_SOUR=self.sm_offset_y_source_ref_frame
+                 shadow_oe.oe.Z_SOUR=self.sm_offset_z_source_ref_frame
+                 shadow_oe.oe.X_SOUR_ROT=self.sm_rotation_around_x
+                 shadow_oe.oe.Y_SOUR_ROT=self.sm_rotation_around_y
+                 shadow_oe.oe.Z_SOUR_ROT=self.sm_rotation_around_z
         else:
             shadow_oe.oe.setFrameOfReference(self.source_plane_distance,
                                              self.image_plane_distance,
