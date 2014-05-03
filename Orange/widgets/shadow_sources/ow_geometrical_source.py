@@ -25,11 +25,7 @@ class GeometricalSource(ow_generic_element.GenericElement):
                 "doc":"Shadow Beam",
                 "id":"beam"}]
 
-
     want_main_area=1
-
-    # TODO ELEMENTO DA FARE COMPLETAMENTE
-    # TODO INSERIRE LIVELLI DI ASTRAZIONE COME PER OE
 
     sampling = Setting(0)
 
@@ -53,7 +49,6 @@ class GeometricalSource(ow_generic_element.GenericElement):
     gauss_sigma_x = Setting(0.001)
     gauss_sigma_z = Setting(0.001)
 
-
     angular_distribution = Setting(0)
 
     horizontal_div_x_plus = Setting(5.0e-7)
@@ -76,12 +71,49 @@ class GeometricalSource(ow_generic_element.GenericElement):
     source_depth_y = Setting(0.2)
     sigma_y = Setting(0.001)
 
+    photon_energy_distribution = Setting(0)
+
+    units=Setting(0)
+
+    single_line_value = Setting(1000.0)
+    number_of_lines = Setting(0)
+
+    line_value_1 = Setting(1000.0)
+    line_value_2 = Setting(1010.0)
+    line_value_3 = Setting(0.0)
+    line_value_4 = Setting(0.0)
+    line_value_5 = Setting(0.0)
+    line_value_6 = Setting(0.0)
+    line_value_7 = Setting(0.0)
+    line_value_8 = Setting(0.0)
+    line_value_9 = Setting(0.0)
+    line_value_10 = Setting(0.0)
+
+    uniform_minimum = Setting(1000.0)
+    uniform_maximum = Setting(1010.0)
+
+    line_int_1 = Setting(0.0)
+    line_int_2 = Setting(0.0)
+    line_int_3 = Setting(0.0)
+    line_int_4 = Setting(0.0)
+    line_int_5 = Setting(0.0)
+    line_int_6 = Setting(0.0)
+    line_int_7 = Setting(0.0)
+    line_int_8 = Setting(0.0)
+    line_int_9 = Setting(0.0)
+    line_int_10 = Setting(0.0)
+
+    polarization = Setting(0)
+    coherent_beam = Setting(0)
+    phase_diff = Setting(0.0)
+    polarization_degree = Setting(1.0)
+
     store_optical_paths=Setting(1) # REMOVED FROM GUI: 1 AS DEFAULT
 
     def __init__(self):
         super().__init__()
 
-        tabs = ShadowGui.tabWidget(self.controlArea, height=705)
+        tabs = ShadowGui.tabWidget(self.controlArea, height=650)
 
         tab_montecarlo = ShadowGui.createTabPage(tabs, "Monte Carlo and Sampling")
         tab_geometry = ShadowGui.createTabPage(tabs, "Geometry")
@@ -205,6 +237,90 @@ class GeometricalSource(ow_generic_element.GenericElement):
         ##############################
         # ENERGY
 
+        left_box_3 = ShadowGui.widgetBox(tab_energy, "", addSpace=True, orientation="vertical", height=640)
+
+        gui.separator(left_box_3)
+
+        ######
+
+        energy_wavelength_box = ShadowGui.widgetBox(left_box_3, "Energy/Wavelength", addSpace=True, orientation="vertical", height=430)
+
+        gui.comboBox(energy_wavelength_box, self, "photon_energy_distribution", label="Photon Energy Distribution", labelWidth=300,
+                     items=["Single Line", "Several Lines", "Uniform", "Relative Intensities"], orientation="horizontal", callback=self.set_PhotonEnergyDistribution)
+
+        gui.separator(energy_wavelength_box)
+
+        gui.comboBox(energy_wavelength_box, self, "units", label="Units", labelWidth=300,
+                     items=["Energy/eV", "Wavelength/Å"], orientation="horizontal", callback=self.set_PhotonEnergyDistribution)
+
+        gui.separator(energy_wavelength_box)
+
+        self.ewp_box_5 = ShadowGui.widgetBox(energy_wavelength_box, "", addSpace=False, orientation="vertical")
+
+        gui.comboBox(self.ewp_box_5, self, "number_of_lines", label="Number of Lines", labelWidth=350,
+                     items=["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"], orientation="horizontal", callback=self.set_NumberOfLines)
+
+        container =  ShadowGui.widgetBox(energy_wavelength_box, "", addSpace=False, orientation="horizontal")
+        self.container_left =  ShadowGui.widgetBox(container, "", addSpace=False, orientation="vertical")
+        self.container_right =  ShadowGui.widgetBox(container, "", addSpace=False, orientation="vertical")
+
+        self.ewp_box_1 = ShadowGui.widgetBox(self.container_left, "", addSpace=False, orientation="vertical")
+
+        ShadowGui.lineEdit(self.ewp_box_1, self, "single_line_value", "Value", labelWidth=300, valueType=float, orientation="horizontal")
+
+        self.ewp_box_2 = ShadowGui.widgetBox(self.container_left, "Values", addSpace=True, orientation="vertical")
+
+        self.le_line_value_1 = ShadowGui.lineEdit(self.ewp_box_2, self, "line_value_1", "Line 1", valueType=float, orientation="horizontal")
+        self.le_line_value_2 = ShadowGui.lineEdit(self.ewp_box_2, self, "line_value_2", "Line 2", valueType=float, orientation="horizontal")
+        self.le_line_value_3 = ShadowGui.lineEdit(self.ewp_box_2, self, "line_value_3", "Line 3", valueType=float, orientation="horizontal")
+        self.le_line_value_4 = ShadowGui.lineEdit(self.ewp_box_2, self, "line_value_4", "Line 4", valueType=float, orientation="horizontal")
+        self.le_line_value_5 = ShadowGui.lineEdit(self.ewp_box_2, self, "line_value_5", "Line 5", valueType=float, orientation="horizontal")
+        self.le_line_value_6 = ShadowGui.lineEdit(self.ewp_box_2, self, "line_value_6", "Line 6", valueType=float, orientation="horizontal")
+        self.le_line_value_7 = ShadowGui.lineEdit(self.ewp_box_2, self, "line_value_7", "Line 7", valueType=float, orientation="horizontal")
+        self.le_line_value_8 = ShadowGui.lineEdit(self.ewp_box_2, self, "line_value_8", "Line 8", valueType=float, orientation="horizontal")
+        self.le_line_value_9 = ShadowGui.lineEdit(self.ewp_box_2, self, "line_value_9", "Line 9", valueType=float, orientation="horizontal")
+        self.le_line_value_10 = ShadowGui.lineEdit(self.ewp_box_2, self, "line_value_10", "Line 10", valueType=float, orientation="horizontal")
+
+        self.ewp_box_3 = ShadowGui.widgetBox(self.container_left, "", addSpace=False, orientation="vertical")
+
+        ShadowGui.lineEdit(self.ewp_box_3, self, "uniform_minimum", "Minimum Energy/Wavelength", labelWidth=300, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.ewp_box_3, self, "uniform_maximum", "Maximum Energy/Wavelength", labelWidth=300, valueType=float, orientation="horizontal")
+
+        self.ewp_box_4 = ShadowGui.widgetBox(self.container_right, "Relative Intensities", addSpace=True, orientation="vertical")
+        
+        self.le_line_int_1 = ShadowGui.lineEdit(self.ewp_box_4, self, "line_int_1", "Int 1", labelWidth=100, valueType=float, orientation="horizontal")
+        self.le_line_int_2 = ShadowGui.lineEdit(self.ewp_box_4, self, "line_int_2", "Int 2", labelWidth=100, valueType=float, orientation="horizontal")
+        self.le_line_int_3 = ShadowGui.lineEdit(self.ewp_box_4, self, "line_int_3", "Int 3", labelWidth=100, valueType=float, orientation="horizontal")
+        self.le_line_int_4 = ShadowGui.lineEdit(self.ewp_box_4, self, "line_int_4", "Int 4", labelWidth=100, valueType=float, orientation="horizontal")
+        self.le_line_int_5 = ShadowGui.lineEdit(self.ewp_box_4, self, "line_int_5", "Int 5", labelWidth=100, valueType=float, orientation="horizontal")
+        self.le_line_int_6 = ShadowGui.lineEdit(self.ewp_box_4, self, "line_int_6", "Int 6", labelWidth=100, valueType=float, orientation="horizontal")
+        self.le_line_int_7 = ShadowGui.lineEdit(self.ewp_box_4, self, "line_int_7", "Int 7", labelWidth=100, valueType=float, orientation="horizontal")
+        self.le_line_int_8 = ShadowGui.lineEdit(self.ewp_box_4, self, "line_int_8", "Int 8", labelWidth=100, valueType=float, orientation="horizontal")
+        self.le_line_int_9 = ShadowGui.lineEdit(self.ewp_box_4, self, "line_int_9", "Int 9", labelWidth=100, valueType=float, orientation="horizontal")
+        self.le_line_int_10 = ShadowGui.lineEdit(self.ewp_box_4, self, "line_int_10", "Int 10", labelWidth=100, valueType=float, orientation="horizontal")
+
+        self.set_PhotonEnergyDistribution()
+
+        polarization_box = ShadowGui.widgetBox(left_box_3, "Polarization", addSpace=True, orientation="vertical", height=150)
+
+        gui.comboBox(polarization_box, self, "polarization", label="Polarization", labelWidth=355,
+                     items=["No", "Yes"], orientation="horizontal", callback=self.set_Polarization)
+
+        gui.separator(polarization_box)
+
+        self.ewp_box_6 = ShadowGui.widgetBox(polarization_box, "", addSpace=True, orientation="vertical")
+
+        gui.comboBox(self.ewp_box_6, self, "coherent_beam", label="Coherent Beam", labelWidth=355,
+                     items=["No", "Yes"], orientation="horizontal")
+
+        ShadowGui.lineEdit(self.ewp_box_6, self, "phase_diff", "Phase Difference [deg,0=linear,+90=ell/right]", labelWidth=330, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.ewp_box_6, self, "polarization_degree", "Polarization Degree [cos_s/(cos_s+sin_s)]", labelWidth=330, valueType=float, orientation="horizontal")
+
+        self.set_Polarization()
+
+        ##############################
+
+        gui.separator(self.controlArea, height=50)
 
         button = gui.button(self.controlArea, self, "Run Shadow/source", callback=self.runShadowSource)
         button.setFixedHeight(45)
@@ -236,36 +352,173 @@ class GeometricalSource(ow_generic_element.GenericElement):
         self.depth_box_1.setVisible(self.depth == 1)
         self.depth_box_2.setVisible(self.depth == 2)
 
+    def set_PhotonEnergyDistribution(self):
+        self.ewp_box_1.setVisible(self.photon_energy_distribution == 0)
+        self.ewp_box_2.setVisible(self.photon_energy_distribution == 1 or self.photon_energy_distribution == 3)
+        self.ewp_box_3.setVisible(self.photon_energy_distribution == 2)
+        self.ewp_box_4.setVisible(self.photon_energy_distribution == 3)
+        self.ewp_box_5.setVisible(self.photon_energy_distribution == 1 or self.photon_energy_distribution == 3)
+
+        if self.photon_energy_distribution == 3:
+            self.le_line_value_1.parentWidget().children()[1].setFixedWidth(100)
+            self.le_line_value_2.parentWidget().children()[1].setFixedWidth(100)
+            self.le_line_value_3.parentWidget().children()[1].setFixedWidth(100)
+            self.le_line_value_4.parentWidget().children()[1].setFixedWidth(100)
+            self.le_line_value_5.parentWidget().children()[1].setFixedWidth(100)
+            self.le_line_value_6.parentWidget().children()[1].setFixedWidth(100)
+            self.le_line_value_7.parentWidget().children()[1].setFixedWidth(100)
+            self.le_line_value_8.parentWidget().children()[1].setFixedWidth(100)
+            self.le_line_value_9.parentWidget().children()[1].setFixedWidth(100)
+            self.le_line_value_10.parentWidget().children()[1].setFixedWidth(100)
+        else:
+            self.le_line_value_1.parentWidget().children()[1].setFixedWidth(300)
+            self.le_line_value_2.parentWidget().children()[1].setFixedWidth(300)
+            self.le_line_value_3.parentWidget().children()[1].setFixedWidth(300)
+            self.le_line_value_4.parentWidget().children()[1].setFixedWidth(300)
+            self.le_line_value_5.parentWidget().children()[1].setFixedWidth(300)
+            self.le_line_value_6.parentWidget().children()[1].setFixedWidth(300)
+            self.le_line_value_7.parentWidget().children()[1].setFixedWidth(300)
+            self.le_line_value_8.parentWidget().children()[1].setFixedWidth(300)
+            self.le_line_value_9.parentWidget().children()[1].setFixedWidth(300)
+            self.le_line_value_10.parentWidget().children()[1].setFixedWidth(300)
+
+        self.container_right.setVisible(self.photon_energy_distribution == 3)
+
+        self.set_NumberOfLines()
+
+    def set_NumberOfLines(self):
+        self.le_line_value_2.parentWidget().setVisible(self.number_of_lines >= 1)
+        self.le_line_int_2.parentWidget().setVisible(self.number_of_lines >= 1)
+        self.le_line_value_3.parentWidget().setVisible(self.number_of_lines >= 2)
+        self.le_line_int_3.parentWidget().setVisible(self.number_of_lines >= 2)
+        self.le_line_value_4.parentWidget().setVisible(self.number_of_lines >= 3)
+        self.le_line_int_4.parentWidget().setVisible(self.number_of_lines >= 3)
+        self.le_line_value_5.parentWidget().setVisible(self.number_of_lines >= 4)
+        self.le_line_int_5.parentWidget().setVisible(self.number_of_lines >= 4)
+        self.le_line_value_6.parentWidget().setVisible(self.number_of_lines >= 5)
+        self.le_line_int_6.parentWidget().setVisible(self.number_of_lines >= 5)
+        self.le_line_value_7.parentWidget().setVisible(self.number_of_lines >= 6)
+        self.le_line_int_7.parentWidget().setVisible(self.number_of_lines >= 6)
+        self.le_line_value_8.parentWidget().setVisible(self.number_of_lines >= 7)
+        self.le_line_int_8.parentWidget().setVisible(self.number_of_lines >= 7)
+        self.le_line_value_9.parentWidget().setVisible(self.number_of_lines >= 8)
+        self.le_line_int_9.parentWidget().setVisible(self.number_of_lines >= 8)
+        self.le_line_value_10.parentWidget().setVisible(self.number_of_lines == 9)
+        self.le_line_int_10.parentWidget().setVisible(self.number_of_lines == 9)
+
+    def set_Polarization(self):
+        self.ewp_box_6.setVisible(self.polarization==1)
+
     def runShadowSource(self):
 
         self.progressBarInit()
 
         shadow_src = Orange.shadow.ShadowSource.create_src()
 
-#        shadow_src.src.NPOINT=self.number_of_rays
-#        shadow_src.src.ISTAR1=self.seed
-#        shadow_src.src.PH1=self.e_min
-#        shadow_src.src.PH2=self.e_max
-#        shadow_src.src.F_OPD=self.store_optical_paths
-#        shadow_src.src.F_SR_TYPE=self.sample_distribution_combo
-#        shadow_src.src.F_POL=1+self.generate_polarization_combo
+        shadow_src.src.NPOINT=self.number_of_rays
+        shadow_src.src.ISTAR1=self.seed
 
-#        shadow_src.src.SIGMAX=self.sigma_x
-#        shadow_src.src.SIGMAZ=self.sigma_z
-#        shadow_src.src.EPSI_X=self.emittance_x
-#        shadow_src.src.EPSI_Z=self.emittance_z
-#        shadow_src.src.BENER=self.energy
-#        shadow_src.src.EPSI_DX=self.distance_from_waist_x
-#        shadow_src.src.EPSI_DZ=self.distance_from_waist_z
+        shadow_src.src.FGRID=self.sampling
 
-#        shadow_src.src.R_MAGNET=self.magnetic_radius
-#        shadow_src.src.R_ALADDIN=self.magnetic_radius*100
-#        shadow_src.src.HDIV1=self.horizontal_half_divergence_from
-#        shadow_src.src.HDIV2=self.horizontal_half_divergence_to
-#        shadow_src.src.VDIV1=self.max_vertical_half_divergence_from
-#        shadow_src.src.VDIV2=self.max_vertical_half_divergence_to
+        if self.sampling>0:
+            shadow_src.src.IDO_VX = self.grid_points_in_xfirst
+            shadow_src.src.IDO_VZ = self.grid_points_in_zfirst
+            shadow_src.src.IDO_X_S = self.grid_points_in_x
+            shadow_src.src.IDO_Y_S = self.grid_points_in_y
+            shadow_src.src.IDO_Z_S = self.grid_points_in_z
+            shadow_src.src.N_CIRCLE = self.radial_grid_points
+            shadow_src.src.N_CONE = self.concentrical_grid_points
 
-#        shadow_src.src.FDISTR=4+2*self.calculation_mode_combo
+        shadow_src.src.FSOUR = self.spatial_type
+
+        if self.spatial_type == 1:
+            shadow_src.src.WXSOU = self.rect_width
+            shadow_src.src.WZSOU = self.rect_height
+        elif self.spatial_type == 2:
+            shadow_src.src.WXSOU = self.ell_semiaxis_x
+            shadow_src.src.WZSOU = self.ell_semiaxis_z
+        elif self.spatial_type == 2:
+            shadow_src.src.SIGMAX = self.gauss_sigma_x
+            shadow_src.src.SIGMAZ = self.gauss_sigma_z
+
+        if self.angular_distribution == 0 or \
+           self.angular_distribution == 1:
+            shadow_src.src.FDISTR = self.angular_distribution + 1
+            shadow_src.src.HDIV1 = self.horizontal_div_x_plus
+            shadow_src.src.HDIV2 = self.horizontal_div_x_minus
+            shadow_src.src.VDIV1 = self.vertical_div_z_plus
+            shadow_src.src.VDIV2 = self.vertical_div_z_minus
+        elif self.angular_distribution == 2:
+            shadow_src.src.FDISTR = 3
+            shadow_src.src.HDIV1 = self.horizontal_lim_x_plus
+            shadow_src.src.HDIV2 = self.horizontal_lim_x_minus
+            shadow_src.src.VDIV1 = self.vertical_lim_z_plus
+            shadow_src.src.VDIV2 = self.vertical_lim_z_minus
+            shadow_src.src.SIGDIX = self.horizontal_sigma_x
+            shadow_src.src.SIGDIZ = self.vertical_sigma_z
+        elif self.angular_distribution == 3:
+            shadow_src.src.FDISTR = 5
+            shadow_src.src.CONE_MIN = self.cone_internal_half_aperture
+            shadow_src.src.CONE_MAX = self.cone_external_half_aperture
+
+        shadow_src.src.FSOURCE_DEPTH = self.depth
+
+        if self.depth == 1:
+            shadow_src.src.WYSOU = self.source_depth_y
+        elif self.depth == 2:
+            shadow_src.src.SIGMAY = self.sigma_y
+
+        shadow_src.src.F_COLOR = self.photon_energy_distribution + 1
+        shadow_src.src.F_PHOT = self.units
+
+        if self.photon_energy_distribution == 0:
+            shadow_src.src.PH1 = self.single_line_value
+        elif self.photon_energy_distribution == 1:
+            shadow_src.src.N_COLOR=self.number_of_lines
+            shadow_src.src.PH1 = self.line_value_1
+            shadow_src.src.PH2 = self.line_value_2
+            shadow_src.src.PH3 = self.line_value_3
+            shadow_src.src.PH4 = self.line_value_4
+            shadow_src.src.PH5 = self.line_value_5
+            shadow_src.src.PH6 = self.line_value_6
+            shadow_src.src.PH7 = self.line_value_7
+            shadow_src.src.PH8 = self.line_value_8
+            shadow_src.src.PH9 = self.line_value_9
+            shadow_src.src.PH10 = self.line_value_10
+        elif self.photon_energy_distribution == 2:
+            shadow_src.src.PH1 = self.uniform_minimum
+            shadow_src.src.PH2 = self.uniform_maximum
+        elif self.photon_energy_distribution == 3:
+            shadow_src.src.N_COLOR=self.number_of_lines
+            shadow_src.src.PH1 = self.line_value_1
+            shadow_src.src.PH2 = self.line_value_2
+            shadow_src.src.PH3 = self.line_value_3
+            shadow_src.src.PH4 = self.line_value_4
+            shadow_src.src.PH5 = self.line_value_5
+            shadow_src.src.PH6 = self.line_value_6
+            shadow_src.src.PH7 = self.line_value_7
+            shadow_src.src.PH8 = self.line_value_8
+            shadow_src.src.PH9 = self.line_value_9
+            shadow_src.src.PH10 = self.line_value_10
+            shadow_src.src.RL1 = self.line_int_1
+            shadow_src.src.RL2 = self.line_int_2
+            shadow_src.src.RL3 = self.line_int_3
+            shadow_src.src.RL4 = self.line_int_4
+            shadow_src.src.RL5 = self.line_int_5
+            shadow_src.src.RL6 = self.line_int_6
+            shadow_src.src.RL7 = self.line_int_7
+            shadow_src.src.RL8 = self.line_int_8
+            shadow_src.src.RL9 = self.line_int_9
+            shadow_src.src.RL10 = self.line_int_10
+
+        shadow_src.src.F_POLAR = self.polarization
+
+        if self.polarization == 1:
+            shadow_src.src.F_COHER = self.coherent_beam
+            shadow_src.src.POL_ANGLE = self.phase_diff
+            shadow_src.src.POL_DEG = self.polarization_degree
+
+        shadow_src.src.F_OPD=self.store_optical_paths
 
         self.progressBarSet(10)
 

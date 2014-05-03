@@ -152,9 +152,15 @@ class ShadowSource:
     def create_src(cls):
         self = cls.__new__(ShadowSource, src=Shadow.Source())
 
-        # parameters embedded
+        self.src.OE_NUMBER =  0
 
-        self.src.FSOURCE_DEPTH= 4
+        return self
+
+    @classmethod
+    def create_bm_src(cls):
+        self = cls.create_src()
+
+        self.src.FSOURCE_DEPTH=4
         self.src.F_COLOR=3
         self.src.F_PHOT=0
         self.src.F_POLAR=1
@@ -170,13 +176,6 @@ class ShadowSource:
         self.src.FILE_TRAJ=b"NONESPECIFIED"
         self.src.FILE_SOURCE=b"NONESPECIFIED"
         self.src.FILE_BOUND=b"NONESPECIFIED"
-        self.src.OE_NUMBER =  0
-
-        return self
-
-    @classmethod
-    def create_bm_src(cls):
-        self = cls.create_src()
 
         self.src.F_WIGGLER = 0
 
