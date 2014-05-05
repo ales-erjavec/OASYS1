@@ -5,9 +5,9 @@ from Orange.widgets import gui
 from Orange.widgets.settings import Setting
 from PyQt4.QtGui import QApplication, qApp, QPalette, QColor, QFont, QGraphicsEffect
 
-
 import Shadow.ShadowTools as ST
 
+from Orange.shadow.shadow_objects import ShadowTrigger
 from Orange.widgets.shadow_gui import ow_automatic_element
 from Orange.shadow.shadow_util import ShadowGui, ShadowMath, ShadowPhysics
 from Orange.shadow.argonne11bm_absorption import Absorb as Absorption
@@ -29,10 +29,10 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     inputs = [("Input Beam", Orange.shadow.ShadowBeam, "setBeam")]
 
-    outputs = [{"name":"Send New Beam",
-                "type": int,
+    outputs = [{"name":"Trigger",
+                "type": Orange.shadow.ShadowTrigger,
                 "doc":"Feedback signal to start a new beam simulation",
-                "id":"send_new_beam"}]
+                "id":"Trigger"}]
 
     input_beam = None
 
@@ -448,6 +448,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         self.writeOutFile()
 
     def resetSimulation(self):
+        self.current_new_beam = 0
+
         cursor = range(0, len(self.counts))
 
         for angle_index in cursor:
@@ -462,6 +464,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         self.writeOutFile()
 
         self.reset_button_pressed = True
+
 
     def simulate(self):
         #TODO: ERROR MANAGEMENT WITH MESSAGES
@@ -838,12 +841,13 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         if self.send_new_beam == 1:
             if self.current_new_beam < self.number_of_new_beams:
-                self.send("send_new_beam", 1)
+                self.send("Trigger", ShadowTrigger(True))
                 self.current_new_beam += 1
             else:
-                self.send("send_new_beam", 0)
+                self.send("Trigger", ShadowTrigger(False))
+                self.current_new_beam = 0
         else:
-            self.send("send_new_beam", 0)
+            self.send("Trigger", ShadowTrigger(False))
 
     def simulateBackground(self):
         if self.add_background ==  1:

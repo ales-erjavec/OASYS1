@@ -146,6 +146,7 @@ class SchemeEditWidget(QWidget):
         self.__editMenu.addAction(self.__redoAction)
         self.__editMenu.addSeparator()
         self.__editMenu.addAction(self.__selectAllAction)
+        self.__editMenu.setStyleSheet(":item {background-color: white} :item:selected {background-color: #2D68F3}")
 
         self.__widgetMenu = QMenu(self.tr("&Widget"), self)
         self.__widgetMenu.addAction(self.__openSelectedAction)
@@ -154,12 +155,16 @@ class SchemeEditWidget(QWidget):
         self.__widgetMenu.addAction(self.__removeSelectedAction)
         self.__widgetMenu.addSeparator()
         self.__widgetMenu.addAction(self.__helpAction)
+        self.__widgetMenu.setStyleSheet(":item {background-color: white} :item:selected {background-color: #2D68F3}")
 
         self.__linkMenu = QMenu(self.tr("Link"), self)
         self.__linkMenu.addAction(self.__linkEnableAction)
         self.__linkMenu.addSeparator()
         self.__linkMenu.addAction(self.__linkRemoveAction)
         self.__linkMenu.addAction(self.__linkResetAction)
+        self.__linkMenu.setStyleSheet(":item {background-color: white} :item:selected {background-color: #2D68F3}")
+
+#        for color in ["#000", "#C1272D", "#662D91", "#1F9CDF", "#39B54A"]:
 
     def __setupActions(self):
 
@@ -1101,8 +1106,7 @@ class SchemeEditWidget(QWidget):
             # Create a new node using QuickMenu
             action = interactions.NewNodeAction(self)
 
-            with (disabled(self.__undoAction),
-                  disabled(self.__redoAction)):
+            with disabled(self.__undoAction), disabled(self.__redoAction):
                 action.create_new(event.screenPos())
 
             event.accept()

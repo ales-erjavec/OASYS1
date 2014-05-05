@@ -41,9 +41,9 @@ def create_palette(light_color, color):
                      light_color)
 
     palette.setColor(QPalette.Active, QPalette.Light,
-                     saturated(color, 50))
+                     saturated(color, 255))
     palette.setColor(QPalette.Active, QPalette.Midlight,
-                     saturated(color, 90))
+                     saturated(color, 255))
     palette.setColor(QPalette.Active, QPalette.Button,
                      color)
     palette.setColor(QPalette.ButtonText, QColor("#515151"))

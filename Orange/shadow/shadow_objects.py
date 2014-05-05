@@ -31,6 +31,15 @@ class EmittingStream(QtCore.QObject):
     def write(self, text):
         self.textWritten.emit(str(text))
 
+class ShadowTrigger:
+    def __new__(cls, trigger=False):
+        self = super().__new__(cls)
+
+        self.trigger = trigger
+
+        return self
+
+
 class ShadowOEHistoryItem:
 
     def __new__(cls, input_beam=None, shadow_oe=None, output_beam=None):
