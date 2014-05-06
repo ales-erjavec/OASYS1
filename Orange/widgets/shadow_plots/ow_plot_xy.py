@@ -172,7 +172,6 @@ class PlotXY(ow_automatic_element.AutomaticElement):
 
         ShadowGui.lineEdit(histograms_box, self, "binning_for_contour", "Binning for CONTOURS", labelWidth=250, valueType=int, orientation="horizontal")
 
-
         self.image_box = gui.widgetBox(self.mainArea, "Plot Result", addSpace=True, orientation="vertical")
         self.image_box.setFixedHeight(self.IMAGE_HEIGHT)
         self.image_box.setFixedWidth(self.IMAGE_WIDTH)
@@ -205,7 +204,6 @@ class PlotXY(ow_automatic_element.AutomaticElement):
         if not plot is None:
             self.plot_canvas = FigureCanvas(plot.figure)
             self.image_box.layout().addWidget(self.plot_canvas)
-
 
     def plot_xy(self, var_x, var_y, title, xtitle, ytitle):
         beam_to_plot = self.input_beam.beam

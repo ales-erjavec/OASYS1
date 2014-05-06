@@ -103,35 +103,30 @@ echo "Building application in $TEMPLATE"
 
 PYTHON=$TEMPLATE/Contents/MacOS/python
 PIP=$TEMPLATE/Contents/MacOS/pip
+EASY_INSTALL=$TEMPLATE/Contents/MacOS/easy_install
 
 PREFIX=$("$PYTHON" -c'import sys; print(sys.prefix)')
 SITE_PACKAGES=$("$PYTHON" -c'import sysconfig as sc; print(sc.get_path("platlib"))')
 
+cp -r "/Users/labx/env/orange3/lib/python3.3/site-packages/Shadow"  "$SITE_PACKAGES"
+cp -r "/Users/labx/env/orange3/lib/python3.3/site-packages/PyMca"  "$SITE_PACKAGES"
+cp -r "/Users/labx/env/orange3/lib/python3.3/site-packages/matplotlib-1.4.x-py3.3-macosx-10.8-x86_64.egg" "$SITE_PACKAGES"
+cp -r "/Users/labx/env/orange3/lib/python3.3/site-packages/pyparsing-2.0.1-py3.3.egg" "$SITE_PACKAGES"
+cp -r "/Users/labx/env/orange3/lib/python3.3/site-packages/six-1.5.2-py3.3.egg" "$SITE_PACKAGES"
+cp -r "/Users/labx/env/orange3/lib/python3.3/site-packages/python_dateutil-2.2-py3.3.egg" "$SITE_PACKAGES"
+
+cp -f "/Users/labx/Documents/workspace/orange-shadow/orange3/scripts/easy-install.pth" "$SITE_PACKAGES"
+
+
+"$PIP" uninstall numpy
+"$PIP" install numpy
+
+"$PIP" uninstall scipy
+UMFPACK=None "$PIP" install scipy
+
 echo "Installing bottlechest"
 echo "======================"
 "$PIP" install git+https://github.com/biolab/bottlechest@bottlechest#egg=bottlechest
-
-echo "Installing orangeqt"
-echo "==================="
-FDIR=$TEMPLATE/Contents/Frameworks
-# to find moc executable in the app bundle
-EXTRA_PATH=$PREFIX/bin:$TEMPLATE/Contents/Resources/Qt4/bin
-# for the compiler to find Qt's headers and frameworks
-EXTRA_CXXFLAGS="-F$FDIR -I$FDIR/QtCore.framework/Headers -I$FDIR/QtGui.framework/Headers"
-EXTRA_LDFLAGS="-F$FDIR -framework QtCore -framework QtGui"
-
-echo "Fixing sip/pyqt configuration"
-
-sed -i.bak "s@/.*\.app/@$TEMPLATE/@g" "${SITE_PACKAGES}"/PyQt4/pyqtconfig.py
-sed -i.bak "s@/.*\.app/@$TEMPLATE/@g" "${SITE_PACKAGES}"/sipconfig.py
-
-
-(
-    PATH=$EXTRA_PATH:$PATH
-    CXXFLAGS=${EXTRA_CXXFLAGS}${CXXFLAGS:+:$CXXFLAGS}
-    LDFLAGS=${EXTRA_LDFLAGS}:${LDFLAGS:+:$LDFLAGS}
-    "$PIP" install qt-graph-helpers
-)
 
 echo "Installing Orange"
 echo "================="
@@ -164,3 +159,8 @@ if [[ ! $INPLACE ]]; then
 	mkdir -p $(dirname "$APP")
     mv "$TEMPLATE" "$APP"
 fi
+
+rm -f "$APP"/Contents/Frameworks/libgfortran.2.0.0.dylib
+cp -f /usr/local/gfortran/lib/libgfortran.3.dylib "$APP"/Contents/Frameworks/
+cp -f /usr/local/gfortran/lib/libgcc_s.1.dylib "$APP"/Contents/Frameworks/
+

@@ -24,8 +24,8 @@ class GenericElement(ow_automatic_element.AutomaticElement):
     plotted_beam=None
     tab=[]
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, show_automatic_box=True):
+        super().__init__(show_automatic_box)
 
         view_box = ShadowGui.widgetBox(self.mainArea, "Plotting Style", addSpace=False, orientation="horizontal")
 

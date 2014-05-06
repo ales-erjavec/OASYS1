@@ -3,7 +3,7 @@ import Orange
 import Orange.shadow
 from Orange.widgets import gui
 from Orange.widgets.settings import Setting
-from PyQt4.QtGui import QApplication, qApp, QScrollArea
+from PyQt4.QtGui import QApplication, qApp
 
 from Orange.widgets.shadow_gui import ow_generic_element
 from Orange.shadow.shadow_objects import EmittingStream, TTYGrabber
@@ -55,7 +55,7 @@ class BendingMagnet(ow_generic_element.GenericElement):
     want_main_area=1
 
     def __init__(self):
-        super().__init__()
+        super().__init__(show_automatic_box=False)
 
         left_box_1 = ShadowGui.widgetBox(self.controlArea, "Monte Carlo and Energy Spectrum", addSpace=True, orientation="vertical")
 
@@ -87,8 +87,7 @@ class BendingMagnet(ow_generic_element.GenericElement):
         ShadowGui.lineEdit(left_box_3, self, "max_vertical_half_divergence_to", "Max vertical half-divergence [rads] To [-]", labelWidth=300, tooltip="Max vertical half-divergence [rads] To [-]", valueType=float, orientation="horizontal")
         gui.comboBox(left_box_3, self, "calculation_mode_combo", label="Calculation Mode", items=["Precomputed", "Exact"], labelWidth=300, orientation="horizontal")
 
-        left_box_4 = ShadowGui.widgetBox(self.controlArea, "", addSpace=True, orientation="vertical")
-        left_box_4.setFixedHeight(75)
+        gui.separator(self.controlArea, height=150)
 
         button = gui.button(self.controlArea, self, "Run Shadow/source", callback=self.runShadowSource)
         button.setFixedHeight(45)

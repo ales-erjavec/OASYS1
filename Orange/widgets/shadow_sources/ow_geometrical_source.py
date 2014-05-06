@@ -111,7 +111,7 @@ class GeometricalSource(ow_generic_element.GenericElement):
     store_optical_paths=Setting(1) # REMOVED FROM GUI: 1 AS DEFAULT
 
     def __init__(self):
-        super().__init__()
+        super().__init__(show_automatic_box=False)
 
         tabs = ShadowGui.tabWidget(self.controlArea, height=650)
 
@@ -320,7 +320,7 @@ class GeometricalSource(ow_generic_element.GenericElement):
 
         ##############################
 
-        gui.separator(self.controlArea, height=50)
+        gui.separator(self.controlArea, height=120)
 
         button = gui.button(self.controlArea, self, "Run Shadow/source", callback=self.runShadowSource)
         button.setFixedHeight(45)
@@ -328,9 +328,6 @@ class GeometricalSource(ow_generic_element.GenericElement):
         gui.rubber(self.controlArea)
 
         gui.rubber(self.mainArea)
-
-        #if (self.is_automatic_run):
-        #    self.runShadowSource()
 
     def set_Sampling(self):
         self.sample_box_1.setVisible(self.sampling == 0)

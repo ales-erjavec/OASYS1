@@ -8,7 +8,7 @@ import sys
 
 import numpy as np
 
-import shadow.argonne11bm_absorption.Element as Element
+import Orange.shadow.argonne11bm_absorption.Element as Element
 
 class Absorb():
     ''' '''

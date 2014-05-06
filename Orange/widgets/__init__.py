@@ -15,6 +15,7 @@ def widget_discovery(discovery):
             "Orange.widgets.shadow_experimental_elements",
             "Orange.widgets.shadow_optical_elements",
             "Orange.widgets.shadow_preprocessor",
+            "Orange.widgets.shadow_user_defined",
             "Orange.widgets.shadow_sources",
             "Orange.widgets.shadow_plots"]
     for pkg in pkgs:
