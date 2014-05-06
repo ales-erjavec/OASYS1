@@ -3,7 +3,6 @@ from Orange.widgets import gui
 from PyQt4 import QtGui
 from PyQt4.QtGui import QApplication, qApp
 
-#from PyMca.widgets.PlotWindow import PlotWindow
 from Orange.widgets.settings import Setting
 
 import Shadow.ShadowTools as ST
@@ -120,24 +119,6 @@ class GenericElement(ow_automatic_element.AutomaticElement):
             self.replace_fig(plot_canvas_index, plot)
             self.progressBarSet(progressBarValue)
 
-        '''
-        x, y, good_only = ST.getshcol(beam_out.beam, (var_x, var_y, 10))
-
-        t = numpy.where(good_only == 1)
-
-        if not len(t)==0:
-            plot = PlotWindow(roi=True, control=True, position=True)
-            plot.setDefaultPlotLines(False)
-            plot.setActiveCurveColor(color='darkblue')
-            plot.addCurve(x[t], y[t], title, symbol=',', color='blue') #'+', '^',
-            plot.setGraphXLabel(xtitle)
-            plot.setGraphYLabel(ytitle)
-            plot.setDrawModeEnabled(True, 'rectangle')
-            plot.setZoomModeEnabled(True)
-
-            self.replace_plot(plot_canvas_index, plot)
-            self.progressBarSet(progressBarValue)
-        '''
     def plot_xy(self, beam_out, progressBarValue, var_x, var_y, figure_canvas_index, title, xtitle, ytitle):
         plot = ST.plotxy(beam_out.beam,var_x,var_y,nolost=1,contour=6,nbins=100,nbins_h=100,calfwhm=1,title=title, xtitle=xtitle, ytitle=ytitle, noplot=1)
 
