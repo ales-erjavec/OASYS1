@@ -108,16 +108,16 @@ class ImageToBeamConverter(ow_generic_element.GenericElement):
             if (number_of_x_pixels*number_of_z_pixels*self.number_of_x_bins*self.number_of_z_bins) > 500000: raise Exception("Number of Pixels too high (>500000)")
 
             x0 = -p0*number_of_x_pixels*0.5
-            z0 = p0*number_of_z_pixels*0.5
+            z0 = -p0*number_of_z_pixels*0.5
 
             for z_index in range (0, len(rows)):
                 values = rows[z_index].split('	')
 
                 for z_pixel_bin_index in range(0, self.number_of_z_bins):
-                    z = z0 - (p0*z_index + p0_bin_z*z_pixel_bin_index)
+                    z = z0 + (p0*z_index + p0_bin_z*z_pixel_bin_index)
                     for x_index in range(0, len(values)):
                         for x_pixel_bin_index in range(0, self.number_of_x_bins):
-                            x = x0 + p0*x_index + p0_bin_x*x_pixel_bin_index
+                            x = x0 + (p0*x_index + p0_bin_x*x_pixel_bin_index)
                             point = ImagePoint(x, 0, z, float(values[x_index]))
                             map.append(point)
 

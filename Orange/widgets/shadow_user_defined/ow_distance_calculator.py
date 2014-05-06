@@ -42,7 +42,7 @@ class MonochromatorDistanceCalculator(widget.OWWidget):
 
         ShadowGui.lineEdit(left_box_1, self, "vertical_quote", "Vertical Distance (H) [cm]", labelWidth=300, valueType=float, orientation="horizontal")
         ShadowGui.lineEdit(left_box_1, self, "total_distance", "First Crystal - Mirror Distance (D) [cm]", labelWidth=300, valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(left_box_1, self, "bragg_angle", "Bragg Angle [deg]", labelWidth=300, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(left_box_1, self, "bragg_angle", "First Crystal Reflection Angle [deg]", labelWidth=300, valueType=float, orientation="horizontal")
 
         gui.separator(left_box_1, height=20)
 
@@ -73,7 +73,7 @@ class MonochromatorDistanceCalculator(widget.OWWidget):
 
 
     def calculate(self):
-        twotheta = 2*math.radians(self.bragg_angle)
+        twotheta = math.radians(2*(90-self.bragg_angle))
 
         self.d_1 = self.vertical_quote/math.sin(twotheta)
         self.d_2 = self.total_distance - self.vertical_quote/math.tan(twotheta)

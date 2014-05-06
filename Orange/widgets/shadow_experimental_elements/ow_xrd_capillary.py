@@ -839,15 +839,16 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         self.progressBarFinished()
         qApp.processEvents()
 
-        if self.send_new_beam == 1:
-            if self.current_new_beam < self.number_of_new_beams:
-                self.send("Trigger", ShadowTrigger(True))
-                self.current_new_beam += 1
+        if self.run_simulation:
+            if self.send_new_beam == 1:
+                if self.current_new_beam < self.number_of_new_beams:
+                    self.send("Trigger", ShadowTrigger(True))
+                    self.current_new_beam += 1
+                else:
+                    self.send("Trigger", ShadowTrigger(False))
+                    self.current_new_beam = 0
             else:
                 self.send("Trigger", ShadowTrigger(False))
-                self.current_new_beam = 0
-        else:
-            self.send("Trigger", ShadowTrigger(False))
 
     def simulateBackground(self):
         if self.add_background ==  1:
