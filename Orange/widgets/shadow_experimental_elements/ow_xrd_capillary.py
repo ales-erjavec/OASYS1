@@ -850,6 +850,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             else:
                 self.send("Trigger", ShadowTrigger(False))
 
+
     def simulateBackground(self):
         if self.add_background ==  1:
             self.information(0, "Adding Background")
