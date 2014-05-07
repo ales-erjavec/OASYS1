@@ -540,7 +540,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         avg_wavelength = (2*math.pi/numpy.average(go_input_beam.beam.rays[:,10]))*1e+8 # in Angstrom
 
-        self.normalization_factor = 1/self.getAttenuationCoefficient(capillary_radius*2, avg_wavelength)
+        self.normalization_factor = 1/self.getTransmittance(capillary_radius*2, avg_wavelength)
 
         ################################
         # ARRAYS FOR OUTPUT AND PLOTS
@@ -942,12 +942,12 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     # ACCESSORY METHODS
     ############################################################
 
-    def getAttenuationCoefficient(self, path, wavelength):
+    def getTransmittance(self, path, wavelength):
 
         absorption = Absorption.Absorb(Path=path, Wave=wavelength, Packing=self.packing_factor)
         absorption.SetElems(self.getChemicalFormula(self.sample_material))
 
-        return absorption.ComputeTotalAttenuationCoefficient()
+        return absorption.ComputeTransmittance()
 
     ############################################################
 
@@ -1115,8 +1115,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
                 distance = min((ShadowMath.point_distance(entry_point, origin_point) + ShadowMath.point_distance(origin_point, exit_point))*10, capillary_radius*2*10) #in mm
 
-                attenuation_coefficient = self.getAttenuationCoefficient(distance, wavelength)
-                absorption = attenuation_coefficient*self.normalization_factor
+                absorption = self.getTransmittance(distance, wavelength)*self.normalization_factor
             else:
                 absorption = 0 # kill the ray
 

@@ -85,7 +85,7 @@ class Absorb():
     #
     ########################################################
 
-    def ComputeTotalAttenuationCoefficient(self):
+    def ComputeTransmittance(self):
         return math.exp(-self.ComputeLinearAttenuationCoefficient()*self.Path)
 
     def ComputeLinearAttenuationCoefficient(self):
