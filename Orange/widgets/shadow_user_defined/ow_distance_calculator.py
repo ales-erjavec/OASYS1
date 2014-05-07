@@ -5,6 +5,8 @@ from PyQt4 import QtGui
 from Orange.widgets.settings import Setting
 from Orange.shadow.shadow_util import ShadowGui
 
+import Orange.canvas.resources as resources
+
 class MonochromatorDistanceCalculator(widget.OWWidget):
 
     name = "Monochromator Distance Calculator"
@@ -25,10 +27,10 @@ class MonochromatorDistanceCalculator(widget.OWWidget):
     d_1 = 0.0
     d_2 = 0.0
 
-    image_path = os.getcwd() + "/widgets/shadow_user_defined/icons/distances.png"
+    image_path = resources.package_dirname("Orange.widgets.shadow_user_defined") + "/icons/distances.png"
 
     def __init__(self):
-        self.setFixedWidth(650)
+        self.setFixedWidth(600)
         self.setFixedHeight(600)
 
         left_box_1 = ShadowGui.widgetBox(self.controlArea, "Optical Parameters", addSpace=True, orientation="vertical", width=630, height=500)
@@ -70,7 +72,6 @@ class MonochromatorDistanceCalculator(widget.OWWidget):
         button.setFixedHeight(45)
 
         gui.rubber(self.controlArea)
-
 
     def calculate(self):
         twotheta = math.radians(2*(90-self.bragg_angle))

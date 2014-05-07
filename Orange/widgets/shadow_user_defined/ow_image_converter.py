@@ -1,9 +1,11 @@
-import sys, numpy, math
+import sys, math, os
 import Orange
 import Orange.shadow
 from Orange.widgets import gui
 from Orange.widgets.settings import Setting
-from PyQt4.QtGui import qApp
+from PyQt4 import QtGui
+from PyQt4.QtCore import Qt
+from PyQt4.QtGui import qApp, QColor
 
 from Orange.widgets.shadow_gui import ow_generic_element
 from Orange.shadow.shadow_objects import EmittingStream, TTYGrabber, ShadowBeam
@@ -27,24 +29,82 @@ class ImageToBeamConverter(ow_generic_element.GenericElement):
 
     want_main_area=1
 
+    is_textual = Setting(False)
+    number_of_x_pixels = Setting(0)
+    number_of_z_pixels = Setting(0)
+
     image_file_name=Setting("")
     pixel_size = Setting(14.0)
     number_of_x_bins = Setting(10)
     number_of_z_bins = Setting(5)
+    flip_vertically = Setting(1)
+    flip_horizontally = Setting(0)
 
     def __init__(self):
         super().__init__(show_automatic_box=False)
 
         left_box_1 = ShadowGui.widgetBox(self.controlArea, "CCD Image", addSpace=True, orientation="vertical")
 
-        le = ShadowGui.lineEdit(left_box_1, self, "image_file_name", "Image File Name", labelWidth=120, valueType=str, orientation="horizontal")
-        le.setFixedWidth(300)
+        gui.checkBox(left_box_1, self, "is_textual", "Textual Image", callback=self.setTextual)
+
+        ########################################
+
+        self.select_file_box_1 = ShadowGui.widgetBox(left_box_1, "Textual Image Parameters", addSpace=True, orientation="horizontal", height=250)
+
+        self.le_image_txt_file_name = ShadowGui.lineEdit(self.select_file_box_1, self, "image_file_name", "Image File Name", labelWidth=120, valueType=str, orientation="horizontal")
+        self.le_image_txt_file_name.setFixedWidth(300)
+
+        pushButton = gui.button(self.select_file_box_1, self, "...")
+        pushButton.clicked.connect(self.selectTxtFile)
+
+
+        self.select_file_box_2 = ShadowGui.widgetBox(left_box_1, "Image Parameters", addSpace=True, orientation="vertical", height=250)
+
+        select_file_box_2_int = ShadowGui.widgetBox(self.select_file_box_2, "", addSpace=True, orientation="horizontal")
+
+        self.le_image_file_name = ShadowGui.lineEdit(select_file_box_2_int, self, "image_file_name", "Image File Name", labelWidth=120, valueType=str, orientation="horizontal")
+        self.le_image_file_name.setFixedWidth(300)
+
+        pushButton = gui.button(select_file_box_2_int, self, "...")
+        pushButton.clicked.connect(self.selectFile)
+
+        figure_box = ShadowGui.widgetBox(self.select_file_box_2, "Preview", addSpace=True, orientation="vertical", width=350, height=180)
+
+        self.preview_box = QtGui.QLabel("")
+        self.preview_box.setFixedHeight(100)
+
+        figure_box.layout().addWidget(self.preview_box)
+
+        le = ShadowGui.lineEdit(figure_box, self, "number_of_x_pixels", "Number of x Pixels", labelWidth=200, valueType=int, orientation="horizontal")
+        le.setReadOnly(True)
+        font = QtGui.QFont(le.font())
+        font.setBold(True)
+        le.setFont(font)
+        palette = QtGui.QPalette(le.palette()) # make a copy of the palette
+        palette.setColor(QtGui.QPalette.Text, QtGui.QColor('dark blue'))
+        palette.setColor(QtGui.QPalette.Base, QtGui.QColor(243, 240, 160))
+        le.setPalette(palette)
+        le = ShadowGui.lineEdit(figure_box, self, "number_of_z_pixels", "Number of z Pixels", labelWidth=200, valueType=int, orientation="horizontal")
+        le.setReadOnly(True)
+        font = QtGui.QFont(le.font())
+        font.setBold(True)
+        le.setFont(font)
+        palette = QtGui.QPalette(le.palette()) # make a copy of the palette
+        palette.setColor(QtGui.QPalette.Text, QtGui.QColor('dark blue'))
+        palette.setColor(QtGui.QPalette.Base, QtGui.QColor(243, 240, 160))
+        le.setPalette(palette)
+
+        ########################################
+
+        self.setTextual()
 
         ShadowGui.lineEdit(left_box_1, self, "pixel_size", "Pixel Size [um]", labelWidth=200, valueType=float, orientation="horizontal")
         ShadowGui.lineEdit(left_box_1, self, "number_of_x_bins", "Number of Bin per Pixel [x]", labelWidth=200, valueType=int, orientation="horizontal")
         ShadowGui.lineEdit(left_box_1, self, "number_of_z_bins", "Number of Bin per Pixel [z]", labelWidth=200, valueType=int, orientation="horizontal")
+        gui.checkBox(left_box_1, self, "flip_vertically", "Flip Vertically")
+        gui.checkBox(left_box_1, self, "flip_horizontally", "Flip Horizontally")
 
-        gui.separator(self.controlArea, height=600)
+        gui.separator(self.controlArea, height=305)
 
         button = gui.button(self.controlArea, self, "Convert To Beam", callback=self.convertToBeam)
         button.setFixedHeight(45)
@@ -52,6 +112,22 @@ class ImageToBeamConverter(ow_generic_element.GenericElement):
         gui.rubber(self.controlArea)
 
         gui.rubber(self.mainArea)
+
+    def selectTxtFile(self):
+        self.le_image_txt_file_name.setText(QtGui.QFileDialog.getOpenFileName(self, "Open Textual Image", ".", "*.txt"))
+
+    def selectFile(self):
+        self.le_image_file_name.setText(QtGui.QFileDialog.getOpenFileName(self, "Open Textual Image", ".", "*.tif;*.jpg"))
+
+        pixmap = QtGui.QPixmap(self.image_file_name)
+
+        self.preview_box.setPixmap(pixmap)
+        self.number_of_x_pixels = pixmap.width()
+        self.number_of_z_pixels = pixmap.height()
+
+    def setTextual(self):
+        self.select_file_box_1.setVisible(self.is_textual==1)
+        self.select_file_box_2.setVisible(self.is_textual==0)
 
     def convertToBeam(self):
 
@@ -66,7 +142,12 @@ class ImageToBeamConverter(ow_generic_element.GenericElement):
         grabber = TTYGrabber()
         grabber.start()
 
-        map = self.convertImageToXYMap()
+        text_image = self.image_file_name
+
+        if not self.is_textual:
+            text_image = self.convertImagetoText()
+
+        map = self.convertTextImageToXYMap(text_image)
 
         self.progressBarSet(50)
 
@@ -90,9 +171,48 @@ class ImageToBeamConverter(ow_generic_element.GenericElement):
 
         self.send("Beam", beam_out)
 
+    def convertImagetoText(self):
+        if str(self.image_file_name).endswith("txt") or str(self.image_file_name).endswith("TXT"):
+          return self.image_file_name
 
-    def convertImageToXYMap(self):
-        input_file = open(self.image_file_name, "r")
+        else:
+            out_file_name = os.getcwd() + "/Output/temp_image.txt"
+            out_file = open(out_file_name, "w")
+
+            separator = '	'
+
+            image = QtGui.QImage(self.image_file_name)
+
+            x_pixels = image.width()
+            z_pixels = image.height()
+
+            for z_index in range (0, z_pixels):
+
+                row = ""
+
+                for x_index in range (0, x_pixels):
+                    color = QColor(image.pixel(x_index, z_index))
+
+                    red = color.red()
+                    blue = color.blue()
+                    green = color.green()
+
+                    grey = (red*11+green*16+blue*5)/32
+
+                    if x_index == x_pixels - 1:
+                        row += str(int(grey))
+                    else:
+                        row += str(int(grey)) + separator
+
+                out_file.write(row + "\r")
+
+            out_file.flush()
+            out_file.close()
+
+        return out_file_name
+
+    def convertTextImageToXYMap(self, text_image_file_name):
+        input_file = open(text_image_file_name, "r")
 
         map = []
         rows = input_file.readlines()
@@ -114,11 +234,19 @@ class ImageToBeamConverter(ow_generic_element.GenericElement):
                 values = rows[z_index].split('	')
 
                 for z_pixel_bin_index in range(0, self.number_of_z_bins):
-                    z = z0 + (p0*z_index + p0_bin_z*z_pixel_bin_index)
+                    if (self.flip_vertically):
+                        z = z0 + (p0*z_index + p0_bin_z*z_pixel_bin_index)
+                    else:
+                        z = z0 - (p0*z_index + p0_bin_z*z_pixel_bin_index)
+
                     for x_index in range(0, len(values)):
                         for x_pixel_bin_index in range(0, self.number_of_x_bins):
-                            x = x0 + (p0*x_index + p0_bin_x*x_pixel_bin_index)
-                            point = ImagePoint(x, 0, z, float(values[x_index]))
+                            if (self.flip_horizontally):
+                                x = x0 - (p0*x_index + p0_bin_x*x_pixel_bin_index)
+                            else:
+                                x = x0 + (p0*x_index + p0_bin_x*x_pixel_bin_index)
+
+                            point = ImagePoint(x, 0, z, int(values[x_index]))
                             map.append(point)
 
         return map
