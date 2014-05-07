@@ -1,6 +1,7 @@
 import sys, math, os
 import Orange
 import Orange.shadow
+from Orange.widgets import widget
 from Orange.widgets import gui
 from Orange.widgets.settings import Setting
 from PyQt4 import QtGui
@@ -11,7 +12,7 @@ from Orange.widgets.shadow_gui import ow_generic_element
 from Orange.shadow.shadow_objects import EmittingStream, TTYGrabber, ShadowBeam
 from Orange.shadow.shadow_util import ShadowGui
 
-class ImageToBeamConverter(ow_generic_element.GenericElement):
+class ImageToBeamConverter(widget.OWWidget):
 
     name = "Image To Beam"
     description = "User Defined: ImageToBeamConverter"
@@ -27,7 +28,7 @@ class ImageToBeamConverter(ow_generic_element.GenericElement):
                 "doc":"Shadow Beam",
                 "id":"beam"}]
 
-    want_main_area=1
+    want_main_area = 0
 
     is_textual = Setting(False)
     number_of_x_pixels = Setting(0)
@@ -41,11 +42,12 @@ class ImageToBeamConverter(ow_generic_element.GenericElement):
     flip_horizontally = Setting(0)
 
     def __init__(self):
-        super().__init__(show_automatic_box=False)
+        self.setFixedWidth(590)
+        self.setFixedHeight(550)
 
         left_box_1 = ShadowGui.widgetBox(self.controlArea, "CCD Image", addSpace=True, orientation="vertical")
 
-        gui.checkBox(left_box_1, self, "is_textual", "Textual Image", callback=self.setTextual)
+        gui.comboBox(left_box_1, self, "is_textual", label="Image Type", labelWidth=250, items=["JPEG/PNG", "Textual"], sendSelectedValue=False, orientation="horizontal", callback=self.setTextual)
 
         ########################################
 
@@ -97,6 +99,7 @@ class ImageToBeamConverter(ow_generic_element.GenericElement):
         ########################################
 
         self.setTextual()
+        self.loadImage()
 
         ShadowGui.lineEdit(left_box_1, self, "pixel_size", "Pixel Size [um]", labelWidth=200, valueType=float, orientation="horizontal")
         ShadowGui.lineEdit(left_box_1, self, "number_of_x_bins", "Number of Bin per Pixel [x]", labelWidth=200, valueType=int, orientation="horizontal")
@@ -104,7 +107,7 @@ class ImageToBeamConverter(ow_generic_element.GenericElement):
         gui.checkBox(left_box_1, self, "flip_vertically", "Flip Vertically")
         gui.checkBox(left_box_1, self, "flip_horizontally", "Flip Horizontally")
 
-        gui.separator(self.controlArea, height=305)
+        gui.separator(self.controlArea)
 
         button = gui.button(self.controlArea, self, "Convert To Beam", callback=self.convertToBeam)
         button.setFixedHeight(45)
@@ -117,17 +120,21 @@ class ImageToBeamConverter(ow_generic_element.GenericElement):
         self.le_image_txt_file_name.setText(QtGui.QFileDialog.getOpenFileName(self, "Open Textual Image", ".", "*.txt"))
 
     def selectFile(self):
-        self.le_image_file_name.setText(QtGui.QFileDialog.getOpenFileName(self, "Open Textual Image", ".", "*.tif;*.jpg"))
+        self.le_image_file_name.setText(QtGui.QFileDialog.getOpenFileName(self, "Open Textual Image", ".", "*.png;*.jpg"))
+        self.loadImage()
 
-        pixmap = QtGui.QPixmap(self.image_file_name)
+    def loadImage(self):
+        if self.is_textual == 0:
+            pixmap = QtGui.QPixmap(self.image_file_name)
 
-        self.preview_box.setPixmap(pixmap)
-        self.number_of_x_pixels = pixmap.width()
-        self.number_of_z_pixels = pixmap.height()
+            self.preview_box.setPixmap(pixmap)
+            self.number_of_x_pixels = pixmap.width()
+            self.number_of_z_pixels = pixmap.height()
 
     def setTextual(self):
-        self.select_file_box_1.setVisible(self.is_textual==1)
         self.select_file_box_2.setVisible(self.is_textual==0)
+        self.select_file_box_1.setVisible(self.is_textual==1)
+
 
     def convertToBeam(self):
 
@@ -137,10 +144,6 @@ class ImageToBeamConverter(ow_generic_element.GenericElement):
 
         self.information(0, "Converting Image Map")
         qApp.processEvents()
-
-        sys.stdout = EmittingStream(textWritten=self.writeStdOut)
-        grabber = TTYGrabber()
-        grabber.start()
 
         text_image = self.image_file_name
 
@@ -153,16 +156,10 @@ class ImageToBeamConverter(ow_generic_element.GenericElement):
 
         beam_out = self.convertMapToBeam(map)
 
-        grabber.stop()
-
-        for row in grabber.ttyData:
-           self.writeStdOut(row)
-
         self.information(0, "Plotting Results")
         qApp.processEvents()
 
         self.progressBarSet(80)
-        self.plot_results(beam_out)
 
         self.information()
         qApp.processEvents()

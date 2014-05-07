@@ -30,10 +30,10 @@ class MonochromatorDistanceCalculator(widget.OWWidget):
     image_path = resources.package_dirname("Orange.widgets.shadow_user_defined") + "/icons/distances.png"
 
     def __init__(self):
-        self.setFixedWidth(600)
-        self.setFixedHeight(600)
+        self.setFixedWidth(590)
+        self.setFixedHeight(580)
 
-        left_box_1 = ShadowGui.widgetBox(self.controlArea, "Optical Parameters", addSpace=True, orientation="vertical", width=630, height=500)
+        left_box_1 = ShadowGui.widgetBox(self.controlArea, "Optical Parameters", addSpace=True, orientation="vertical", width=570, height=500)
 
         figure_box = ShadowGui.widgetBox(left_box_1, "", addSpace=True, orientation="horizontal", width=550, height=350)
 
