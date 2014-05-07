@@ -99,6 +99,13 @@ class SchemeInfoEdit(QWidget):
         print(working_directory)
         os.chdir(working_directory)
 
+        if not os.path.exists(working_directory + "/Output"):
+            os.mkdir(working_directory + "/Output")
+
+        if not os.path.exists(working_directory + "/Files"):
+            os.mkdir(working_directory + "/Files")
+
+
     def paintEvent(self, event):
         return StyledWidget_paintEvent(self, event)
 

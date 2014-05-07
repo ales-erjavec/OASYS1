@@ -3,7 +3,7 @@ import Orange
 import Orange.shadow
 from Orange.widgets import gui
 from Orange.widgets.settings import Setting
-from PyQt4.QtGui import QApplication, qApp, QPalette, QColor, QFont, QGraphicsEffect
+from PyQt4.QtGui import QFileDialog, QApplication, qApp, QPalette, QColor, QFont, QGraphicsEffect
 
 import Shadow.ShadowTools as ST
 
@@ -122,6 +122,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     plot_canvas=None
 
     twotheta_angles = []
+    current_counts = []
     counts = []
     noise = []
 
@@ -236,10 +237,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         ShadowGui.lineEdit(box_cap_aberrations, self, "horizontal_displacement", "Horizontal Displacement (um)", labelWidth=300, valueType=float, orientation="horizontal")
         ShadowGui.lineEdit(box_cap_aberrations, self, "vertical_displacement", "Vertical Displacement (um)", labelWidth=300, valueType=float, orientation="horizontal")
         gui.separator(box_cap_aberrations)
-        gui.comboBox(box_cap_aberrations, self, "calculate_absorption", label="Calculate Absorption", labelWidth=370, callback=self.setAbsorption, items=["No", "Yes"], sendSelectedValue=False, orientation="horizontal")
-        self.le_normalization_factor = ShadowGui.lineEdit(box_cap_aberrations, self, "normalization_factor", "Normalization Factor", labelWidth=340, valueType=float, orientation="horizontal")
-
-        self.setAbsorption()
+        gui.comboBox(box_cap_aberrations, self, "calculate_absorption", label="Calculate Absorption", labelWidth=370, items=["No", "Yes"], sendSelectedValue=False, orientation="horizontal")
 
         box_gon_aberrations = ShadowGui.widgetBox(self.tab_aberrations, "Goniometer Aberrations", addSpace=True, orientation="vertical")
 
@@ -372,9 +370,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     def setSendNewBeam(self):
         self.le_number_of_new_beams.setEnabled(self.send_new_beam == 1)
 
-    def setAbsorption(self):
-        self.le_normalization_factor.setEnabled(self.calculate_absorption == 1)
-
     def setNumberOfPeaks(self):
         self.le_number_of_peaks.setEnabled(self.set_number_of_peaks == 1)
 
@@ -433,10 +428,34 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         self.run_simulation = False
 
     def loadSimulation(self):
+        file_name = QFileDialog.getOpenFileName(self, "Open Result File", "./Output", "*.dat;*.txt;*.xy")
 
-        #TODO: LETTURA DEL FILE - VERIFICARE SE NECESSARIA
+        if os.path.exists(file_name):
+            input_file = open(file_name, "r")
 
-        a=1
+            rows = input_file.readlines()
+
+            start_angle = rows[0].split(" ")[0]
+            stop_angle = rows[len(rows)-1].split(" ")[0]
+
+            if float(start_angle) == self.start_angle_na + self.shift_2theta \
+               and float(stop_angle) == self.stop_angle_na + self.shift_2theta:
+
+                self.counts = []
+                self.noise = []
+                self.twotheta_angles = []
+
+                for index in range(0, len(rows)):
+                    data = rows[index].split(" ")
+
+                    self.noise.append(0)
+                    self.twotheta_angles.append(float(data[0]))
+                    self.counts.append(float(data[1]))
+
+                self.plotResult()
+            else:
+                raise Exception("Simulation not compatible: start/stop angle =  (" + str(start_angle) + ", " + str(stop_angle) + ")")
+
 
     def resetBackground(self):
         cursor = range(0, len(self.noise))
@@ -453,6 +472,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         cursor = range(0, len(self.counts))
 
         for angle_index in cursor:
+            self.current_counts[angle_index] = 0
             self.counts[angle_index] = 0
 
         cursor = range(0, len(self.noise))
@@ -518,10 +538,14 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         theta_slit = math.atan(self.vertical_acceptance_1/self.D_1)
 
+        avg_wavelength = (2*math.pi/numpy.average(go_input_beam.beam.rays[:,10]))*1e+8 # in Angstrom
+
+        self.normalization_factor = 1/self.getAttenuationCoefficient(capillary_radius*2, avg_wavelength)
+
         ################################
         # ARRAYS FOR OUTPUT AND PLOTS
 
-        steps = range(0, math.floor((self.stop_angle_na-self.start_angle_na)/self.step))
+        steps = range(0, math.floor((self.stop_angle_na-self.start_angle_na)/self.step) + 1)
 
         self.start_angle = self.start_angle_na + self.shift_2theta
         self.stop_angle = self.stop_angle_na + self.shift_2theta
@@ -547,6 +571,11 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         for execution in executions:
             if not self.run_simulation: break
+
+            self.current_counts = []
+
+            for step_index in steps:
+                self.current_counts.append(0)
 
             self.le_current_execution.setText(str(execution+1))
 
@@ -818,10 +847,16 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                             if (self.isCollectedRay(math.radians(twotheta_angle), x_0_i, y_0_i, z_0_i, v_x_i, v_y_i, v_z_i)):
                                 position = min(n_steps_inf + n_step, max_position)
 
-                                self.counts[position] += intensity_i
+                                self.current_counts[position] += intensity_i
 
                     bar_value += percentage_fraction
                     self.progressBarSet(bar_value)
+
+                statistic_factor = 1/(self.number_of_origin_points*self.number_of_rotated_rays)
+
+                for index in range(0, len(self.counts)):
+                    self.current_counts[index] = self.current_counts[index]*statistic_factor
+                    self.counts[index] += self.current_counts[index]
 
                 self.plotResult()
                 self.writeOutFile()
@@ -907,12 +942,12 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     # ACCESSORY METHODS
     ############################################################
 
-    def getMassAttenuationCoefficient(self, path, wavelength):
+    def getAttenuationCoefficient(self, path, wavelength):
 
-        absorption = Absorption.Absorb(Radius=path, Wave=wavelength, Packing=self.packing_factor)
+        absorption = Absorption.Absorb(Path=path, Wave=wavelength, Packing=self.packing_factor)
         absorption.SetElems(self.getChemicalFormula(self.sample_material))
 
-        return absorption.ComputeMassAttenuationCoefficient()
+        return absorption.ComputeTotalAttenuationCoefficient()
 
     ############################################################
 
@@ -1080,8 +1115,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
                 distance = min((ShadowMath.point_distance(entry_point, origin_point) + ShadowMath.point_distance(origin_point, exit_point))*10, capillary_radius*2*10) #in mm
 
-                mass_attenuation_coefficient = self.getMassAttenuationCoefficient(distance*0.5, wavelength)
-                absorption = math.exp(-2*mass_attenuation_coefficient)*self.normalization_factor
+                attenuation_coefficient = self.getAttenuationCoefficient(distance, wavelength)
+                absorption = attenuation_coefficient*self.normalization_factor
             else:
                 absorption = 0 # kill the ray
 

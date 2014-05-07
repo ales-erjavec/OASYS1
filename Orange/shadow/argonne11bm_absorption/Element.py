@@ -5,7 +5,8 @@
 
 import math
 import sys
-import os.path
+
+import Orange.canvas.resources as resources
 
 def GetFormFactorCoeff(El):
     """Read form factor coefficients from atomdata.asc file
@@ -21,13 +22,12 @@ def GetFormFactorCoeff(El):
     ElS = El.upper()
     ElS = ElS.rjust(2)
 
-    # TODO: inserire una directory di installazione o simili
-    filename = os.path.abspath('Absorption/atmdata.dat')
+    filename = resources.package_dirname("Orange.shadow.argonne11bm_absorption") + "/atmdata.dat"
 
     try:
         FFdata = open(filename,'Ur')
     except:
-        print("File atmdata.dat not found in directory " + os.path.abspath('Absorption'))
+        print("File atmdata.dat not found in directory " + resources.package_dirname("Orange.shadow.argonne11bm_absorption"))
 
     S = '1'
     FormFactors = []
@@ -48,13 +48,12 @@ def GetFormFactorCoeff(El):
 def GetAtomInfo(El):
     ElS = El.upper().rjust(2)
 
-    # TODO: inserire una directory di installazione o simili
-    filename = os.path.abspath('Absorption/atmdata.dat')
+    filename = resources.package_dirname("Orange.shadow.argonne11bm_absorption") + "/atmdata.dat"
 
     try:
         FFdata = open(filename,'Ur')
     except:
-        print("File atmdata.dat not found in directory " + os.path.abspath('Absorption'))
+        print("File atmdata.dat not found in directory " + resources.package_dirname("Orange.shadow.argonne11bm_absorption"))
 
     S = '1'
     AtomInfo = {}
@@ -95,8 +94,7 @@ def GetXsectionCoeff(El):
     ElS = El.upper()
     ElS = ElS.ljust(2)
 
-    # TODO: inserire una directory di installazione o simili
-    filename = os.path.abspath('Absorption/Xsect.dat')
+    filename = resources.package_dirname("Orange.shadow.argonne11bm_absorption") + "/Xsect.dat"
 
     try:
         xsec = open(filename,'Ur')
@@ -174,12 +172,12 @@ def GetMagFormFacCoeff(El):
 
     # TODO: inserire una directory di installazione o simili
 
-    filename = os.path.abspath('Absorption/atmdata.dat')
+    filename = resources.package_dirname("Orange.shadow.argonne11bm_absorption") + "/atmdata.dat"
 
     try:
         FFdata = open(filename,'Ur')
     except:
-        print("File atmdata.dat not found in directory " + os.path.abspath('Absorption'))
+        print("File atmdata.dat not found in directory " + resources.package_dirname("Orange.shadow.argonne11bm_absorption"))
 
     S = '1'
     MagFormFactors = []

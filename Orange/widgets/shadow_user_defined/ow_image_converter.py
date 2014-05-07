@@ -114,8 +114,6 @@ class ImageToBeamConverter(widget.OWWidget):
 
         gui.rubber(self.controlArea)
 
-        gui.rubber(self.mainArea)
-
     def selectTxtFile(self):
         self.le_image_txt_file_name.setText(QtGui.QFileDialog.getOpenFileName(self, "Open Textual Image", ".", "*.txt"))
 
