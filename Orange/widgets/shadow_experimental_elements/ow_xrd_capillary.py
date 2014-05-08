@@ -52,7 +52,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     horizontal_displacement = Setting(0.0)
     vertical_displacement = Setting(0.0)
     calculate_absorption = Setting(0.0)
-    normalization_factor = Setting(100.0)
+    normalization_factor = 0.0
 
     shift_2theta = Setting(0.000)
 
@@ -89,6 +89,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     keep_result = Setting(0)
     number_of_origin_points = Setting(1)
     number_of_rotated_rays = Setting(5)
+    normalize = Setting(1)
     output_file_name = Setting('XRD_Profile.xy')
 
     add_background = Setting(0)
@@ -149,6 +150,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         ShadowGui.lineEdit(box_rays, self, "number_of_origin_points", "Number of Origin Points into the Capillary", labelWidth=355, valueType=int, orientation="horizontal")
         ShadowGui.lineEdit(box_rays, self, "number_of_rotated_rays", "Number of Generated Rays in the Powder Diffraction Arc",  valueType=int, orientation="horizontal")
+
+        gui.comboBox(box_rays, self, "normalize", label="Normalize", labelWidth=370, items=["No", "Yes"], sendSelectedValue=False, orientation="horizontal")
 
         box_simulation = ShadowGui.widgetBox(self.tab_simulation, "Simulation Management", addSpace=True, orientation="vertical")
 
@@ -538,9 +541,9 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         theta_slit = math.atan(self.vertical_acceptance_1/self.D_1)
 
-        avg_wavelength = (2*math.pi/numpy.average(go_input_beam.beam.rays[:,10]))*1e+8 # in Angstrom
-
-        self.normalization_factor = 1/self.getTransmittance(capillary_radius*2, avg_wavelength)
+        if self.calculate_absorption == 1:
+            avg_wavelength = (2*math.pi/numpy.average(go_input_beam.beam.rays[:,10]))*1e+8 # in Angstrom
+            self.normalization_factor = 1/self.getTransmittance(capillary_radius*2, avg_wavelength)
 
         ################################
         # ARRAYS FOR OUTPUT AND PLOTS
@@ -852,7 +855,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                     bar_value += percentage_fraction
                     self.progressBarSet(bar_value)
 
-                statistic_factor = 1/(self.number_of_origin_points*self.number_of_rotated_rays)
+                statistic_factor = 1
+                if (self.normalize): statistic_factor = 1/(self.number_of_origin_points*self.number_of_rotated_rays)
 
                 for index in range(0, len(self.counts)):
                     self.current_counts[index] = self.current_counts[index]*statistic_factor
