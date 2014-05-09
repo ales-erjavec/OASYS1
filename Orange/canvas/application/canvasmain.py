@@ -1291,7 +1291,7 @@ class CanvasMainWindow(QMainWindow):
         """
 
         dialog = welcomedialog.WelcomeDialog(self)
-        dialog.setWindowTitle(self.tr("Welcome to Orange Data Mining"))
+        dialog.setWindowTitle(self.tr("Welcome to Shadow Ray-Tracing Simulation"))
 
         def new_scheme():
             if self.new_scheme() == QDialog.Accepted:

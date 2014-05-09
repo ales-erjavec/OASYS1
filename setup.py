@@ -7,14 +7,14 @@ import subprocess
 
 NAME = 'Orange'
 
-VERSION = '3.1'
+VERSION = '4.0'
 ISRELEASED = False
 
-DESCRIPTION = 'Orange, a component-based data mining framework.'
+DESCRIPTION = 'Shadow, Ray-tracing simulation software'
 README_FILE = os.path.join(os.path.dirname(__file__), 'README.txt')
 LONG_DESCRIPTION = open(README_FILE).read()
-AUTHOR = 'Bioinformatics Laboratory, FRI UL'
-AUTHOR_EMAIL = 'contact@orange.biolab.si'
+AUTHOR = 'Luca Rebuffi, Manuel Sanchez del Rio and Bioinformatics Laboratory, FRI UL'
+AUTHOR_EMAIL = 'luca.rebuffi@elettra.eu'
 URL = 'http://orange.biolab.si/'
 DOWNLOAD_URL = 'https://bitbucket.org/biolab/orange/downloads'
 LICENSE = 'GPLv3'

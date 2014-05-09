@@ -11,6 +11,7 @@ from PyQt4.QtCore import Qt
 
 from .utils import is_transparency_supported
 
+import time
 
 class SplashScreen(QSplashScreen):
     """
@@ -102,6 +103,7 @@ class SplashScreen(QSplashScreen):
         self.__color = color
         self.__message = message
         QSplashScreen.showMessage(self, message, alignment, color)
+        time.sleep(0.05)
         QApplication.instance().processEvents()
 
     # Reimplemented to allow graceful fall back if the windowing system

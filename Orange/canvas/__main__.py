@@ -11,6 +11,7 @@ import logging
 import optparse
 import pickle
 import shlex
+import time
 
 import pkg_resources
 
@@ -260,6 +261,7 @@ def main(argv=None):
     set_global_registry(widget_registry)
     canvas_window.set_widget_registry(widget_registry)
     canvas_window.show()
+
     canvas_window.raise_()
 
     want_welcome = True or \
@@ -273,8 +275,6 @@ def main(argv=None):
     app.processEvents()
 
     app.fileOpenRequest.connect(canvas_window.open_scheme_file)
-
-    close_app = False
 
     close_app = False
     if want_welcome and not args and not open_requests:
