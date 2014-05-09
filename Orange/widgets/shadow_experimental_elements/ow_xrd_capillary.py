@@ -52,7 +52,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     horizontal_displacement = Setting(0.0)
     vertical_displacement = Setting(0.0)
     calculate_absorption = Setting(0.0)
-    normalization_factor = 0.0
+    absorption_normalization_factor = 0.0
 
     shift_2theta = Setting(0.000)
 
@@ -323,11 +323,11 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         button_box_2 = ShadowGui.widgetBox(self.controlArea, "", addSpace=False, orientation="horizontal", height=30)
 
-        load_button = gui.button(button_box_2, self, "Load Data", callback=self.loadSimulation)
-        load_button.setFixedHeight(30)
-        font = QFont(load_button.font())
+        self.load_button = gui.button(button_box_2, self, "Load Data", callback=self.loadSimulation)
+        self.load_button.setFixedHeight(30)
+        font = QFont(self.load_button.font())
         font.setItalic(True)
-        load_button.setFont(font)
+        self.load_button.setFont(font)
 
         self.reset_bkg_Button = gui.button(button_box_2, self, "Reset Background", callback=self.resetBackground)
         self.reset_bkg_Button.setFixedHeight(30)
@@ -335,11 +335,11 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         palette.setColor(QPalette.ButtonText, QColor('dark blue'))
         self.reset_bkg_Button.setPalette(palette) # assign new palette
 
-        reset_button = gui.button(button_box_2, self, "Reset Data", callback=self.resetSimulation)
-        reset_button.setFixedHeight(30)
-        palette = QPalette(reset_button.palette()) # make a copy of the palette
+        self.reset_button = gui.button(button_box_2, self, "Reset Data", callback=self.resetSimulation)
+        self.reset_button.setFixedHeight(30)
+        palette = QPalette(self.reset_button.palette()) # make a copy of the palette
         palette.setColor(QPalette.ButtonText, QColor('dark red'))
-        reset_button.setPalette(palette) # assign new palette
+        self.reset_button.setPalette(palette) # assign new palette
 
         self.setAddBackground()
 
@@ -361,11 +361,22 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     # GUI MANAGEMENT METHODS
     ############################################################
 
-    def setTabsEnabled(self, enabled=True):
+    def setTabsAndButtonEnabled(self, enabled=True):
         self.tab_simulation.setEnabled(enabled)
         self.tab_physical.setEnabled(enabled)
         self.tab_aberrations.setEnabled(enabled)
         self.tab_background.setEnabled(enabled)
+
+        self.load_button.setEnabled(enabled)
+        self.reset_button.setEnabled(enabled)
+
+        if not enabled:
+            self.background_button.setEnabled(False)
+            self.reset_bkg_Button.setEnabled(False)
+        else:
+            self.background_button.setEnabled(self.add_background == 1)
+            self.reset_bkg_Button.setEnabled(self.add_background == 1)
+
 
     def setIncremental(self):
         self.le_number_of_executions.setEnabled(self.incremental == 1)
@@ -424,7 +435,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             self.replace_plot(plot)
 
     ############################################################
-    # MAIN METHOD - SIMULATION ALGORITHM
+    # EVENT MANAGEMENT METHODS
     ############################################################
 
     def stopSimulation(self):
@@ -489,6 +500,42 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         self.reset_button_pressed = True
 
 
+    def initialize(self):
+        steps = range(0, math.floor((self.stop_angle_na - self.start_angle_na) / self.step) + 1)
+
+        self.start_angle = self.start_angle_na + self.shift_2theta
+        self.stop_angle = self.stop_angle_na + self.shift_2theta
+
+        if self.keep_result == 0 or len(self.twotheta_angles) == 0 or self.reset_button_pressed:
+            self.twotheta_angles = []
+            self.counts = []
+            self.noise = []
+
+            for step_index in steps:
+                self.twotheta_angles.append(self.start_angle + step_index * self.step)
+                self.counts.append(0)
+                self.noise.append(0)
+
+            self.twotheta_angles = numpy.array(self.twotheta_angles)
+            self.counts = numpy.array(self.counts)
+            self.noise = numpy.array(self.noise)
+
+        self.reset_button_pressed = False
+
+        self.resetCurrentCounts(steps)
+
+        return steps
+
+    def resetCurrentCounts(self, steps):
+        self.current_counts = []
+        for step_index in steps:
+            self.current_counts.append(0)
+
+    ############################################################
+    # MAIN METHOD - SIMULATION ALGORITHM
+    ############################################################
+
+
     def simulate(self):
         #TODO: ERROR MANAGEMENT WITH MESSAGES
         if self.input_beam is None: return
@@ -498,7 +545,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         self.backupOutFile()
 
         self.run_simulation = True
-        self.setTabsEnabled(False)
+        self.setTabsAndButtonEnabled(False)
 
         executions = range(0,1)
 
@@ -543,31 +590,12 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         if self.calculate_absorption == 1:
             avg_wavelength = (2*math.pi/numpy.average(go_input_beam.beam.rays[:,10]))*1e+8 # in Angstrom
-            self.normalization_factor = 1/self.getTransmittance(capillary_radius*2, avg_wavelength)
+            self.absorption_normalization_factor = 1/self.getTransmittance(capillary_radius*2, avg_wavelength)
 
         ################################
         # ARRAYS FOR OUTPUT AND PLOTS
 
-        steps = range(0, math.floor((self.stop_angle_na-self.start_angle_na)/self.step) + 1)
-
-        self.start_angle = self.start_angle_na + self.shift_2theta
-        self.stop_angle = self.stop_angle_na + self.shift_2theta
-
-        if self.keep_result == 0 or len(self.twotheta_angles) == 0 or self.reset_button_pressed:
-            self.twotheta_angles = []
-            self.counts = []
-            self.noise = []
-
-            for step_index in steps:
-                self.twotheta_angles.append(self.start_angle + step_index*self.step)
-                self.counts.append(0)
-                self.noise.append(0)
-
-            self.twotheta_angles = numpy.array(self.twotheta_angles)
-            self.counts = numpy.array(self.counts)
-            self.noise = numpy.array(self.noise)
-
-        self.reset_button_pressed = False
+        steps = self.initialize()
 
         ################################
         # EXECUTION CYCLES
@@ -575,10 +603,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         for execution in executions:
             if not self.run_simulation: break
 
-            self.current_counts = []
-
-            for step_index in steps:
-                self.current_counts.append(0)
+            self.resetCurrentCounts(steps)
 
             self.le_current_execution.setText(str(execution+1))
 
@@ -693,7 +718,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                     b = ShadowMath.vector_modulus(P_0)
                                     a = math.sqrt(R_sp*R_sp - b*b)
 
-                                    P_1 = ShadowMath.vector_sum(origin_point, ShadowMath.vector_multiply(v_out, t_0-a))
+                                    # N.B. punti di uscita hanno solo direzione in avanti.
+                                    #P_1 = ShadowMath.vector_sum(origin_point, ShadowMath.vector_multiply(v_out, t_0-a))
                                     P_2 = ShadowMath.vector_sum(origin_point, ShadowMath.vector_multiply(v_out, t_0+a))
 
                                     # ok se P2 con z > 0
@@ -734,66 +760,63 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
                                         diffracted_ray[18] = ray_intensity*reduction_factor
 
-                                        #
-                                        # non appendo il centrale - forzatura
-                                        #
-                                        #diffracted_rays.append(diffracted_ray)
+                                        if (self.number_of_rotated_rays == 1):
+                                            diffracted_rays.append(diffracted_ray)
+                                        else:
+                                            # genero altri n raggi nel'arco di cerchio intercettato dalle slitte
 
-                                        # genero altri 10 raggi nel'arco di cerchio +-delta (5 e 5)
+                                            delta = self.calculateDeltaAngle(twotheta_reflection)
+                                            delta_angles = []
 
-                                        delta = self.calculateDeltaAngle(twotheta_reflection)
+                                            for index in range(0, int(self.number_of_rotated_rays)):
+                                                delta_temp = 2*self.random_generator.random()*delta
 
-                                        delta_angles = []
+                                                if delta_temp <= delta: delta_angles.append(delta_temp)
+                                                else : delta_angles.append(2*math.pi-(delta_temp-delta))
 
-                                        for index in range(0, int(self.number_of_rotated_rays)):
-                                            delta_temp = 2*self.random_generator.random()*delta
+                                            delta_range = range(0, len(delta_angles))
 
-                                            if delta_temp <= delta: delta_angles.append(delta_temp)
-                                            else : delta_angles.append(2*math.pi-(delta_temp-delta))
+                                            for delta_index in delta_range:
 
-                                        delta_range = range(0, len(delta_angles))
+                                                diffracted_ray_circle = numpy.zeros(19)
 
-                                        for delta_index in delta_range:
+                                                diffracted_ray_circle[0] = diffracted_ray[0]
+                                                diffracted_ray_circle[1] = diffracted_ray[1]
+                                                diffracted_ray_circle[2] = diffracted_ray[2]
+                                                diffracted_ray_circle[6] = diffracted_ray[6]
+                                                diffracted_ray_circle[7] = diffracted_ray[7]
+                                                diffracted_ray_circle[8] = diffracted_ray[8]
+                                                diffracted_ray_circle[9] = diffracted_ray[9]
+                                                diffracted_ray_circle[10] = diffracted_ray[10]
+                                                diffracted_ray_circle[11] = diffracted_ray[11]
+                                                diffracted_ray_circle[12] = diffracted_ray[12]
+                                                diffracted_ray_circle[13] = diffracted_ray[13]
+                                                diffracted_ray_circle[14] = diffracted_ray[14]
+                                                diffracted_ray_circle[15] = diffracted_ray[15]
+                                                diffracted_ray_circle[16] = diffracted_ray[16]
+                                                diffracted_ray_circle[17] = diffracted_ray[17]
+                                                diffracted_ray_circle[18] = diffracted_ray[18]
 
-                                            diffracted_ray_new = numpy.zeros(19)
+                                                delta_angle = delta_angles[delta_index]
 
-                                            diffracted_ray_new[0] = diffracted_ray[0]
-                                            diffracted_ray_new[1] = diffracted_ray[1]
-                                            diffracted_ray_new[2] = diffracted_ray[2]
-                                            diffracted_ray_new[6] = diffracted_ray[6]
-                                            diffracted_ray_new[7] = diffracted_ray[7]
-                                            diffracted_ray_new[8] = diffracted_ray[8]
-                                            diffracted_ray_new[9] = diffracted_ray[9]
-                                            diffracted_ray_new[10] = diffracted_ray[10]
-                                            diffracted_ray_new[11] = diffracted_ray[11]
-                                            diffracted_ray_new[12] = diffracted_ray[12]
-                                            diffracted_ray_new[13] = diffracted_ray[13]
-                                            diffracted_ray_new[14] = diffracted_ray[14]
-                                            diffracted_ray_new[15] = diffracted_ray[15]
-                                            diffracted_ray_new[16] = diffracted_ray[16]
-                                            diffracted_ray_new[17] = diffracted_ray[17]
-                                            diffracted_ray_new[18] = diffracted_ray[18]
+                                                #
+                                                # calcolo del vettore ruotato di delta, con la formula di Rodrigues:
+                                                #
+                                                # v_out_new = v_out * cos(delta) + (asse_rot x v_out ) * sin(delta) + asse_rot*(asse_rot . v_out )(1 - cos(delta))
+                                                #
+                                                # asse rot = v_in
+                                                #
+                                                v_out_new_1 = ShadowMath.vector_multiply(v_out, math.cos(delta_angle))
+                                                v_out_new_2 = ShadowMath.vector_multiply(ShadowMath.vectorial_product(v_in, v_out), math.sin(delta_angle))
+                                                v_out_new_3 = ShadowMath.vector_multiply(v_in, ShadowMath.scalar_product(v_in, v_out)*(1-math.cos(delta_angle)))
 
-                                            delta_angle = delta_angles[delta_index]
+                                                v_out_new = ShadowMath.vector_sum(v_out_new_1, ShadowMath.vector_sum(v_out_new_2, v_out_new_3))
 
-                                            #
-                                            # calcolo del vettore ruotato di delta, con la formula di Rodrigues:
-                                            #
-                                            # v_out_new = v_out * cos(delta) + (asse_rot x v_out ) * sin(delta) + asse_rot*(asse_rot . v_out )(1 - cos(delta))
-                                            #
-                                            # asse rot = v_in
-                                            #
-                                            v_out_new_1 = ShadowMath.vector_multiply(v_out, math.cos(delta_angle))
-                                            v_out_new_2 = ShadowMath.vector_multiply(ShadowMath.vectorial_product(v_in, v_out), math.sin(delta_angle))
-                                            v_out_new_3 = ShadowMath.vector_multiply(v_in, ShadowMath.scalar_product(v_in, v_out)*(1-math.cos(delta_angle)))
+                                                diffracted_ray_circle[3]  = v_out_new[0]                              # director cos x
+                                                diffracted_ray_circle[4]  = v_out_new[1]                              # director cos y
+                                                diffracted_ray_circle[5]  = v_out_new[2]                              # director cos z
 
-                                            v_out_new = ShadowMath.vector_sum(v_out_new_1, ShadowMath.vector_sum(v_out_new_2, v_out_new_3))
-
-                                            diffracted_ray_new[3]  = v_out_new[0]                              # director cos x
-                                            diffracted_ray_new[4]  = v_out_new[1]                              # director cos y
-                                            diffracted_ray_new[5]  = v_out_new[2]                              # director cos z
-
-                                            diffracted_rays.append(diffracted_ray_new)
+                                                diffracted_rays.append(diffracted_ray_circle)
 
                 bar_value += percentage_fraction
                 self.progressBarSet(bar_value)
@@ -859,7 +882,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                 if (self.normalize): statistic_factor = 1/(self.number_of_origin_points*self.number_of_rotated_rays)
 
                 for index in range(0, len(self.counts)):
-                    self.current_counts[index] = self.current_counts[index]*statistic_factor
+                    if (statistic_factor != 1): self.current_counts[index] = self.current_counts[index]*statistic_factor
                     self.counts[index] += self.current_counts[index]
 
                 self.plotResult()
@@ -870,7 +893,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         self.writeOutFile()
 
         self.progressBarSet(100)
-        self.setTabsEnabled(True)
+        self.setTabsAndButtonEnabled(True)
 
         self.information()
         qApp.processEvents()
@@ -889,15 +912,22 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             else:
                 self.send("Trigger", ShadowTrigger(False))
 
+        else:
+            self.run_simulation=True
+
 
     def simulateBackground(self):
+        if self.input_beam is None: return
+
+        if len(self.twotheta_angles) == 0:
+            self.initialize()
+
         if self.add_background ==  1:
             self.information(0, "Adding Background")
             qApp.processEvents()
 
             self.calculateBackground(0)
             self.plotResult()
-
             self.writeOutFile()
 
         self.information()
@@ -1119,7 +1149,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
                 distance = min((ShadowMath.point_distance(entry_point, origin_point) + ShadowMath.point_distance(origin_point, exit_point))*10, capillary_radius*2*10) #in mm
 
-                absorption = self.getTransmittance(distance, wavelength)*self.normalization_factor
+                absorption = self.getTransmittance(distance, wavelength)*self.absorption_normalization_factor
             else:
                 absorption = 0 # kill the ray
 
@@ -1229,8 +1259,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         self.n_sigma = 0.5*(1 + self.n_sigma)
 
         for angle_index in cursor:
-            if not self.run_simulation: break
-
             background = 0
             if (self.add_chebyshev==1):
                 coefficients = [self.cheb_coeff_0, self.cheb_coeff_1, self.cheb_coeff_2, self.cheb_coeff_3, self.cheb_coeff_4, self.cheb_coeff_5]
@@ -1253,7 +1281,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         bar_value += percentage_fraction
         self.progressBarSet(bar_value)
-
 
     ############################################################
 
