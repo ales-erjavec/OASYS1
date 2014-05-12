@@ -4,6 +4,7 @@ import Orange
 import Orange.shadow
 from Orange.widgets import gui
 from Orange.widgets.settings import Setting
+from PyQt4 import QtGui
 from PyQt4.QtGui import QApplication, qApp
 from Orange.widgets.shadow_gui import ow_generic_element
 from Orange.shadow.shadow_objects import EmittingStream, TTYGrabber
@@ -997,7 +998,7 @@ class OpticalElement(ow_generic_element.GenericElement):
 
                        shadow_oe.oe.RMIRR = self.spherical_radius
                    else:
-                       print("ERROR") #TODO: ERROR MANAGEMENT - OPERATION NOT SUPPORTED
+                       raise Exception("Automatic calculation of the sagittal focus supported only for Spheric Mirrors/Crystals")
                else:
                    if self.focii_and_continuation_plane == 0:
                       shadow_oe.oe.setAutoFocus(f_default=1)
@@ -1160,36 +1161,121 @@ class OpticalElement(ow_generic_element.GenericElement):
 
     def checkFields(self):
 
-        if not self.graphical_options.is_screen_slit:
-            if self.graphical_options.is_mirror:
-                if self.reflectivity_type == 1:
-                    if self.source_of_reflectivity == 0:
-                        if not self.checkFile(self.file_prerefl): return False
-                    elif self.source_of_reflectivity == 2:
-                        if not self.checkFile(self.file_prerefl_m): return False
-                elif self.reflectivity_type == 2:
-                    if self.source_of_reflectivity == 0:
-                        if not self.checkFile(self.file_prerefl): return False
-                    elif self.source_of_reflectivity == 2:
-                        if not self.checkFile(self.file_prerefl_m): return False
+        if self.graphical_options.is_screen_slit:
+            if self.source_plane_distance < 0: raise Exception("Source plane distance < 0")
+            if self.image_plane_distance < 0: raise Exception("Image plane distance < 0")
+
+            if self.source_movement == 1:
+                if self.sm_distance_from_mirror < 0: raise Exception("Source Movement: Distance from Mirror < 0")
+        else:
+            if self.source_plane_distance < 0: raise Exception("Source plane distance < 0")
+            if self.image_plane_distance < 0: raise Exception("Image plane distance < 0")
+
+
+            if self.mirror_orientation_angle < 0 or self.mirror_orientation_angle > 360: raise Exception("Mirror Orientation Angle should be between 0 and 360 deg")
+
+            if self.graphical_options.is_curved:
+                if self.is_cylinder:
+                    if self.cylinder_orientation < 0 or self.cylinder_orientation > 360: raise Exception("Cylinder Orientation Angle should be between 0 and 360 deg")
+
+            if self.surface_shape_parameters == 0:
+                if (self.is_cylinder and self.cylinder_orientation==90):
+                   if not self.graphical_options.is_spheric:
+                       raise Exception("Automatic calculation of the sagittal focus supported only for Spheric Mirrors/Crystals")
+                else:
+                   if not self.focii_and_continuation_plane == 0:
+                        if self.object_side_focal_distance < 0: raise Exception("Object side focal distance < 0")
+                        if self.image_side_focal_distance < 0: raise Exception("Image side focal distance < 0")
+
+                   if self.graphical_options.is_paraboloid:
+                        if self.focus_location < 0: raise Exception("Focus location < 0")
             else:
-                if not self.checkFile(self.file_crystal_parameters): return False
+               if self.graphical_options.is_spheric:
+                   if self.spherical_radius < 0: raise Exception("Spherical radius < 0")
+               elif self.graphical_options.is_toroidal:
+                   if self.torus_major_radius < 0: raise Exception("Torus major radius < 0")
+                   if self.torus_minor_radius < 0: raise Exception("Torus minor radius < 0")
+               elif self.graphical_options.is_hyperboloid or self.graphical_options.is_ellipsoidal:
+                   if self.ellipse_hyperbola_semi_major_axis < 0: raise Exception("Semi major axis < 0")
+                   if self.ellipse_hyperbola_semi_minor_axis < 0: raise Exception("Semi minor axis < 0")
+                   if self.angle_of_majax_and_pole < 0: raise Exception("Angle of MajAx and Pole < 0")
+               elif self.graphical_options.is_paraboloid:
+                   if self.paraboloid_parameter < 0: raise Exception("Paraboloid parameter < 0")
+
+
+            if self.graphical_options.is_toroidal:
+                if self.toroidal_mirror_pole_location < 0: raise Exception("Toroidal mirror pole location < 0")
+
+            if self.graphical_options.is_mirror:
+                if not self.reflectivity_type == 0:
+                    if self.source_of_reflectivity == 0:
+                        if not self.checkFile(self.file_prerefl): raise Exception("File " + self.file_prerefl + " not existing")
+                    elif self.source_of_reflectivity == 2:
+                        if not self.checkFile(self.file_prerefl_m): raise Exception("File " + self.file_prerefl_m + " not existing")
+            else:
+                if not self.checkFile(self.file_crystal_parameters): raise Exception("File " + self.file_crystal_parameters + " not existing")
+
+                if not self.crystal_auto_setting == 0:
+                    if self.units_in_use == 0 and self.photon_energy < 0: raise Exception("Photon Energy < 0")
+                    if self.units_in_use == 1 and self.photon_wavelength < 0: raise Exception("Photon Wavelength < 0")
+
+                if self.mosaic_crystal==1:
+                   if self.seed_for_mosaic < 0: raise Exception("Crystal: Seed for mosaic < 0")
+                   if self.angle_spread_FWHM < 0: raise Exception("Crystal: Angle spread FWHM < 0")
+                   if self.thickness < 0: raise Exception("Crystal: thickness < 0")
+                else:
+                    if self.asymmetric_cut == 1:
+                        if self.planes_angle < 0: raise Exception("Crystal: Planes angle < 0")
+                        if self.thickness < 0: raise Exception("Crystal: thickness < 0")
+                    if self.johansson_geometry == 1:
+                        if self.johansson_radius < 0: raise Exception("Crystal: Johansson radius < 0")
+
+            if not self.is_infinite == 0:
+               if self.dim_y_plus < 0: raise Exception("Dimensions: y plus < 0")
+               if self.dim_y_minus < 0: raise Exception("Dimensions: y minus < 0")
+               if self.dim_x_plus < 0: raise Exception("Dimensions: x plus < 0")
+               if self.dim_x_minus < 0: raise Exception("Dimensions: x minus < 0")
+
+
+            #####################################
+            # ADVANCED SETTING
+            #####################################
 
             if self.modified_surface == 1:
-                 if self.ms_type_of_defect != 0:
-                     if not self.checkFile(self.ms_defect_file_name): return False
+                 if self.ms_type_of_defect == 0:
+                     if self.ms_ripple_ampli_x < 0: raise Exception("Modified Surface: Ripple Amplitude x < 0")
+                     if self.ms_ripple_wavel_x < 0: raise Exception("Modified Surface: Ripple Wavelength x < 0")
+                     if self.ms_ripple_ampli_y < 0: raise Exception("Modified Surface: Ripple Amplitude y < 0")
+                     if self.ms_ripple_wavel_y < 0: raise Exception("Modified Surface: Ripple Wavelength y < 0")
+                 else:
+                     if not self.checkFile(self.ms_defect_file_name): raise Exception("File " + self.ms_defect_file_name + " not existing")
             elif self.modified_surface == 2:
-                if not self.checkFile(self.ms_file_facet_descr): return False
+                if not self.checkFile(self.ms_file_facet_descr): raise Exception("File " + self.ms_file_facet_descr + " not existing")
+                if self.ms_facet_width_x < 0: raise Exception("Modified Surface: Facet width x < 0")
+                if self.ms_facet_phase_x < 0 or self.ms_facet_phase_x > 360: raise Exception("Modified Surface: facet phase x should be between 0 and 360 deg")
+                if self.ms_dead_width_x_minus < 0: raise Exception("Modified Surface: Dead width x minus < 0")
+                if self.ms_dead_width_x_plus < 0: raise Exception("Modified Surface: Dead width x plus < 0")
+                if self.ms_facet_width_y < 0: raise Exception("Modified Surface: Facet width y < 0")
+                if self.ms_facet_phase_y < 0 or self.ms_facet_phase_x > 360: raise Exception("Modified Surface: facet phase y should be between 0 and 360 deg")
+                if self.ms_dead_width_y_minus < 0: raise Exception("Modified Surface: Dead width y minus < 0")
+                if self.ms_dead_width_y_plus < 0: raise Exception("Modified Surface: Dead width y plus < 0")
             elif self.modified_surface == 3:
-                if not self.checkFile(self.ms_file_surf_roughness): return False
+                if not self.checkFile(self.ms_file_surf_roughness): raise Exception("File " + self.ms_file_surf_roughness + " not existing")
+                if self.ms_roughness_rms_x < 0: raise Exception("Modified Surface: Roughness rms x < 0")
+                if self.ms_roughness_rms_y < 0: raise Exception("Modified Surface: Roughness rms y < 0")
             elif self.modified_surface == 4:
-                if self.ms_specify_rz2==0 and not self.checkFile(self.ms_file_with_parameters_rz): return False
-                if self.ms_specify_rz2==0 and not self.checkFile(self.ms_file_with_parameters_rz2): return False
+                if self.ms_specify_rz2==0 and not self.checkFile(self.ms_file_with_parameters_rz): raise Exception("File " + self.ms_file_with_parameters_rz + " not existing")
+                if self.ms_specify_rz2==0 and not self.checkFile(self.ms_file_with_parameters_rz2): raise Exception("File " + self.ms_file_with_parameters_rz2 + " not existing")
             elif self.modified_surface == 5:
-                if not self.checkFile(self.ms_file_orientations): return False
-                if not self.checkFile(self.ms_file_polynomial): return False
+                if not self.checkFile(self.ms_file_orientations): raise Exception("File " + self.ms_file_orientations + " not existing")
+                if not self.checkFile(self.ms_file_polynomial): raise Exception("File " + self.ms_file_polynomial + " not existing")
+                if self.ms_number_of_segments_x < 0: raise Exception("Modified Surface: Number of segments x < 0")
+                if self.ms_number_of_segments_y < 0: raise Exception("Modified Surface: Number of segments y < 0")
+                if self.ms_length_of_segments_x < 0: raise Exception("Modified Surface: Length of segments x < 0")
+                if self.ms_length_of_segments_y < 0: raise Exception("Modified Surface: Length of segments y < 0")
 
-        return True
+            if self.source_movement == 1:
+                if self.sm_distance_from_mirror < 0: raise Exception("Source Movement: Distance from Mirror < 0")
 
     def writeCalculatedFields(self, shadow_oe):
         if self.surface_shape_parameters == 0:
@@ -1235,26 +1321,30 @@ class OpticalElement(ow_generic_element.GenericElement):
         self.send("Beam", beam_out)
 
     def traceOpticalElement(self):
+        try:
+            if self.input_beam is None: raise Exception("No input beam, run the previous simulation first")
 
-        if not self.input_beam is None:
             self.error()
-
             self.progressBarInit()
+
+            self.checkFields()
 
             shadow_oe = self.instantiateShadowOE()
 
             self.populateFields(shadow_oe)
             self.doSpecificSetting(shadow_oe)
+
             self.progressBarSet(10)
 
-            if self.checkFields():
-                self.completeOperations(shadow_oe)
+            self.completeOperations(shadow_oe)
+        except Exception as exception:
+            self.error(0, exception.args[0])
+            QtGui.QMessageBox.critical(self, "QMessageBox.critical()",
+                exception.args[0],
+                QtGui.QMessageBox.Ok)
 
-            self.progressBarFinished()
-        else:
-            self.error(0, "No input beam, run the previous simulation first")
-            self.close()
-            
+        self.progressBarFinished()
+
     def setBeam(self, beam):
         self.onReceivingInput()
 
