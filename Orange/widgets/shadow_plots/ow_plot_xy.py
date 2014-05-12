@@ -208,78 +208,82 @@ class PlotXY(ow_automatic_element.AutomaticElement):
     def plot_xy(self, var_x, var_y, title, xtitle, ytitle):
         beam_to_plot = self.input_beam.beam
 
-        if self.image_plane==1:
-            historyItem=self.input_beam.getOEHistory(oe_number=self.input_beam.oe_number)
+        try:
+            if self.image_plane==1:
+                historyItem=self.input_beam.getOEHistory(oe_number=self.input_beam.oe_number)
 
-            if not historyItem is None:
-                new_shadow_oe = historyItem.shadow_oe.duplicate()
+                if not historyItem is None:
+                    new_shadow_oe = historyItem.shadow_oe.duplicate()
 
-                if self.image_plane_rel_abs_position == 0:
-                    new_shadow_oe.oe.T_IMAGE = abs(self.image_plane_new_position)
-                else:
-                    new_shadow_oe.oe.T_IMAGE = new_shadow_oe.oe.T_IMAGE + self.image_plane_new_position
+                    if self.image_plane_rel_abs_position == 0:
+                        new_shadow_oe.oe.T_IMAGE = abs(self.image_plane_new_position)
+                    else:
+                        new_shadow_oe.oe.T_IMAGE = new_shadow_oe.oe.T_IMAGE + self.image_plane_new_position
 
-                new_shadow_beam = ShadowBeam.traceFromOENoHistory(historyItem.input_beam, new_shadow_oe)
+                    new_shadow_beam = ShadowBeam.traceFromOENoHistory(historyItem.input_beam, new_shadow_oe)
 
-                beam_to_plot = new_shadow_beam.beam
+                    beam_to_plot = new_shadow_beam.beam
 
-        xrange = None
-        yrange = None
+            xrange = None
+            yrange = None
 
-        if self.cartesian_axis == 1:
-            x, y, good_only = ST.getshcol(beam_to_plot, (var_x, var_y, 10))
+            if self.cartesian_axis == 1:
 
-            go = numpy.where(good_only == 1)
-            lo = numpy.where(good_only == 0)
+                x_max = 0
+                y_max = 0
+                x_min = 0
+                y_min = 0
 
-            x_max = 0
-            y_max = 0
-            x_min = 0
-            y_min = 0
+                x, y, good_only = ST.getshcol(beam_to_plot, (var_x, var_y, 10))
 
-            if self.rays == 0:
-                x_max = numpy.array(x[0:], float).max()
-                y_max = numpy.array(y[0:], float).max()
-                x_min = numpy.array(x[0:], float).min()
-                y_min = numpy.array(y[0:], float).min()
-            elif self.rays == 1:
-                x_max = numpy.array(x[go], float).max()
-                y_max = numpy.array(y[go], float).max()
-                x_min = numpy.array(x[go], float).min()
-                y_min = numpy.array(y[go], float).min()
-            elif self.rays == 2:
-                x_max = numpy.array(x[lo], float).max()
-                y_max = numpy.array(y[lo], float).max()
-                x_min = numpy.array(x[lo], float).min()
-                y_min = numpy.array(y[lo], float).min()
+                go = numpy.where(good_only == 1)
+                lo = numpy.where(good_only == 0)
 
-            temp = numpy.array([x_max, y_max, x_min, y_min], float)
+                if self.rays == 0:
+                    x_max = numpy.array(x[0:], float).max()
+                    y_max = numpy.array(y[0:], float).max()
+                    x_min = numpy.array(x[0:], float).min()
+                    y_min = numpy.array(y[0:], float).min()
+                elif self.rays == 1:
+                    x_max = numpy.array(x[go], float).max()
+                    y_max = numpy.array(y[go], float).max()
+                    x_min = numpy.array(x[go], float).min()
+                    y_min = numpy.array(y[go], float).min()
+                elif self.rays == 2:
+                    x_max = numpy.array(x[lo], float).max()
+                    y_max = numpy.array(y[lo], float).max()
+                    x_min = numpy.array(x[lo], float).min()
+                    y_min = numpy.array(y[lo], float).min()
 
-            xrange = [temp.min(), temp.max()]
-            yrange = [temp.min(), temp.max()]
+                temp = numpy.array([x_max, y_max, x_min, y_min], float)
 
-        if self.x_range == 1:
-            xrange = [self.x_range_min, self.x_range_max]
+                xrange = [temp.min(), temp.max()]
+                yrange = [temp.min(), temp.max()]
 
-        if self.y_range == 1:
-            yrange = [self.y_range_min, self.y_range_max]
+            if self.x_range == 1:
+                xrange = [self.x_range_min, self.x_range_max]
 
-        plot = ST.plotxy(beam=beam_to_plot,
-                         cols1=var_x,
-                         cols2=var_y,
-                         nolost=self.rays,
-                         contour=self.plot_type,
-                         nbins=int(self.binning_for_contour),
-                         nbins_h=int(self.number_of_bins),
-                         calfwhm=self.histogram_fwhm,
-                         title=title,
-                         xtitle=xtitle,
-                         ytitle=ytitle,
-                         xrange=xrange,
-                         yrange=yrange,
-                         noplot=1)
+            if self.y_range == 1:
+                yrange = [self.y_range_min, self.y_range_max]
 
-        self.replace_fig(plot)
+            plot = ST.plotxy(beam=beam_to_plot,
+                             cols1=var_x,
+                             cols2=var_y,
+                             nolost=self.rays,
+                             contour=self.plot_type,
+                             nbins=int(self.binning_for_contour),
+                             nbins_h=int(self.number_of_bins),
+                             calfwhm=self.histogram_fwhm,
+                             title=title,
+                             xtitle=xtitle,
+                             ytitle=ytitle,
+                             xrange=xrange,
+                             yrange=yrange,
+                             noplot=1)
+
+            self.replace_fig(plot)
+        except:
+            pass
 
     def plot_results(self):
 

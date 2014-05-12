@@ -997,8 +997,6 @@ class OpticalElement(ow_generic_element.GenericElement):
                           self.spherical_radius = ((2*self.object_side_focal_distance*self.image_side_focal_distance)/(self.object_side_focal_distance+self.image_side_focal_distance))*math.sin(round(math.radians(90-self.incidence_angle_respect_to_normal), 2))
 
                        shadow_oe.oe.RMIRR = self.spherical_radius
-                   else:
-                       raise Exception("Automatic calculation of the sagittal focus supported only for Spheric Mirrors/Crystals")
                else:
                    if self.focii_and_continuation_plane == 0:
                       shadow_oe.oe.setAutoFocus(f_default=1)
@@ -1148,35 +1146,26 @@ class OpticalElement(ow_generic_element.GenericElement):
             shadow_oe.oe.FWRITE=self.file_to_write_out
             shadow_oe.oe.F_ANGLE=self.write_out_inc_ref_angles
 
-    def checkFile(self, fileName):
-        filePath = os.getcwd() + '/' + fileName
-
-        if not os.path.exists(filePath):
-            self.error(0, "File " + filePath + " not found in path")
-            return False
-        else: return True
-
     def doSpecificSetting(self, shadow_oe):
         return None
 
     def checkFields(self):
-
         if self.graphical_options.is_screen_slit:
-            if self.source_plane_distance < 0: raise Exception("Source plane distance < 0")
-            if self.image_plane_distance < 0: raise Exception("Image plane distance < 0")
+            self.source_plane_distance = ShadowGui.checkPositiveNumber(self.source_plane_distance, "Source plane distance")
+            self.image_plane_distance = ShadowGui.checkPositiveNumber(self.image_plane_distance, "Image plane distance")
 
             if self.source_movement == 1:
-                if self.sm_distance_from_mirror < 0: raise Exception("Source Movement: Distance from Mirror < 0")
+                self.sm_distance_from_mirror = ShadowGui.checkPositiveNumber(self.sm_distance_from_mirror, "Source Movement: Distance from Mirror")
         else:
-            if self.source_plane_distance < 0: raise Exception("Source plane distance < 0")
-            if self.image_plane_distance < 0: raise Exception("Image plane distance < 0")
+            self.source_plane_distance = ShadowGui.checkPositiveNumber(self.source_plane_distance, "Source plane distance")
+            self.image_plane_distance = ShadowGui.checkPositiveNumber(self.image_plane_distance, "Image plane distance")
 
 
-            if self.mirror_orientation_angle < 0 or self.mirror_orientation_angle > 360: raise Exception("Mirror Orientation Angle should be between 0 and 360 deg")
+            self.mirror_orientation_angle = ShadowGui.checkPositiveAngle(self.mirror_orientation_angle, "Mirror Orientation Angle")
 
             if self.graphical_options.is_curved:
                 if self.is_cylinder:
-                    if self.cylinder_orientation < 0 or self.cylinder_orientation > 360: raise Exception("Cylinder Orientation Angle should be between 0 and 360 deg")
+                    self.cylinder_orientation = ShadowGui.checkPositiveAngle(self.cylinder_orientation, "Cylinder Orientation Angle")
 
             if self.surface_shape_parameters == 0:
                 if (self.is_cylinder and self.cylinder_orientation==90):
@@ -1184,57 +1173,58 @@ class OpticalElement(ow_generic_element.GenericElement):
                        raise Exception("Automatic calculation of the sagittal focus supported only for Spheric Mirrors/Crystals")
                 else:
                    if not self.focii_and_continuation_plane == 0:
-                        if self.object_side_focal_distance < 0: raise Exception("Object side focal distance < 0")
-                        if self.image_side_focal_distance < 0: raise Exception("Image side focal distance < 0")
+                        self.object_side_focal_distance = ShadowGui.checkPositiveNumber(self.object_side_focal_distance, "Object side focal distance")
+                        self.image_side_focal_distance = ShadowGui.checkPositiveNumber(self.image_side_focal_distance, "Image side focal distance")
 
                    if self.graphical_options.is_paraboloid:
-                        if self.focus_location < 0: raise Exception("Focus location < 0")
+                        self.focus_location = ShadowGui.checkPositiveNumber(self.focus_location, "Focus location")
             else:
                if self.graphical_options.is_spheric:
-                   if self.spherical_radius < 0: raise Exception("Spherical radius < 0")
+                   self.spherical_radius = ShadowGui.checkPositiveNumber(self.spherical_radius, "Spherical radius")
                elif self.graphical_options.is_toroidal:
-                   if self.torus_major_radius < 0: raise Exception("Torus major radius < 0")
-                   if self.torus_minor_radius < 0: raise Exception("Torus minor radius < 0")
+                   self.torus_major_radius = ShadowGui.checkPositiveNumber(self.torus_major_radius, "Torus major radius")
+                   self.torus_minor_radius = ShadowGui.checkPositiveNumber(self.torus_minor_radius, "Torus minor radius")
                elif self.graphical_options.is_hyperboloid or self.graphical_options.is_ellipsoidal:
-                   if self.ellipse_hyperbola_semi_major_axis < 0: raise Exception("Semi major axis < 0")
-                   if self.ellipse_hyperbola_semi_minor_axis < 0: raise Exception("Semi minor axis < 0")
-                   if self.angle_of_majax_and_pole < 0: raise Exception("Angle of MajAx and Pole < 0")
+                   self.ellipse_hyperbola_semi_major_axis = ShadowGui.checkPositiveNumber(self.ellipse_hyperbola_semi_major_axis, "Semi major axis")
+                   self.ellipse_hyperbola_semi_minor_axis = ShadowGui.checkPositiveNumber(self.ellipse_hyperbola_semi_minor_axis, "Semi minor axis")
+                   self.angle_of_majax_and_pole = ShadowGui.checkPositiveNumber(self.angle_of_majax_and_pole, "Angle of MajAx and Pole")
                elif self.graphical_options.is_paraboloid:
-                   if self.paraboloid_parameter < 0: raise Exception("Paraboloid parameter < 0")
-
+                   self.paraboloid_parameter = ShadowGui.checkPositiveNumber(self.paraboloid_parameter, "Paraboloid parameter")
 
             if self.graphical_options.is_toroidal:
-                if self.toroidal_mirror_pole_location < 0: raise Exception("Toroidal mirror pole location < 0")
+                self.toroidal_mirror_pole_location = ShadowGui.checkPositiveNumber(self.toroidal_mirror_pole_location, "Toroidal mirror pole location")
 
             if self.graphical_options.is_mirror:
                 if not self.reflectivity_type == 0:
                     if self.source_of_reflectivity == 0:
-                        if not self.checkFile(self.file_prerefl): raise Exception("File " + self.file_prerefl + " not existing")
+                        ShadowGui.checkFile(self.file_prerefl)
                     elif self.source_of_reflectivity == 2:
-                        if not self.checkFile(self.file_prerefl_m): raise Exception("File " + self.file_prerefl_m + " not existing")
+                        ShadowGui.checkFile(self.file_prerefl_m)
             else:
-                if not self.checkFile(self.file_crystal_parameters): raise Exception("File " + self.file_crystal_parameters + " not existing")
+                ShadowGui.checkFile(self.file_crystal_parameters)
 
                 if not self.crystal_auto_setting == 0:
-                    if self.units_in_use == 0 and self.photon_energy < 0: raise Exception("Photon Energy < 0")
-                    if self.units_in_use == 1 and self.photon_wavelength < 0: raise Exception("Photon Wavelength < 0")
+                    if self.units_in_use == 0:
+                        self.photon_energy = ShadowGui.checkPositiveNumber(self.photon_energy, "Photon Energy")
+                    elif self.units_in_use == 1:
+                        self.photon_wavelength = ShadowGui.checkPositiveNumber(self.photon_wavelength, "Photon Wavelength")
 
                 if self.mosaic_crystal==1:
-                   if self.seed_for_mosaic < 0: raise Exception("Crystal: Seed for mosaic < 0")
-                   if self.angle_spread_FWHM < 0: raise Exception("Crystal: Angle spread FWHM < 0")
-                   if self.thickness < 0: raise Exception("Crystal: thickness < 0")
+                   self.seed_for_mosaic = ShadowGui.checkPositiveNumber(self.seed_for_mosaic, "Crystal: Seed for mosaic")
+                   self.angle_spread_FWHM = ShadowGui.checkPositiveNumber(self.angle_spread_FWHM, "Crystal: Angle spread FWHM")
+                   self.thickness = ShadowGui.checkPositiveNumber(self.thickness, "Crystal: thickness")
                 else:
                     if self.asymmetric_cut == 1:
-                        if self.planes_angle < 0: raise Exception("Crystal: Planes angle < 0")
-                        if self.thickness < 0: raise Exception("Crystal: thickness < 0")
+                        self.planes_angle = ShadowGui.checkPositiveNumber(self.planes_angle, "Crystal: Planes angle")
+                        self.thickness = ShadowGui.checkPositiveNumber(self.thickness, "Crystal: thickness")
                     if self.johansson_geometry == 1:
-                        if self.johansson_radius < 0: raise Exception("Crystal: Johansson radius < 0")
+                        self.johansson_radius = ShadowGui.checkPositiveNumber(self.johansson_radius, "Crystal: Johansson radius")
 
             if not self.is_infinite == 0:
-               if self.dim_y_plus < 0: raise Exception("Dimensions: y plus < 0")
-               if self.dim_y_minus < 0: raise Exception("Dimensions: y minus < 0")
-               if self.dim_x_plus < 0: raise Exception("Dimensions: x plus < 0")
-               if self.dim_x_minus < 0: raise Exception("Dimensions: x minus < 0")
+               self.dim_y_plus = ShadowGui.checkPositiveNumber(self.dim_y_plus, "Dimensions: y plus")
+               self.dim_y_minus = ShadowGui.checkPositiveNumber(self.dim_y_minus, "Dimensions: y minus")
+               self.dim_x_plus = ShadowGui.checkPositiveNumber(self.dim_x_plus, "Dimensions: x plus")
+               self.dim_x_minus = ShadowGui.checkPositiveNumber(self.dim_x_minus, "Dimensions: x minus")
 
 
             #####################################
@@ -1243,39 +1233,39 @@ class OpticalElement(ow_generic_element.GenericElement):
 
             if self.modified_surface == 1:
                  if self.ms_type_of_defect == 0:
-                     if self.ms_ripple_ampli_x < 0: raise Exception("Modified Surface: Ripple Amplitude x < 0")
-                     if self.ms_ripple_wavel_x < 0: raise Exception("Modified Surface: Ripple Wavelength x < 0")
-                     if self.ms_ripple_ampli_y < 0: raise Exception("Modified Surface: Ripple Amplitude y < 0")
-                     if self.ms_ripple_wavel_y < 0: raise Exception("Modified Surface: Ripple Wavelength y < 0")
+                     self.ms_ripple_ampli_x = ShadowGui.checkPositiveNumber(self.ms_ripple_ampli_x , "Modified Surface: Ripple Amplitude x")
+                     self.ms_ripple_wavel_x = ShadowGui.checkPositiveNumber(self.ms_ripple_wavel_x , "Modified Surface: Ripple Wavelength x")
+                     self.ms_ripple_ampli_y = ShadowGui.checkPositiveNumber(self.ms_ripple_ampli_y , "Modified Surface: Ripple Amplitude y")
+                     self.ms_ripple_wavel_y = ShadowGui.checkPositiveNumber(self.ms_ripple_wavel_y , "Modified Surface: Ripple Wavelength y")
                  else:
-                     if not self.checkFile(self.ms_defect_file_name): raise Exception("File " + self.ms_defect_file_name + " not existing")
+                     ShadowGui.checkFile(self.ms_defect_file_name)
             elif self.modified_surface == 2:
-                if not self.checkFile(self.ms_file_facet_descr): raise Exception("File " + self.ms_file_facet_descr + " not existing")
-                if self.ms_facet_width_x < 0: raise Exception("Modified Surface: Facet width x < 0")
-                if self.ms_facet_phase_x < 0 or self.ms_facet_phase_x > 360: raise Exception("Modified Surface: facet phase x should be between 0 and 360 deg")
-                if self.ms_dead_width_x_minus < 0: raise Exception("Modified Surface: Dead width x minus < 0")
-                if self.ms_dead_width_x_plus < 0: raise Exception("Modified Surface: Dead width x plus < 0")
-                if self.ms_facet_width_y < 0: raise Exception("Modified Surface: Facet width y < 0")
-                if self.ms_facet_phase_y < 0 or self.ms_facet_phase_x > 360: raise Exception("Modified Surface: facet phase y should be between 0 and 360 deg")
-                if self.ms_dead_width_y_minus < 0: raise Exception("Modified Surface: Dead width y minus < 0")
-                if self.ms_dead_width_y_plus < 0: raise Exception("Modified Surface: Dead width y plus < 0")
+                self.checkFile(self.ms_file_facet_descr)
+                self.ms_facet_width_x = ShadowGui.checkPositiveNumber(self.ms_facet_width_x, "Modified Surface: Facet width x")
+                self.ms_facet_phase_x = ShadowGui.checkPositiveAngle(self.ms_facet_phase_x, "Modified Surface: Facet phase x")
+                self.ms_dead_width_x_minus = ShadowGui.checkPositiveNumber(self.ms_dead_width_x_minus, "Modified Surface: Dead width x minus")
+                self.ms_dead_width_x_plus = ShadowGui.checkPositiveNumber(self.ms_dead_width_x_plus, "Modified Surface: Dead width x plus")
+                self.ms_facet_width_y = ShadowGui.checkPositiveNumber(self.ms_facet_width_y, "Modified Surface: Facet width y")
+                self.ms_facet_phase_y = ShadowGui.checkPositiveAngle(self.ms_facet_phase_y, "Modified Surface: Facet phase y")
+                self.ms_dead_width_y_minus = ShadowGui.checkPositiveNumber(self.ms_dead_width_y_minus, "Modified Surface: Dead width y minus")
+                self.ms_dead_width_y_plus = ShadowGui.checkPositiveNumber(self.ms_dead_width_y_plus, "Modified Surface: Dead width y plus")
             elif self.modified_surface == 3:
-                if not self.checkFile(self.ms_file_surf_roughness): raise Exception("File " + self.ms_file_surf_roughness + " not existing")
-                if self.ms_roughness_rms_x < 0: raise Exception("Modified Surface: Roughness rms x < 0")
-                if self.ms_roughness_rms_y < 0: raise Exception("Modified Surface: Roughness rms y < 0")
+                ShadowGui.checkFile(self.ms_file_surf_roughness)
+                self.ms_roughness_rms_x = ShadowGui.checkPositiveNumber(self.ms_roughness_rms_x, "Modified Surface: Roughness rms x")
+                self.ms_roughness_rms_y = ShadowGui.checkPositiveNumber(self.ms_roughness_rms_y, "Modified Surface: Roughness rms y")
             elif self.modified_surface == 4:
-                if self.ms_specify_rz2==0 and not self.checkFile(self.ms_file_with_parameters_rz): raise Exception("File " + self.ms_file_with_parameters_rz + " not existing")
-                if self.ms_specify_rz2==0 and not self.checkFile(self.ms_file_with_parameters_rz2): raise Exception("File " + self.ms_file_with_parameters_rz2 + " not existing")
+                if self.ms_specify_rz2==0: ShadowGui.checkFile(self.ms_file_with_parameters_rz)
+                if self.ms_specify_rz2==0: ShadowGui.checkFile(self.ms_file_with_parameters_rz2)
             elif self.modified_surface == 5:
-                if not self.checkFile(self.ms_file_orientations): raise Exception("File " + self.ms_file_orientations + " not existing")
-                if not self.checkFile(self.ms_file_polynomial): raise Exception("File " + self.ms_file_polynomial + " not existing")
-                if self.ms_number_of_segments_x < 0: raise Exception("Modified Surface: Number of segments x < 0")
-                if self.ms_number_of_segments_y < 0: raise Exception("Modified Surface: Number of segments y < 0")
-                if self.ms_length_of_segments_x < 0: raise Exception("Modified Surface: Length of segments x < 0")
-                if self.ms_length_of_segments_y < 0: raise Exception("Modified Surface: Length of segments y < 0")
+                ShadowGui.checkFile(self.ms_file_orientations)
+                ShadowGui.checkFile(self.ms_file_polynomial)
+                self.ms_number_of_segments_x = ShadowGui.checkPositiveNumber(self.ms_number_of_segments_x, "Modified Surface: Number of segments x")
+                self.ms_number_of_segments_y = ShadowGui.checkPositiveNumber(self.ms_number_of_segments_y, "Modified Surface: Number of segments y")
+                self.ms_length_of_segments_x = ShadowGui.checkPositiveNumber(self.ms_length_of_segments_x, "Modified Surface: Length of segments x")
+                self.ms_length_of_segments_y = ShadowGui.checkPositiveNumber(self.ms_length_of_segments_y, "Modified Surface: Length of segments y")
 
             if self.source_movement == 1:
-                if self.sm_distance_from_mirror < 0: raise Exception("Source Movement: Distance from Mirror < 0")
+                if self.sm_distance_from_mirror < 0: raise Exception("Source Movement: Distance from Mirror")
 
     def writeCalculatedFields(self, shadow_oe):
         if self.surface_shape_parameters == 0:

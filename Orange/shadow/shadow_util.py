@@ -3,7 +3,7 @@ __author__ = 'labx'
 from PyQt4.QtCore import Qt
 from Orange.widgets import gui
 
-import numpy, math, random
+import numpy, math, random, os
 import sys
 try:
     import matplotlib
@@ -19,7 +19,6 @@ import Shadow.ShadowTools as ST
 import Shadow.ShadowToolsPrivate as stp
 from Shadow.ShadowToolsPrivate import Histo1_Ticket as Histo1_Ticket
 from Shadow.ShadowToolsPrivate import plotxy_Ticket as plotxy_Ticket
-
 
 class ShadowGui():
 
@@ -74,6 +73,38 @@ class ShadowGui():
             tab.setFixedWidth(width)
 
         return tab
+
+    @classmethod
+    def checkNumber(cls, value, field_name):
+        try:
+            float(value)
+        except ValueError:
+            raise Exception(str(field_name) + " is not a number")
+
+        return value
+
+    @classmethod
+    def checkPositiveNumber(cls, value, field_name):
+        value = ShadowGui.checkNumber(value, field_name)
+
+        if (value < 0): raise Exception(field_name + " should be >= 0")
+
+        return value
+
+    @classmethod
+    def checkPositiveAngle(cls, value, field_name):
+        value = ShadowGui.checkNumber(value, field_name)
+
+        if value < 0 or value > 360: raise Exception(field_name + " should be between 0 and 360 deg")
+
+        return value
+
+    @classmethod
+    def checkFile(cls, fileName):
+        filePath = os.getcwd() + '/' + fileName
+
+        if not os.path.exists(filePath):
+            raise Exception("File " + fileName + " not existing")
 
 class ShadowPlot:
 
