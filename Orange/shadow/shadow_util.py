@@ -86,7 +86,6 @@ class ShadowGui():
     @classmethod
     def checkPositiveNumber(cls, value, field_name):
         value = ShadowGui.checkNumber(value, field_name)
-
         if (value < 0): raise Exception(field_name + " should be >= 0")
 
         return value
@@ -94,7 +93,6 @@ class ShadowGui():
     @classmethod
     def checkPositiveAngle(cls, value, field_name):
         value = ShadowGui.checkNumber(value, field_name)
-
         if value < 0 or value > 360: raise Exception(field_name + " should be between 0 and 360 deg")
 
         return value
