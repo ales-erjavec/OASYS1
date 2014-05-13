@@ -97,9 +97,6 @@ class BendingMagnet(ow_generic_element.GenericElement):
 
         gui.rubber(self.mainArea)
 
-        #if (self.is_automatic_run):
-        #    self.runShadowSource()
-
     def calculateMagneticField(self):
         self.magnetic_radius=abs(self.magnetic_radius)
         if self.magnetic_radius > 0:

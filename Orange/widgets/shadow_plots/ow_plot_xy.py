@@ -75,7 +75,7 @@ class PlotXY(ow_automatic_element.AutomaticElement):
         screen_box = ShadowGui.widgetBox(tab_gen, "Screen Position Settings", addSpace=True, orientation="vertical", height=140)
 
         self.image_plane_combo = gui.comboBox(screen_box, self, "image_plane", label="Position of the Image",
-                                            items=["Previous OE Image Plane", "Different"],
+                                            items=["On Image Plane", "Retraced"],
                                             callback=self.set_ImagePlane, sendSelectedValue=False, orientation="horizontal")
 
         self.image_plane_box = ShadowGui.widgetBox(screen_box, "", addSpace=True, orientation="vertical", width=350, height=110)
@@ -210,19 +210,21 @@ class PlotXY(ow_automatic_element.AutomaticElement):
 
         try:
             if self.image_plane==1:
-                historyItem=self.input_beam.getOEHistory(oe_number=self.input_beam.oe_number)
+                new_shadow_beam = self.input_beam.duplicate(history = False)
 
-                if not historyItem is None:
-                    new_shadow_oe = historyItem.shadow_oe.duplicate()
+                dist = 0.0
+                if self.image_plane_rel_abs_position == 1:
+                    dist = abs(self.image_plane_new_position)
+                else:
+                    historyItem=self.input_beam.getOEHistory(oe_number=self.input_beam.oe_number)
 
-                    if self.image_plane_rel_abs_position == 0:
-                        new_shadow_oe.oe.T_IMAGE = abs(self.image_plane_new_position)
-                    else:
-                        new_shadow_oe.oe.T_IMAGE = new_shadow_oe.oe.T_IMAGE + self.image_plane_new_position
+                    if historyItem is None: raise Exception("Calculation impossible: Beam has no history")
 
-                    new_shadow_beam = ShadowBeam.traceFromOENoHistory(historyItem.input_beam, new_shadow_oe)
+                    dist = self.image_plane_new_position - historyItem.shadow_oe.oe.T_IMAGE
 
-                    beam_to_plot = new_shadow_beam.beam
+                new_shadow_beam.beam.retrace(dist)
+
+                beam_to_plot = new_shadow_beam.beam
 
             xrange = None
             yrange = None

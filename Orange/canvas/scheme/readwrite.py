@@ -656,8 +656,6 @@ def scheme_load(scheme, stream, registry=None, error_handler=None):
 
     scheme.working_directory = getattr(desc, "working_directory",
                                        os.path.expanduser("~/Shadow"))
-    #scheme.working_directory = desc.working_directory
-    scheme.working_directory = getattr(desc, "working_directory", os.path.expanduser("/Users/labx/Desktop/Orange3_Test/Shadow"))
 
     if not os.path.exists(scheme.working_directory):
         new_wd = ""
@@ -667,6 +665,7 @@ def scheme_load(scheme, stream, registry=None, error_handler=None):
                 QSettings.value("output/default-working-directory",
                                 os.path.expanduser("~/Shadow"), type=str))
         scheme.working_directory = new_wd
+
         if not os.path.exists(scheme.working_directory):
             os.mkdir(scheme.working_directory)
 

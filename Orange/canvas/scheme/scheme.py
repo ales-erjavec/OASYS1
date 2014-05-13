@@ -16,6 +16,7 @@ import logging
 from PyQt4.QtCore import QObject, QSettings
 from PyQt4.QtCore import pyqtSignal as Signal
 from PyQt4.QtCore import pyqtProperty as Property
+from PyQt4.QtGui import QFileDialog
 
 from .node import SchemeNode
 from .link import SchemeLink, compatible_channels
@@ -182,8 +183,21 @@ class Scheme(QObject):
         """
         if self.__working_directory != working_directory:
             self.__working_directory = working_directory
+
             if not os.path.exists(self.__working_directory):
-                 os.mkdir(self.__working_directory)
+
+                new_wd = ""
+                while new_wd == "":
+                    new_wd = QFileDialog.getExistingDirectory(
+                        None, "Set working directory",
+                        os.path.expanduser("~/Shadow"))
+
+                working_directory = new_wd
+                self.__working_directory = working_directory
+
+                if not os.path.exists(self.__working_directory):
+                     os.mkdir(self.__working_directory)
+
             self.working_directory_changed.emit(working_directory)
             os.chdir(working_directory)
 

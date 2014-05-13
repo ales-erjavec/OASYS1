@@ -3,7 +3,6 @@ import os, copy
 from PyQt4 import QtCore
 import Shadow
 
-
 class TTYGrabber:
     def __init__(self,  tmpFile = 'out.tmp.dat'):
         self.tmpFile = tmpFile
@@ -39,24 +38,19 @@ class ShadowTrigger:
 
         return self
 
-
 class ShadowOEHistoryItem:
 
-    def __new__(cls, input_beam=None, shadow_oe=None, output_beam=None):
+    def __new__(cls, shadow_oe=None):
         self = super().__new__(cls)
 
-        self.input_beam = input_beam
         self.shadow_oe = shadow_oe
-        self.output_beam = output_beam
 
         return self
 
     def duplicate(self):
         new_history_item = ShadowOEHistoryItem()
 
-        new_history_item.input_beam = self.input_beam
         new_history_item.shadow_oe = self.shadow_oe
-        new_history_item.output_beam = self.output_beam
 
         return new_history_item
 
@@ -113,9 +107,9 @@ class ShadowBeam:
         shadow_oe.oe.write("end.0" + str(self.oe_number))
 
         if len(self.history) < self.oe_number:
-            self.history.append(ShadowOEHistoryItem(input_beam.duplicate(False), history_shadow_oe, self.duplicate(False)))
+            self.history.append(ShadowOEHistoryItem(history_shadow_oe))
         else:
-            self.history[self.oe_number-1]=ShadowOEHistoryItem(input_beam.duplicate(False), history_shadow_oe, self.duplicate(False))
+            self.history[self.oe_number-1]=ShadowOEHistoryItem(history_shadow_oe)
 
         return self
 
@@ -139,14 +133,6 @@ class ShadowBeam:
             return self.history
         else:
             return self.history[oe_number-1]
-
-    def getLastOE(self):
-        dimension = len(self.history)
-
-        if dimension > 0:
-            return self.history[dimension-1]
-        else:
-            return None
 
 class ShadowSource:
     def __new__(cls, src=None):

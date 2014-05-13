@@ -57,7 +57,7 @@ class Histogram(ow_automatic_element.AutomaticElement):
         general_box = ShadowGui.widgetBox(tab_gen, "General Settings", addSpace=True, orientation="vertical", height=200)
 
         gui.comboBox(general_box, self, "image_plane", label="Position of the Image",
-                     items=["Previous OE Image Plane", "Different"],
+                     items=["On Image Plane", "Retraced"],
                      callback=self.set_ImagePlane, sendSelectedValue=False, orientation="horizontal")
 
 
@@ -67,7 +67,7 @@ class Histogram(ow_automatic_element.AutomaticElement):
         ShadowGui.lineEdit(self.image_plane_box, self, "image_plane_new_position", "Image Plane new Position", labelWidth=220, valueType=float, orientation="horizontal")
 
         gui.comboBox(self.image_plane_box, self, "image_plane_rel_abs_position", label="Position Type", labelWidth=250,
-                     items=["Absolute", "Relative"], sendSelectedValue=False, orientation="horizontal")
+                     items=["Relative to O.E. position", "Relative to Image Plane position"], sendSelectedValue=False, orientation="horizontal")
 
         self.set_ImagePlane()
 
@@ -110,23 +110,29 @@ class Histogram(ow_automatic_element.AutomaticElement):
     def plot_histo(self, var_x, title, xtitle, ytitle):
         beam_to_plot = self.input_beam.beam
 
-        if self.image_plane==1:
-            historyItem=self.input_beam.getOEHistory(oe_number=self.input_beam.oe_number)
 
-            if not historyItem is None:
-                new_shadow_oe = historyItem.shadow_oe.duplicate()
+        try:
+            if self.image_plane==1:
+                new_shadow_beam = self.input_beam.duplicate(history = False)
 
-                if self.image_plane_rel_abs_position == 0:
-                    new_shadow_oe.oe.T_IMAGE = abs(self.image_plane_new_position)
+                dist = 0.0
+                if self.image_plane_rel_abs_position == 1:
+                    dist = abs(self.image_plane_new_position)
                 else:
-                    new_shadow_oe.oe.T_IMAGE = new_shadow_oe.oe.T_IMAGE + self.image_plane_new_position
+                    historyItem=self.input_beam.getOEHistory(oe_number=self.input_beam.oe_number)
 
-                new_shadow_beam = ShadowBeam.traceFromOENoHistory(historyItem.input_beam, new_shadow_oe)
+                    if historyItem is None: raise Exception("Calculation impossible: Beam has no history")
+
+                    dist = self.image_plane_new_position - historyItem.shadow_oe.oe.T_IMAGE
+
+                new_shadow_beam.beam.retrace(dist)
 
                 beam_to_plot = new_shadow_beam.beam
 
-        plot = ST.histo1(beam_to_plot,var_x,nolost=1,nbins=100,ref=1,calfwhm=1,title=title, xtitle=xtitle, ytitle=ytitle, noplot=1)
-        self.replace_fig(plot)
+            plot = ST.histo1(beam_to_plot,var_x,nolost=1,nbins=100,ref=1,calfwhm=1,title=title, xtitle=xtitle, ytitle=ytitle, noplot=1)
+            self.replace_fig(plot)
+        except:
+            pass
 
     def plot_results(self):
 
