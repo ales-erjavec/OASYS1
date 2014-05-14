@@ -1,5 +1,5 @@
 
-import os, copy
+import os, copy, numpy
 from PyQt4 import QtCore
 import Shadow
 
@@ -31,10 +31,11 @@ class EmittingStream(QtCore.QObject):
         self.textWritten.emit(str(text))
 
 class ShadowTrigger:
-    def __new__(cls, trigger=False):
+    def __new__(cls, new_beam=False, interrupt=False):
         self = super().__new__(cls)
 
-        self.trigger = trigger
+        self.new_beam = new_beam
+        self.interrupt = interrupt
 
         return self
 
@@ -67,6 +68,7 @@ class ShadowBeam:
                 self.beam = Shadow.Beam()
         else:
             self.beam = beam
+
         self.history = []
         return self
 
@@ -84,6 +86,16 @@ class ShadowBeam:
                 new_shadow_beam.history.append(historyItem)
 
         return new_shadow_beam
+
+    def mergeBeams(self, beam_to_merge):
+        if not beam_to_merge is None:
+            rays = copy.deepcopy(beam_to_merge.beam.rays)
+
+            print(len(rays))
+
+            self.beam.rays = numpy.append(self.beam.rays, rays, axis=0)
+
+            print(len(self.beam.rays))
 
     @classmethod
     def traceFromSource(cls, shadow_src):

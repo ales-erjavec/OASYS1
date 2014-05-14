@@ -21,15 +21,6 @@ class ScreenSlit(OpticalElement):
     category = "Optical Elements"
     keywords = ["data", "file", "load", "read"]
 
-
-    inputs = [("Input Beam", Orange.shadow.ShadowBeam, "setBeam")]
-
-    outputs = [{"name":"Beam",
-                "type":Orange.shadow.ShadowBeam,
-                "doc":"Shadow Beam",
-                "id":"beam"}]
-
-
     def __init__(self):
         graphical_Options=GraphicalOptions(is_screen_slit=True)
 

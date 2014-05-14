@@ -191,7 +191,7 @@ class BendingMagnet(ow_generic_element.GenericElement):
         self.progressBarFinished()
 
     def sendNewBeam(self, trigger):
-        if trigger.trigger == True:
+        if trigger.new_beam == True:
             self.runShadowSource()
 
 if __name__ == "__main__":

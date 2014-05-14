@@ -20,6 +20,8 @@ class GeometricalSource(ow_generic_element.GenericElement):
     category = "Sources"
     keywords = ["data", "file", "load", "read"]
 
+    inputs = [("Send New Beam", Orange.shadow.ShadowTrigger, "sendNewBeam")]
+
     outputs = [{"name":"Beam",
                 "type":Orange.shadow.ShadowBeam,
                 "doc":"Shadow Beam",
@@ -547,6 +549,10 @@ class GeometricalSource(ow_generic_element.GenericElement):
         self.send("Beam", beam_out)
 
         self.progressBarFinished()
+
+    def sendNewBeam(self, trigger):
+        if trigger.new_beam == True:
+            self.runShadowSource()
 
 if __name__ == "__main__":
     a = QApplication(sys.argv)

@@ -19,14 +19,6 @@ class PlaneCrystal(ow_plane_element.PlaneElement):
     category = "Optical Elements"
     keywords = ["data", "file", "load", "read"]
 
-
-    inputs = [("Input Beam", Orange.shadow.ShadowBeam, "setBeam")]
-
-    outputs = [{"name":"Beam",
-                "type":Orange.shadow.ShadowBeam,
-                "doc":"Shadow Beam",
-                "id":"beam"}]
-
     def __init__(self):
         graphical_Options=ow_optical_element.GraphicalOptions(is_mirror=False)
 

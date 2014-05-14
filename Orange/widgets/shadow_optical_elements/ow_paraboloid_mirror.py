@@ -18,18 +18,6 @@ class ParaboloidMirror(ow_paraboloid_element.ParaboloidElement):
     category = "Optical Elements"
     keywords = ["data", "file", "load", "read"]
 
-
-    inputs = [("Input Beam", Orange.shadow.ShadowBeam, "setBeam")]
-
-    outputs = [{"name":"Beam",
-                "type":Orange.shadow.ShadowBeam,
-                "doc":"Shadow Beam",
-                "id":"beam"}]
-
-    ##########################################
-    # BASIC SETTING
-    ##########################################
-
     def __init__(self):
         graphical_Options=ow_optical_element.GraphicalOptions(is_mirror=True)
 

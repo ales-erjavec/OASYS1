@@ -59,6 +59,8 @@ class PlotXY(ow_automatic_element.AutomaticElement):
 
     title=Setting("X,Z")
 
+    keep_result=Setting(0)
+
     def __init__(self):
         super().__init__()
 
@@ -71,6 +73,9 @@ class PlotXY(ow_automatic_element.AutomaticElement):
         tab_gen = ShadowGui.createTabPage(tabs_setting, "General")
         tab_his = ShadowGui.createTabPage(tabs_setting, "Histograms")
         tab_col = ShadowGui.createTabPage(tabs_setting, "Color")
+
+        gui.checkBox(tab_gen, self, "keep_result", "Keep Result")
+        gui.separator(tab_gen)
 
         screen_box = ShadowGui.widgetBox(tab_gen, "Screen Position Settings", addSpace=True, orientation="vertical", height=140)
 
@@ -318,7 +323,10 @@ class PlotXY(ow_automatic_element.AutomaticElement):
         qApp.processEvents()
 
     def setBeam(self, beam):
-        self.input_beam = beam
+        if self.keep_result==1 and not self.input_beam is None:
+            self.input_beam.mergeBeams(beam)
+        else:
+            self.input_beam = beam
 
         if (self.input_beam.oe_number==0): # IS THE SOURCE
             self.image_plane = 0
