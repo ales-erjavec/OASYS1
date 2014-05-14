@@ -45,6 +45,7 @@ VarTypes = Variable.VarTypes
 #     return []
 
 class ZeroDict(dict):
+    """Just a dict, which return 0 if key not found."""
     def __getitem__(self, key):
         return dict.get(self, key, 0)
 
@@ -360,16 +361,40 @@ class OWMosaicDisplay(OWWidget):
         # self.data = self.optimizationDlg.setData(data, self.removeUnusedValues)
         # zgornja vrstica je diskretizirala tabelo in odstranila unused values
 
+
+
+
+        ##TODO: spodnje vrstice so developer-only
         # "popravi" sql tabelo
+        if data and type(data) == SqlTable and data.name == 'iris':
+            data.domain.class_var = data.domain.attributes[4]
         if data and type(data) == SqlTable and data.name == 'zoo':
             data.domain.class_var = data.domain.attributes[16]
         if data and type(data) == SqlTable and data.name == 'adult':
             data.domain.class_var = data.domain.attributes[data.domain.index('y')]
 
+
+
         # diskretiziraj - prej se je to naredilo v optimizationDlg.setData()
         disc = EqualWidth()
         self.data = DiscretizeTable(data, method=disc)
         self.data.name = data.name  # v DiscretizeTable se izgubi name
+
+
+
+
+        ##TODO: spodnje vrstice so developer-only
+        # med DiscretizeTable se izgubijo tele informacije
+        if self.data and type(self.data) == SqlTable and self.data.name == 'iris':
+            self.data.domain.class_var = self.data.domain.attributes[4]
+        if self.data and type(self.data) == SqlTable and self.data.name == 'zoo':
+            self.data.domain.class_var = self.data.domain.attributes[16]
+        if self.data and type(self.data) == SqlTable and self.data.name == 'adult':
+            self.data.domain.class_var = self.data.domain.attributes[self.data.domain.index('y')]
+
+
+
+
 
         if self.data:
             if any(attr.var_type == VarTypes.Continuous for attr in self.data.domain):
@@ -567,20 +592,27 @@ class OWMosaicDisplay(OWWidget):
             # self.canvas.update()
 
     # create a dictionary with all possible pairs of "combination-of-attr-values" : count
+    ## TODO: this function is used both in owmosaic and owsieve --> where to put it?
     def getConditionalDistributions(self, data, attrs):
         if type(data) == SqlTable:
-            tstart = datetime.now()
-            dict = {}
-            for i in range(0, len(attrs) + 1):
+            dict = ZeroDict() # ZeroDict is like ordinary dict, except it returns 0 if key not found
+
+            # get instances of attributes instead of strings, because of to_sql()
+            var_attrs = []
+            for a in attrs:
+                for va in data.domain.attributes:
+                    if va.name == a:
+                        var_attrs.append(va)
+                        break
+
+            # make all possible pairs of attributes + class_var
+            for i in range(0, len(var_attrs) + 1):
                 attr = []
                 for j in range(0, i+1):
-                    if j == len(attrs):
-                        attr.append(data.domain.class_var.name)
+                    if j == len(var_attrs):
+                        attr.append(data.domain.class_var.name) ## TODO: hm, tale self sem dodal tako na hitro
                     else:
-                        if '-' in attrs[j]:
-                            attr.append('"%s"' % attrs[j])
-                        else:
-                            attr.append(attrs[j])
+                        attr.append(var_attrs[j].to_sql())
 
                 sql = []
                 sql.append("SELECT")
@@ -592,16 +624,10 @@ class OWMosaicDisplay(OWWidget):
 
                 cur = data._execute_sql_query(" ".join(sql))
                 res = cur.fetchall()
-                for r in res:
+                for r in list(res):
                     dict['-'.join(r[:-1])] = r[-1]
-
-            tend = datetime.now()
-            print(tend - tstart)
-            with open('groupby.times.txt', 'a') as out:
-                out.write('SqlTable - (%s) - %s - %s\n' % (data.name, tend-tstart, attrs))
-            return ZeroDict(dict)
         else:
-            tstart = datetime.now()
+            dict = {}
             def counter(s):
                 t = [0 for i in range(0, len(s))]
                 while True:
@@ -613,7 +639,6 @@ class OWMosaicDisplay(OWWidget):
                     else:
                         break
 
-            dict = {}
             for i in range(0, len(attrs) + 1):
                 attr = []
                 for j in range(0, i+1):
@@ -638,12 +663,7 @@ class OWMosaicDisplay(OWWidget):
                         filt.conditions.append(fd)
                     filtdata = filt(data)
                     dict['-'.join(vals)] = len(filtdata)
-            tend = datetime.now()
-            print(tend - tstart)
-            with open('groupby.times.txt', 'a') as out:
-                out.write('Table    - (%s) - %s - %s\n' % (data.name, tend-tstart, attrs))
-            return dict
-
+        return dict
 
 
     # ############################################################################
