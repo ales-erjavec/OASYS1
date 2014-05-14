@@ -21,7 +21,7 @@ class BendingMagnet(ow_generic_element.GenericElement):
     category = "Sources"
     keywords = ["data", "file", "load", "read"]
 
-    inputs = [("Send New Beam", Orange.shadow.ShadowTrigger, "sendNewBeam")]
+    inputs = [("Send New Beam", Orange.shadow.ShadowTriggerOut, "sendNewBeam")]
 
     outputs = [{"name":"Beam",
                 "type":Orange.shadow.ShadowBeam,
@@ -191,7 +191,7 @@ class BendingMagnet(ow_generic_element.GenericElement):
         self.progressBarFinished()
 
     def sendNewBeam(self, trigger):
-        if trigger.new_beam == True:
+        if trigger and trigger.new_beam == True:
             self.runShadowSource()
 
 if __name__ == "__main__":

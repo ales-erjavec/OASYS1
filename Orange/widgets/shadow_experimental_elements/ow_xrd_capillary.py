@@ -8,7 +8,7 @@ from PyQt4.QtGui import QFileDialog, QApplication, qApp, QPalette, QColor, QFont
 
 import Shadow.ShadowTools as ST
 
-from Orange.shadow.shadow_objects import ShadowTrigger
+from Orange.shadow.shadow_objects import ShadowTriggerIn
 from Orange.widgets.shadow_gui import ow_automatic_element
 from Orange.shadow.shadow_util import ShadowGui, ShadowMath, ShadowPhysics
 from Orange.shadow.argonne11bm_absorption import Absorb as Absorption
@@ -31,7 +31,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     inputs = [("Input Beam", Orange.shadow.ShadowBeam, "setBeam")]
 
     outputs = [{"name":"Trigger",
-                "type": Orange.shadow.ShadowTrigger,
+                "type": Orange.shadow.ShadowTriggerIn,
                 "doc":"Feedback signal to start a new beam simulation",
                 "id":"Trigger"}]
 
@@ -624,10 +624,10 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             qApp.processEvents()
 
             if self.run_simulation == True:
-                self.send("Trigger", ShadowTrigger(new_beam=True))
+                self.send("Trigger", ShadowTriggerIn(new_beam=True))
             else:
                 self.run_simulation=True
-                self.send("Trigger", ShadowTrigger(interrupt=True))
+                self.send("Trigger", ShadowTriggerIn(interrupt=True))
 
         except Exception as exception:
             self.error(0, exception.args[0])

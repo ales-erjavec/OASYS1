@@ -30,7 +30,15 @@ class EmittingStream(QtCore.QObject):
     def write(self, text):
         self.textWritten.emit(str(text))
 
-class ShadowTrigger:
+class ShadowTriggerOut:
+    def __new__(cls, new_beam=False):
+        self = super().__new__(cls)
+
+        self.new_beam = new_beam
+
+        return self
+
+class ShadowTriggerIn:
     def __new__(cls, new_beam=False, interrupt=False):
         self = super().__new__(cls)
 
@@ -57,7 +65,6 @@ class ShadowOEHistoryItem:
 
 
 class ShadowBeam:
-
     def __new__(cls, oe_number=0, beam=None, number_of_rays=0):
         self = super().__new__(cls)
         self.oe_number = oe_number

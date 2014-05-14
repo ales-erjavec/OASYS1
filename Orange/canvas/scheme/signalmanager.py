@@ -310,6 +310,7 @@ class SignalManager(QObject):
                   [node.title for node in node_update_front])
 
         self._set_runtime_state(SignalManager.Processing)
+
         try:
             # TODO: What if the update front changes in the loop?
             for node in node_update_front:

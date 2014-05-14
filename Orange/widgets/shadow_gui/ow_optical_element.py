@@ -7,7 +7,7 @@ from Orange.widgets.settings import Setting
 from PyQt4 import QtGui
 from PyQt4.QtGui import QApplication, qApp
 from Orange.widgets.shadow_gui import ow_generic_element
-from Orange.shadow.shadow_objects import EmittingStream, TTYGrabber, ShadowTrigger
+from Orange.shadow.shadow_objects import EmittingStream, TTYGrabber, ShadowTriggerIn
 from Orange.shadow.shadow_util import ShadowGui
 
 class GraphicalOptions:
@@ -61,7 +61,7 @@ class OpticalElement(ow_generic_element.GenericElement):
                 "doc":"Shadow Beam",
                 "id":"beam"},
                {"name":"Trigger",
-                "type": Orange.shadow.ShadowTrigger,
+                "type": Orange.shadow.ShadowTriggerIn,
                 "doc":"Feedback signal to start a new beam simulation",
                 "id":"Trigger"}]
 
@@ -1321,7 +1321,7 @@ class OpticalElement(ow_generic_element.GenericElement):
         qApp.processEvents()
 
         self.send("Beam", beam_out)
-        self.send("Trigger", ShadowTrigger(new_beam=True))
+        self.send("Trigger", ShadowTriggerIn(new_beam=True))
 
     def traceOpticalElement(self):
         try:

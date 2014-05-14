@@ -493,6 +493,17 @@ class WidgetsSignalManager(SignalManager):
     def is_blocking(self, node):
         return self.scheme().widget_manager.node_processing_state(node) != 0
 
+    def pending_nodes(self):
+
+        pending = super().pending_nodes()
+
+        pending_new = [node for node in pending
+                       if not getattr(self.scheme().widget_for_node(node), "process_last", False)]
+
+        if pending_new: pending = pending_new
+
+        return pending
+
     def send_to_node(self, node, signals):
         """
         Implementation of `SignalManager.send_to_node`.
