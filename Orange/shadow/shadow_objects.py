@@ -82,9 +82,9 @@ class ShadowBeam:
     def setBeam(self, beam):
         self.beam = beam
 
-    def duplicate(self, history=True):
+    def duplicate(self, copy_rays=True, history=True):
         beam = Shadow.Beam()
-        beam.rays = copy.deepcopy(self.beam.rays)
+        if copy_rays: beam.rays = copy.deepcopy(self.beam.rays)
 
         new_shadow_beam = ShadowBeam(self.oe_number, beam)
 
@@ -105,11 +105,17 @@ class ShadowBeam:
             if len(getattr(beam_2.beam, "rays", numpy.zeros(0))) > 0:
                 rays_2 = copy.deepcopy(beam_2.beam.rays)
 
-            merged_beam = ShadowBeam(oe_number=beam_1.oe_number)
+            merged_beam = beam_1.duplicate(copy_rays=False, history=True)
 
-            if not rays_1 is None and not rays_2 is None: merged_beam.beam.rays = numpy.append(rays_1, rays_2, axis=0)
-            elif not rays_1 is None: merged_beam.beam.rays = rays_1
-            elif not rays_2 is None: merged_beam.beam.rays = rays_2
+            if not rays_1 is None and not rays_2 is None:
+                merged_beam.oe_number = beam_2.oe_number
+                merged_beam.beam.rays = numpy.append(rays_1, rays_2, axis=0)
+            elif not rays_1 is None:
+                merged_beam.beam.rays = rays_1
+                merged_beam.oe_number = beam_2.oe_number
+            elif not rays_2 is None:
+                merged_beam.beam.rays = rays_2
+                merged_beam.oe_number = beam_2.oe_number
 
             return merged_beam
 

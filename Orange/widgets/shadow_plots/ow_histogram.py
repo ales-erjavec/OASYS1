@@ -8,10 +8,10 @@ from Orange.shadow.shadow_objects import ShadowBeam, EmittingStream, TTYGrabber
 
 import Shadow.ShadowTools as ST
 
-from Orange.shadow.shadow_util import ShadowGui
+from Orange.shadow.shadow_util import ShadowGui, ConfirmDialog
 from Orange.widgets.shadow_gui import ow_automatic_element
 
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas, Figure
 
 class Histogram(ow_automatic_element.AutomaticElement):
 
@@ -23,7 +23,6 @@ class Histogram(ow_automatic_element.AutomaticElement):
     priority = 2
     category = "Plotting Tools"
     keywords = ["data", "file", "load", "read"]
-
 
     inputs = [("Input Beam", Orange.shadow.ShadowBeam, "setBeam")]
 
@@ -42,6 +41,7 @@ class Histogram(ow_automatic_element.AutomaticElement):
 
     title=Setting("Energy")
 
+    keep_result=Setting(0)
 
     def __init__(self):
         super().__init__()
@@ -53,6 +53,11 @@ class Histogram(ow_automatic_element.AutomaticElement):
 
         # graph tab
         tab_gen = ShadowGui.createTabPage(tabs_setting, "Histogram")
+
+        incremental_box = ShadowGui.widgetBox(tab_gen, "Screen Position Settings", addSpace=True, orientation="horizontal", height=80)
+
+        gui.checkBox(incremental_box, self, "keep_result", "Keep Result")
+        gui.button(incremental_box, self, "Clear", callback=self.clearResults)
 
         general_box = ShadowGui.widgetBox(tab_gen, "General Settings", addSpace=True, orientation="vertical", height=200)
 
@@ -96,6 +101,15 @@ class Histogram(ow_automatic_element.AutomaticElement):
         self.shadow_output.setFixedHeight(100)
         self.shadow_output.setFixedWidth(self.IMAGE_WIDTH-50)
 
+    def clearResults(self):
+        if ConfirmDialog.confirmed(parent=self):
+            self.input_beam = ShadowBeam()
+            if self.plot_canvas is not None:
+                self.image_box.layout().removeWidget(self.plot_canvas)
+
+            self.plot_canvas = FigureCanvas(Figure())
+            self.image_box.layout().addWidget(self.plot_canvas)
+
     def set_ImagePlane(self):
         self.image_plane_box.setVisible(self.image_plane==1)
         self.image_plane_box_empty.setVisible(self.image_plane==0)
@@ -109,7 +123,6 @@ class Histogram(ow_automatic_element.AutomaticElement):
 
     def plot_histo(self, var_x, title, xtitle, ytitle):
         beam_to_plot = self.input_beam.beam
-
 
         try:
             if self.image_plane==1:
@@ -131,8 +144,11 @@ class Histogram(ow_automatic_element.AutomaticElement):
 
             plot = ST.histo1(beam_to_plot,var_x,nolost=1,nbins=100,ref=1,calfwhm=1,title=title, xtitle=xtitle, ytitle=ytitle, noplot=1)
             self.replace_fig(plot)
-        except:
-            pass
+        except Exception as exception:
+            self.error(0, exception.args[0])
+            QtGui.QMessageBox.critical(self, "QMessageBox.critical()",
+                exception.args[0],
+                QtGui.QMessageBox.Ok)
 
     def plot_results(self):
 
@@ -161,10 +177,19 @@ class Histogram(ow_automatic_element.AutomaticElement):
         qApp.processEvents()
 
     def setBeam(self, beam):
-        self.input_beam = beam
+        if self.keep_result==1 and not self.input_beam is None:
+            self.input_beam = ShadowBeam.mergeBeams(self.input_beam, beam)
+        else:
+            self.input_beam = beam
+
+        if (self.input_beam.oe_number==0): # IS THE SOURCE
+            self.image_plane = 0
+            self.set_ImagePlane()
+            self.image_plane_combo.setEnabled(False)
 
         if self.is_automatic_run:
            self.plot_results()
+
 
     def writeStdOut(self, text):
         cursor = self.shadow_output.textCursor()

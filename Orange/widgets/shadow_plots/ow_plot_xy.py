@@ -24,7 +24,6 @@ class PlotXY(AutomaticElement):
     category = "Plotting Tools"
     keywords = ["data", "file", "load", "read"]
 
-
     inputs = [("Input Beam", Orange.shadow.ShadowBeam, "setBeam")]
 
     IMAGE_WIDTH = 920
@@ -195,7 +194,6 @@ class PlotXY(AutomaticElement):
         self.shadow_output.setFixedHeight(100)
         self.shadow_output.setFixedWidth(self.IMAGE_WIDTH-50)
 
-
     def clearResults(self):
         if ConfirmDialog.confirmed(parent=self):
             self.input_beam = ShadowBeam()
@@ -204,7 +202,6 @@ class PlotXY(AutomaticElement):
 
             self.plot_canvas = FigureCanvas(Figure())
             self.image_box.layout().addWidget(self.plot_canvas)
-
 
     def set_ImagePlane(self):
         self.image_plane_box.setVisible(self.image_plane==1)
@@ -306,11 +303,13 @@ class PlotXY(AutomaticElement):
                              noplot=1)
 
             self.replace_fig(plot)
-        except:
-            pass
+        except Exception as exception:
+            self.error(0, exception.args[0])
+            QtGui.QMessageBox.critical(self, "QMessageBox.critical()",
+                exception.args[0],
+                QtGui.QMessageBox.Ok)
 
     def plot_results(self):
-
         sys.stdout = EmittingStream(textWritten=self.writeStdOut)
         grabber = TTYGrabber()
         grabber.start()
