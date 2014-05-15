@@ -15,6 +15,6 @@ DESCRIPTION = "Widgets for Shadow Sources."
 
 BACKGROUND = "#fffeb3"
 
-ICON = "icons/sun.png"
+ICON = "icons/source.png"
 
 PRIORITY = 1

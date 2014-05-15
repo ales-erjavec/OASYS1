@@ -2,7 +2,7 @@ __author__ = 'labx'
 
 from PyQt4.QtCore import Qt
 from Orange.widgets import gui
-
+from PyQt4.QtGui import QLabel, QMessageBox
 import numpy, math, random, os
 import sys
 try:
@@ -19,6 +19,20 @@ import Shadow.ShadowTools as ST
 import Shadow.ShadowToolsPrivate as stp
 from Shadow.ShadowToolsPrivate import Histo1_Ticket as Histo1_Ticket
 from Shadow.ShadowToolsPrivate import plotxy_Ticket as plotxy_Ticket
+
+
+class ConfirmDialog(QMessageBox):
+    def __init__(self, parent = None, message=""):
+        super(ConfirmDialog, self).__init__(parent)
+
+        self.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+        self.setIcon(QMessageBox.Question)
+        self.setText(message)
+
+    @classmethod
+    def confirmed(cls, parent=None, message="Confirm Action?"):
+        return ConfirmDialog(parent, message).exec_() == QMessageBox.Ok
+
 
 class ShadowGui():
 

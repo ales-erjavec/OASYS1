@@ -20,7 +20,7 @@ class GeometricalSource(ow_generic_element.GenericElement):
     category = "Sources"
     keywords = ["data", "file", "load", "read"]
 
-    inputs = [("Send New Beam", Orange.shadow.ShadowTriggerOut, "sendNewBeam")]
+    inputs = [("Trigger", Orange.shadow.ShadowTriggerOut, "sendNewBeam")]
 
     outputs = [{"name":"Beam",
                 "type":Orange.shadow.ShadowBeam,

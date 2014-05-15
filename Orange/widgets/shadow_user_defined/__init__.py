@@ -17,4 +17,4 @@ BACKGROUND = "#FFFFFF"
 
 ICON = "icons/user_defined.jpg"
 
-PRIORITY = 7
+PRIORITY = 8

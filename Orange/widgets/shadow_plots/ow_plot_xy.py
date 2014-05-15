@@ -7,13 +7,13 @@ from Orange.widgets.settings import Setting
 
 import Shadow.ShadowTools as ST
 
-from Orange.shadow.shadow_util import ShadowGui
+from Orange.shadow.shadow_util import ShadowGui, ConfirmDialog
 from Orange.shadow.shadow_objects import ShadowBeam, EmittingStream, TTYGrabber
-from Orange.widgets.shadow_gui import ow_automatic_element
+from Orange.widgets.shadow_gui.ow_automatic_element import AutomaticElement
 
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas, Figure
 
-class PlotXY(ow_automatic_element.AutomaticElement):
+class PlotXY(AutomaticElement):
 
     name = "Plot XY"
     description = "Plotting Tools: Plot XY"
@@ -74,10 +74,12 @@ class PlotXY(ow_automatic_element.AutomaticElement):
         tab_his = ShadowGui.createTabPage(tabs_setting, "Histograms")
         tab_col = ShadowGui.createTabPage(tabs_setting, "Color")
 
-        gui.checkBox(tab_gen, self, "keep_result", "Keep Result")
-        gui.separator(tab_gen)
+        incremental_box = ShadowGui.widgetBox(tab_gen, "Screen Position Settings", addSpace=True, orientation="horizontal", height=80)
 
-        screen_box = ShadowGui.widgetBox(tab_gen, "Screen Position Settings", addSpace=True, orientation="vertical", height=140)
+        gui.checkBox(incremental_box, self, "keep_result", "Keep Result")
+        gui.button(incremental_box, self, "Clear", callback=self.clearResults)
+
+        screen_box = ShadowGui.widgetBox(tab_gen, "Incremental Result", addSpace=True, orientation="vertical", height=140)
 
         self.image_plane_combo = gui.comboBox(screen_box, self, "image_plane", label="Position of the Image",
                                             items=["On Image Plane", "Retraced"],
@@ -181,6 +183,9 @@ class PlotXY(ow_automatic_element.AutomaticElement):
         self.image_box.setFixedHeight(self.IMAGE_HEIGHT)
         self.image_box.setFixedWidth(self.IMAGE_WIDTH)
 
+        self.plot_canvas = FigureCanvas(Figure())
+        self.image_box.layout().addWidget(self.plot_canvas)
+
         self.shadow_output = QtGui.QTextEdit()
 
         out_box = gui.widgetBox(self.mainArea, "Shadow Output", addSpace=True, orientation="horizontal")
@@ -189,6 +194,17 @@ class PlotXY(ow_automatic_element.AutomaticElement):
 
         self.shadow_output.setFixedHeight(100)
         self.shadow_output.setFixedWidth(self.IMAGE_WIDTH-50)
+
+
+    def clearResults(self):
+        if ConfirmDialog.confirmed(parent=self):
+            self.input_beam = ShadowBeam()
+            if self.plot_canvas is not None:
+                self.image_box.layout().removeWidget(self.plot_canvas)
+
+            self.plot_canvas = FigureCanvas(Figure())
+            self.image_box.layout().addWidget(self.plot_canvas)
+
 
     def set_ImagePlane(self):
         self.image_plane_box.setVisible(self.image_plane==1)
@@ -211,6 +227,7 @@ class PlotXY(ow_automatic_element.AutomaticElement):
             self.image_box.layout().addWidget(self.plot_canvas)
 
     def plot_xy(self, var_x, var_y, title, xtitle, ytitle):
+
         beam_to_plot = self.input_beam.beam
 
         try:
@@ -324,7 +341,7 @@ class PlotXY(ow_automatic_element.AutomaticElement):
 
     def setBeam(self, beam):
         if self.keep_result==1 and not self.input_beam is None:
-            self.input_beam.mergeBeams(beam)
+            self.input_beam = ShadowBeam.mergeBeams(self.input_beam, beam)
         else:
             self.input_beam = beam
 

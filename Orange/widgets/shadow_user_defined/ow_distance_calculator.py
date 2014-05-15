@@ -1,11 +1,10 @@
-import math, os
-from Orange.widgets import widget
-from Orange.widgets import gui
-from PyQt4 import QtGui
+import math
+from Orange.widgets import widget, gui
 from Orange.widgets.settings import Setting
 from Orange.shadow.shadow_util import ShadowGui
-
 import Orange.canvas.resources as resources
+
+from PyQt4 import QtGui
 
 class MonochromatorDistanceCalculator(widget.OWWidget):
 

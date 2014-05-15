@@ -15,6 +15,6 @@ DESCRIPTION = "Widgets for Shadow Preprocessor."
 
 BACKGROUND = "#b8bcdb"
 
-ICON = "icons/ingranaggio.jpg"
+ICON = "icons/ingranaggio.png"
 
 PRIORITY = 6

@@ -94,15 +94,24 @@ class ShadowBeam:
 
         return new_shadow_beam
 
-    def mergeBeams(self, beam_to_merge):
-        if not beam_to_merge is None:
-            rays = copy.deepcopy(beam_to_merge.beam.rays)
+    @classmethod
+    def mergeBeams(cls, beam_1, beam_2):
+        if beam_1 and beam_2:
+            rays_1 = None
+            rays_2 = None
 
-            print(len(rays))
+            if len(getattr(beam_1.beam, "rays", numpy.zeros(0))) > 0:
+                rays_1 = copy.deepcopy(beam_1.beam.rays)
+            if len(getattr(beam_2.beam, "rays", numpy.zeros(0))) > 0:
+                rays_2 = copy.deepcopy(beam_2.beam.rays)
 
-            self.beam.rays = numpy.append(self.beam.rays, rays, axis=0)
+            merged_beam = ShadowBeam(oe_number=beam_1.oe_number)
 
-            print(len(self.beam.rays))
+            if not rays_1 is None and not rays_2 is None: merged_beam.beam.rays = numpy.append(rays_1, rays_2, axis=0)
+            elif not rays_1 is None: merged_beam.beam.rays = rays_1
+            elif not rays_2 is None: merged_beam.beam.rays = rays_2
+
+            return merged_beam
 
     @classmethod
     def traceFromSource(cls, shadow_src):
