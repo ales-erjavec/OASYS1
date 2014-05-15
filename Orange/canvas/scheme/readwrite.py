@@ -634,8 +634,9 @@ def resolve_replaced(scheme_desc, registry):
 
     return scheme_desc._replace(nodes=nodes)
 
-
-def scheme_load(scheme, stream, registry=None, error_handler=None):
+# MODIFIED BY LUCA REBUFFI - 15-05-2014
+# MANAGEMENT OF LOADING OWS FILES WITH REGISTERED WORKING DIRECTORY NOT EXISTING
+def scheme_load(scheme, stream, registry=None, error_handler=None, ignore_working_dir_error=False):
     desc = parse_ows_stream(stream)
 
     if registry is None:
@@ -661,17 +662,19 @@ def scheme_load(scheme, stream, registry=None, error_handler=None):
     scheme.working_directory = getattr(desc, "working_directory",
                                        os.path.expanduser("~/Shadow"))
 
-    if not os.path.exists(scheme.working_directory):
-        new_wd = ""
-        while not new_wd:
-            new_wd = QFileDialog.getExistingDirectory(
-                None, "Set working directory",
-                QSettings.value("output/default-working-directory",
+    if not ignore_working_dir_error and not os.path.exists(scheme.working_directory):
+        new_wd = QFileDialog.getExistingDirectory(
+                None, "Set working directory for project '" + scheme.title + "'",
+                QSettings().value("output/default-working-directory",
                                 os.path.expanduser("~/Shadow"), type=str))
-        scheme.working_directory = new_wd
+        if new_wd:
+            scheme.working_directory = new_wd
 
-        if not os.path.exists(scheme.working_directory):
-            os.mkdir(scheme.working_directory)
+            if not os.path.exists(scheme.working_directory):
+                os.mkdir(scheme.working_directory)
+
+        else:
+            raise ValueError("Replacement of not existing Working Directory " + scheme.working_directory + " aborted by user")
 
     os.chdir(scheme.working_directory)
 

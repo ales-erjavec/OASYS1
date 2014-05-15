@@ -934,6 +934,8 @@ class CanvasMainWindow(QMainWindow):
             scheme_doc_widget.setPath(filename)
 
             self.add_recent_scheme(new_scheme.title, filename)
+        else: # MODIFIED BY LUCA REBUFFI 15-05-2014
+            raise Exception("Aborted")
 
     def new_scheme_from(self, filename):
         """Create and return a new :class:`widgetsscheme.WidgetsScheme`

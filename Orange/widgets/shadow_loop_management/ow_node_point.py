@@ -56,9 +56,11 @@ class LoopPoint(widget.OWWidget):
 
         button_box = gui.widgetBox(self.controlArea, "", addSpace=True, orientation="horizontal")
 
+        self.start_button = gui.button(button_box, self, "Start Loop", callback=self.startLoop)
+        self.start_button.setFixedHeight(45)
+
         stop_button = gui.button(button_box, self, "Interrupt", callback=self.stopLoop)
         stop_button.setFixedHeight(45)
-        stop_button.setFixedWidth(200)
         font = QtGui.QFont(stop_button.font())
         font.setBold(True)
         stop_button.setFont(font)
@@ -67,6 +69,11 @@ class LoopPoint(widget.OWWidget):
         stop_button.setPalette(palette) # assign new palette
 
         gui.rubber(self.controlArea)
+
+    def startLoop(self):
+        self.current_new_beam = 1
+        self.start_button.setEnabled(False)
+        self.send("Trigger", ShadowTriggerOut(new_beam=True))
 
     def stopLoop(self):
         if ConfirmDialog.confirmed(parent=self, message="Confirm Interruption of the Loop?"):
@@ -78,16 +85,20 @@ class LoopPoint(widget.OWWidget):
             if trigger:
                 if trigger.interrupt:
                     self.current_new_beam = 0
+                    self.start_button.setEnabled(True)
                     self.send("Trigger", ShadowTriggerOut(new_beam=False))
                 elif trigger.new_beam:
                     if self.current_new_beam < self.number_of_new_beams:
                         self.current_new_beam += 1
+                        self.start_button.setEnabled(False)
                         self.send("Trigger", ShadowTriggerOut(new_beam=True))
                     else:
                         self.current_new_beam = 0
+                        self.start_button.setEnabled(True)
                         self.send("Trigger", ShadowTriggerOut(new_beam=False))
         else:
             self.current_new_beam = 0
+            self.start_button.setEnabled(True)
             self.send("Trigger", ShadowTriggerOut(new_beam=False))
             self.warning()
             self.run_loop = True

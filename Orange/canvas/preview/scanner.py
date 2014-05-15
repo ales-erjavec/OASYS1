@@ -78,7 +78,8 @@ def scheme_svg_thumbnail(scheme_file):
 
     scheme = scheme.Scheme()
     errors = []
-    scheme_load(scheme, scheme_file, error_handler=errors.append)
+    # MODIFIED BY LUCA REBUFFI 15-05-2014: CHECK OF WORKING DIRECTORY NOT NECESSARY IN PREVIEW
+    scheme_load(scheme, scheme_file, error_handler=errors.append, ignore_working_dir_error=True)
 
     tmp_scene = scene.CanvasScene()
     tmp_scene.set_registry(global_registry())

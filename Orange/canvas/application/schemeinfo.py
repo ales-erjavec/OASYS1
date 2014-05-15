@@ -96,7 +96,7 @@ class SchemeInfoEdit(QWidget):
         self.scheme.title = name
         self.scheme.description = description
         self.scheme.working_directory = working_directory
-        print(working_directory)
+
         os.chdir(working_directory)
 
         if not os.path.exists(working_directory + "/Output"):

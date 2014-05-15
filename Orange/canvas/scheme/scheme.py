@@ -114,9 +114,9 @@ class Scheme(QObject):
             working_directory or
             settings.value("output/default-working-directory",
                            os.path.expanduser("~/Shadow"), type=str))
+
         if not os.path.exists(self.__working_directory):
             os.mkdir(self.__working_directory)
-
 
         self.__annotations = []
         self.__nodes = []
@@ -183,23 +183,6 @@ class Scheme(QObject):
         """
         if self.__working_directory != working_directory:
             self.__working_directory = working_directory
-
-            if not os.path.exists(self.__working_directory):
-
-                new_wd = ""
-                while new_wd == "":
-                    new_wd = QFileDialog.getExistingDirectory(
-                        None, "Set working directory",
-                        os.path.expanduser("~/Shadow"))
-
-                working_directory = new_wd
-                self.__working_directory = working_directory
-
-                if not os.path.exists(self.__working_directory):
-                     os.mkdir(self.__working_directory)
-
-            self.working_directory_changed.emit(working_directory)
-            os.chdir(working_directory)
 
     def working_directory(self):
         """

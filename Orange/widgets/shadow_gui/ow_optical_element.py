@@ -89,7 +89,7 @@ class OpticalElement(ow_generic_element.GenericElement):
     incidence_angle_mrad = Setting(0.0)
     reflection_angle_deg = Setting(88.0)
     reflection_angle_mrad = Setting(0.0)
-    mirror_orientation_angle = Setting(0.0)
+    mirror_orientation_angle = Setting(0)
 
     ##########################################
     # BASIC SETTING
@@ -393,7 +393,11 @@ class OpticalElement(ow_generic_element.GenericElement):
             self.incidence_angle_rad_le = ShadowGui.lineEdit(upper_box, self, "incidence_angle_mrad", "... or with respect to the surface [mrad]", labelWidth=300, callback=self.calculate_incidence_angle_deg, valueType=float, orientation="horizontal")
             self.reflection_angle_deg_le = ShadowGui.lineEdit(upper_box, self, "reflection_angle_deg", "Reflection Angle respect to the normal [deg]", labelWidth=300, callback=self.calculate_reflection_angle_mrad, valueType=float, orientation="horizontal")
             self.reflection_angle_rad_le = ShadowGui.lineEdit(upper_box, self, "reflection_angle_mrad", "... or with respect to the surface [mrad]", labelWidth=300, callback=self.calculate_reflection_angle_deg, valueType=float, orientation="horizontal")
-            ShadowGui.lineEdit(upper_box, self, "mirror_orientation_angle", "Mirror Orientation Angle [deg]", tooltip="Mirror Orientation Angle [deg]", labelWidth=300, valueType=float, orientation="horizontal")
+
+            gui.comboBox(upper_box, self, "mirror_orientation_angle", label="Mirror Orientation Angle [deg]", labelWidth=390,
+                         items=[0, 90, 180, 270],
+                         valueType=float,
+                         sendSelectedValue=True, orientation="horizontal")
 
             tabs_setting = ShadowGui.tabWidget(self.controlArea, height=self.TABS_AREA_HEIGHT)
 
@@ -473,7 +477,10 @@ class OpticalElement(ow_generic_element.GenericElement):
                 self.surface_box_cyl = ShadowGui.widgetBox(surface_box_2, "", addSpace=True, orientation="vertical", width=self.INNER_BOX_WIDTH_L1)
                 self.surface_box_cyl_empty = ShadowGui.widgetBox(surface_box_2, "", addSpace=True, orientation="vertical", width=self.INNER_BOX_WIDTH_L1)
 
-                ShadowGui.lineEdit(self.surface_box_cyl, self, "cylinder_orientation", "Cylinder Orientation (deg) [CCW from X axis]", labelWidth=350, valueType=float, orientation="horizontal")
+                gui.comboBox(self.surface_box_cyl, self, "cylinder_orientation", label="Cylinder Orientation (deg) [CCW from X axis]", labelWidth=350,
+                             items=[0, 90, 180, 270],
+                             valueType=float,
+                             sendSelectedValue=True, orientation="horizontal")
 
                 self.set_isCyl_Parameters()
 
@@ -1180,7 +1187,7 @@ class OpticalElement(ow_generic_element.GenericElement):
                     self.cylinder_orientation = ShadowGui.checkPositiveAngle(self.cylinder_orientation, "Cylinder Orientation Angle")
 
             if self.surface_shape_parameters == 0:
-                if (self.is_cylinder and self.cylinder_orientation==90):
+                if (self.is_cylinder and (self.cylinder_orientation==90 or self.cylinder_orientation==270)):
                    if not self.graphical_options.is_spheric:
                        raise Exception("Automatic calculation of the sagittal focus supported only for Spheric Mirrors/Crystals")
                 else:

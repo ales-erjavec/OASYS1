@@ -121,6 +121,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     twotheta_angles = []
     current_counts = []
+    squared_counts = []
+    points_per_bin = []
     counts = []
     noise = []
 
@@ -303,11 +305,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         button_box_2 = ShadowGui.widgetBox(self.controlArea, "", addSpace=False, orientation="horizontal", height=30)
 
-        self.load_button = gui.button(button_box_2, self, "Load Data", callback=self.loadSimulation)
-        self.load_button.setFixedHeight(30)
-        font = QFont(self.load_button.font())
-        font.setItalic(True)
-        self.load_button.setFont(font)
+        ShadowGui.widgetBox(button_box_2, "", addSpace=False, orientation="horizontal", height=30, width=145)
 
         self.reset_bkg_Button = gui.button(button_box_2, self, "Reset Background", callback=self.resetBackground)
         self.reset_bkg_Button.setFixedHeight(30)
@@ -347,7 +345,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         self.tab_aberrations.setEnabled(enabled)
         self.tab_background.setEnabled(enabled)
 
-        self.load_button.setEnabled(enabled)
         self.reset_button.setEnabled(enabled)
 
         if not enabled:
@@ -417,35 +414,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     def stopSimulation(self):
         self.run_simulation = False
 
-    def loadSimulation(self):
-        file_name = QFileDialog.getOpenFileName(self, "Open Result File", "./Output", "*.dat;*.txt;*.xy")
-
-        if os.path.exists(file_name):
-            input_file = open(file_name, "r")
-
-            rows = input_file.readlines()
-
-            start_angle = rows[0].split(" ")[0]
-            stop_angle = rows[len(rows)-1].split(" ")[0]
-
-            if float(start_angle) == self.start_angle_na + self.shift_2theta \
-               and float(stop_angle) == self.stop_angle_na + self.shift_2theta:
-
-                self.counts = []
-                self.noise = []
-                self.twotheta_angles = []
-
-                for index in range(0, len(rows)):
-                    data = rows[index].split(" ")
-
-                    self.noise.append(0)
-                    self.twotheta_angles.append(float(data[0]))
-                    self.counts.append(float(data[1]))
-
-                self.plotResult()
-            else:
-                raise Exception("Simulation not compatible: start/stop angle =  (" + str(start_angle) + ", " + str(stop_angle) + ")")
-
     def resetBackground(self):
         cursor = range(0, len(self.noise))
 
@@ -463,6 +431,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         for angle_index in cursor:
             self.current_counts[angle_index] = 0
             self.counts[angle_index] = 0
+            self.squared_counts[angle_index] = 0
+            self.points_per_bin[angle_index] = 0
 
         cursor = range(0, len(self.noise))
 
@@ -474,7 +444,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         self.reset_button_pressed = True
 
-
     def initialize(self):
         steps = range(0, math.floor((self.stop_angle_na - self.start_angle_na) / self.step) + 1)
 
@@ -485,15 +454,21 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             self.twotheta_angles = []
             self.counts = []
             self.noise = []
+            self.squared_counts = []
+            self.points_per_bin = []
 
             for step_index in steps:
                 self.twotheta_angles.append(self.start_angle + step_index * self.step)
                 self.counts.append(0)
                 self.noise.append(0)
+                self.squared_counts.append(0)
+                self.points_per_bin.append(0)
 
             self.twotheta_angles = numpy.array(self.twotheta_angles)
             self.counts = numpy.array(self.counts)
             self.noise = numpy.array(self.noise)
+            self.squared_counts = numpy.array(self.squared_counts)
+            self.points_per_bin = numpy.array(self.points_per_bin)
 
         self.reset_button_pressed = False
 
@@ -671,14 +646,29 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         else:
             out_file = open(directory_out + '/' + output_file_name,"w")
 
-        cursor = range(0, len(self.twotheta_angles))
+        out_file.write("tth counts error\n")
 
-        for angle_index in cursor:
+        for angle_index in range(0, len(self.twotheta_angles)):
             if not self.run_simulation: break
-            out_file.write(str(self.twotheta_angles[angle_index]) + " " + str(self.counts[angle_index] + self.noise[angle_index]) + "\n")
+            out_file.write(str(self.twotheta_angles[angle_index]) + " "
+                           + str(self.calculateSignal(angle_index)) + " "
+                           + str(self.calculateStatisticError(angle_index))
+                           + "\n")
             out_file.flush()
 
         out_file.close()
+
+    def calculateSignal(self, angle_index):
+        return int(self.counts[angle_index] + self.noise[angle_index])
+
+    def calculateStatisticError(self, angle_index):
+        error_on_counts = 0.0
+        if self.points_per_bin[angle_index] > 0:
+            error_on_counts = math.sqrt(max((self.counts[angle_index]**2-self.squared_counts[angle_index])/self.points_per_bin[angle_index], 0)) # RANDOM-GAUSSIAN
+
+        error_on_noise = math.sqrt(self.noise[angle_index]) # POISSON
+
+        return math.sqrt(error_on_counts**2 + error_on_noise**2)
 
     def backupOutFile(self):
 
@@ -1050,11 +1040,12 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
                         twotheta_angle = self.start_angle + (n_steps_inf + n_step) * self.step
 
-                        if (
-                        self.isCollectedRay(math.radians(twotheta_angle), x_0_i, y_0_i, z_0_i, v_x_i, v_y_i, v_z_i)):
+                        if self.isCollectedRay(math.radians(twotheta_angle), x_0_i, y_0_i, z_0_i, v_x_i, v_y_i, v_z_i):
                             position = min(n_steps_inf + n_step, max_position)
 
-                            self.current_counts[position] += intensity_i
+                            self.current_counts[position] += round(intensity_i)
+                            self.squared_counts[position] += round(intensity_i)**2
+                            self.points_per_bin[position] += 1
 
                 bar_value += percentage_fraction
                 self.progressBarSet(bar_value)
@@ -1063,7 +1054,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             if (self.normalize): statistic_factor = 1 / (self.number_of_origin_points * self.number_of_rotated_rays)
 
             for index in range(0, len(self.counts)):
-                if (statistic_factor != 1): self.current_counts[index] = self.current_counts[index] * statistic_factor
+                if (statistic_factor != 1): self.current_counts[index] = round(self.current_counts[index] * statistic_factor)
+
                 self.counts[index] += self.current_counts[index]
 
             self.plotResult()
