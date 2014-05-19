@@ -4,14 +4,14 @@ import Orange.shadow
 from Orange.widgets import gui
 from Orange.widgets.settings import Setting
 from PyQt4 import QtGui
-from PyQt4.QtGui import QFileDialog, QApplication, qApp, QPalette, QColor, QFont, QGraphicsEffect
+from PyQt4.QtGui import QApplication, qApp, QPalette, QColor, QFont
 
+import xraylib
 import Shadow.ShadowTools as ST
 
 from Orange.shadow.shadow_objects import ShadowTriggerIn
 from Orange.widgets.shadow_gui import ow_automatic_element
 from Orange.shadow.shadow_util import ShadowGui, ShadowMath, ShadowPhysics
-from Orange.shadow.argonne11bm_absorption import Absorb as Absorption
 
 from PyMca.widgets.PlotWindow import PlotWindow
 
@@ -491,7 +491,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     def simulate(self):
         try:
-
             if self.input_beam is None: raise Exception("No input beam, run the previous simulation first")
 
             self.checkFields()
@@ -638,7 +637,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         if not os.path.exists(directory_out): os.mkdir(directory_out)
 
-        out_file = None
         output_file_name = str(self.output_file_name).strip()
 
         if output_file_name == "":
@@ -688,11 +686,10 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     ############################################################
 
     def getTransmittance(self, path, wavelength):
+        mu = xraylib.CS_Total_CP(self.getChemicalFormula(self.sample_material), 12.397639/wavelength)
+        rho = self.getDensity(self.sample_material)*self.packing_factor
 
-        absorption = Absorption.Absorb(Path=path, Wave=wavelength, Packing=self.packing_factor)
-        absorption.SetElems(self.getChemicalFormula(self.sample_material))
-
-        return absorption.ComputeTransmittance()
+        return math.exp(-mu*rho*path)
 
     ############################################################
 
@@ -711,6 +708,16 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             return 4.15689 #Angstrom
         elif material ==1: #Si
             return 5.43123 #Angstrom
+        else:
+            return -1
+
+    ############################################################
+
+    def getDensity(self, material):
+        if material == 0: # LaB6
+            return 4.835 #g/cm3
+        elif material ==1: #Si
+            return 4.665 #g/cm3
         else:
             return -1
 
@@ -783,13 +790,11 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                 k_1 = v_0_y / v_0_x
                 k_2 = v_0_z / v_0_x
 
-                a = (k_1 ** 2 + k_2 ** 2)
-                b = 2 * (k_1 * (y_0 + displacement_h) + k_2 * (z_0 + displacement_v))
-                c = (
-                    y_0 ** 2 + z_0 ** 2 + 2 * displacement_h * y_0 + 2 * displacement_v * z_0) - capillary_radius ** 2 + (
-                    displacement_h ** 2 + displacement_v ** 2)
+                a = (k_1**2 + k_2**2)
+                b = 2*(k_1*(y_0+displacement_h) + k_2*(z_0+displacement_v))
+                c = (y_0**2 + z_0**2 + 2*displacement_h*y_0 + 2*displacement_v*z_0) - capillary_radius**2 + (displacement_h**2 + displacement_v** 2)
 
-                discriminant = b ** 2 - 4 * a * c
+                discriminant = b**2 - 4*a*c
 
                 if discriminant > 0.0:
                     x_sol_1 = (-b - math.sqrt(discriminant)) / (2 * a)
@@ -802,7 +807,10 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                     y_2 = y_0 + k_1 * x_sol_2
                     z_2 = z_0 + k_2 * x_sol_2
 
-                    entry_point = [x_1, y_1, z_1]
+                    if (y_1 < y_2):
+                        entry_point = [x_1, y_1, z_1]
+                    else:
+                        entry_point = [x_2, y_2, z_2]
 
                     k_mod = go_input_beam.beam.rays[ray_index, 10]
                     v_in = [v_0_x, v_0_y, v_0_z]
@@ -867,7 +875,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                 P_0 = ShadowMath.vector_sum(origin_point, ShadowMath.vector_multiply(v_out, t_0))
 
                                 b = ShadowMath.vector_modulus(P_0)
-                                a = math.sqrt(R_sp * R_sp - b * b)
+                                a = math.sqrt(R_sp**2 - b**2)
 
                                 # N.B. punti di uscita hanno solo direzione in avanti.
                                 #P_1 = ShadowMath.vector_sum(origin_point, ShadowMath.vector_multiply(v_out, t_0-a))
@@ -901,10 +909,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                     diffracted_ray[16] = go_input_beam.beam.rays[ray_index, 15]  # Ep_y
                                     diffracted_ray[17] = go_input_beam.beam.rays[ray_index, 16]  # Ep_z
 
-                                    ray_intensity = diffracted_ray[6] ** 2 + diffracted_ray[7] ** 2 + diffracted_ray[
-                                        8] ** 2 + \
-                                                    diffracted_ray[15] ** 2 + diffracted_ray[16] ** 2 + diffracted_ray[
-                                                        17] ** 2
+                                    ray_intensity = diffracted_ray[6]**2 + diffracted_ray[7]**2 + diffracted_ray[8]**2 + \
+                                                    diffracted_ray[15]**2 + diffracted_ray[16]**2 + diffracted_ray[17]**2
 
                                     reduction_factor = reflection.relative_intensity
 
@@ -970,9 +976,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                             v_out_new_2 = ShadowMath.vector_multiply(
                                                 ShadowMath.vectorial_product(v_in, v_out), math.sin(delta_angle))
                                             v_out_new_3 = ShadowMath.vector_multiply(v_in,
-                                                                                     ShadowMath.scalar_product(v_in,
-                                                                                                               v_out) * (
-                                                                                     1 - math.cos(delta_angle)))
+                                                                                     ShadowMath.scalar_product(v_in, v_out) * (1 - math.cos(delta_angle)))
 
                                             v_out_new = ShadowMath.vector_sum(v_out_new_1,
                                                                               ShadowMath.vector_sum(v_out_new_2,
@@ -1084,7 +1088,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     def calculateAbsorption(self, k_mod, entry_point, origin_point, direction_versor, capillary_radius, displacement_h, displacement_v):
 
-        distance = 0
         absorption = 0
 
         #
@@ -1157,7 +1160,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
                 exit_point = [x_sol, y_sol, z_sol]
 
-                distance = min((ShadowMath.point_distance(entry_point, origin_point) + ShadowMath.point_distance(origin_point, exit_point))*10, capillary_radius*2*10) #in mm
+                distance = min((ShadowMath.point_distance(entry_point, origin_point) + ShadowMath.point_distance(origin_point, exit_point)), capillary_radius*2)
 
                 absorption = self.getTransmittance(distance, wavelength)*self.absorption_normalization_factor
             else:
