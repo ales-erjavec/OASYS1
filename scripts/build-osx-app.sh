@@ -108,6 +108,13 @@ EASY_INSTALL=$TEMPLATE/Contents/MacOS/easy_install
 PREFIX=$("$PYTHON" -c'import sys; print(sys.prefix)')
 SITE_PACKAGES=$("$PYTHON" -c'import sysconfig as sc; print(sc.get_path("platlib"))')
 
+cp -f "/Users/labx/env/orange3/lib/python3.3/site-packages/_xraylib.la" "$SITE_PACKAGES"
+cp -f "/Users/labx/env/orange3/lib/python3.3/site-packages/_xraylib.so" "$SITE_PACKAGES"
+cp -f "/Users/labx/env/orange3/lib/python3.3/site-packages/xrayhelp.py" "$SITE_PACKAGES"
+cp -f "/Users/labx/env/orange3/lib/python3.3/site-packages/xraylib.py" "$SITE_PACKAGES"
+cp -f "/Users/labx/env/orange3/lib/python3.3/site-packages/xraymessages.py" "$SITE_PACKAGES"
+
+
 cp -r "/Users/labx/env/orange3/lib/python3.3/site-packages/Shadow"  "$SITE_PACKAGES"
 cp -r "/Users/labx/env/orange3/lib/python3.3/site-packages/PyMca"  "$SITE_PACKAGES"
 cp -r "/Users/labx/env/orange3/lib/python3.3/site-packages/matplotlib-1.4.x-py3.3-macosx-10.8-x86_64.egg" "$SITE_PACKAGES"
