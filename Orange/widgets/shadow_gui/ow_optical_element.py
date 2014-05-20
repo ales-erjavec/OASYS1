@@ -397,7 +397,7 @@ class OpticalElement(ow_generic_element.GenericElement):
             gui.comboBox(upper_box, self, "mirror_orientation_angle", label="Mirror Orientation Angle [deg]", labelWidth=390,
                          items=[0, 90, 180, 270],
                          valueType=float,
-                         sendSelectedValue=True, orientation="horizontal")
+                         sendSelectedValue=False, orientation="horizontal")
 
             tabs_setting = ShadowGui.tabWidget(self.controlArea, height=self.TABS_AREA_HEIGHT)
 
@@ -480,7 +480,7 @@ class OpticalElement(ow_generic_element.GenericElement):
                 gui.comboBox(self.surface_box_cyl, self, "cylinder_orientation", label="Cylinder Orientation (deg) [CCW from X axis]", labelWidth=350,
                              items=[0, 90, 180, 270],
                              valueType=float,
-                             sendSelectedValue=True, orientation="horizontal")
+                             sendSelectedValue=False, orientation="horizontal")
 
                 self.set_isCyl_Parameters()
 
@@ -987,7 +987,7 @@ class OpticalElement(ow_generic_element.GenericElement):
                                              self.image_plane_distance,
                                              self.incidence_angle_deg,
                                              self.reflection_angle_deg,
-                                             self.mirror_orientation_angle)
+                                             90*self.mirror_orientation_angle)
 
             #####################################
             # BASIC SETTING
@@ -995,7 +995,7 @@ class OpticalElement(ow_generic_element.GenericElement):
 
             if self.graphical_options.is_curved:
                 if self.is_cylinder:
-                   shadow_oe.oe.setCylindric(cyl_ang=self.cylinder_orientation)
+                   shadow_oe.oe.setCylindric(cyl_ang=90*self.cylinder_orientation)
                 else:
                    shadow_oe.oe.unsetCylinder()
             else:
@@ -1004,7 +1004,7 @@ class OpticalElement(ow_generic_element.GenericElement):
             if self.surface_shape_parameters == 0:
 
                #IMPLEMENTATION OF THE AUTOMATIC CALCULATION OF THE SAGITTAL FOCUSING FOR CYLINDERS
-               if (self.is_cylinder and self.cylinder_orientation==90):
+               if (self.is_cylinder and self.cylinder_orientation==1):
                    if self.graphical_options.is_spheric:
                        shadow_oe.oe.F_EXT=1
 
@@ -1180,14 +1180,14 @@ class OpticalElement(ow_generic_element.GenericElement):
             self.image_plane_distance = ShadowGui.checkPositiveNumber(self.image_plane_distance, "Image plane distance")
 
 
-            self.mirror_orientation_angle = ShadowGui.checkPositiveAngle(self.mirror_orientation_angle, "Mirror Orientation Angle")
+            #self.mirror_orientation_angle = ShadowGui.checkPositiveAngle(self.mirror_orientation_angle, "Mirror Orientation Angle")
 
-            if self.graphical_options.is_curved:
-                if self.is_cylinder:
-                    self.cylinder_orientation = ShadowGui.checkPositiveAngle(self.cylinder_orientation, "Cylinder Orientation Angle")
+            #if self.graphical_options.is_curved:
+            #    if self.is_cylinder:
+            #        self.cylinder_orientation = ShadowGui.checkPositiveAngle(self.cylinder_orientation*90, "Cylinder Orientation Angle")
 
             if self.surface_shape_parameters == 0:
-                if (self.is_cylinder and (self.cylinder_orientation==90 or self.cylinder_orientation==270)):
+                if (self.is_cylinder and (self.cylinder_orientation==1 or self.cylinder_orientation==3)):
                    if not self.graphical_options.is_spheric:
                        raise Exception("Automatic calculation of the sagittal focus supported only for Spheric Mirrors/Crystals")
                 else:
