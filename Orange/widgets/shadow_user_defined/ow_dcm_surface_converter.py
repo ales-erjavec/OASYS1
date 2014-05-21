@@ -73,7 +73,7 @@ class DCMSurfaceConverter(widget.OWWidget):
 
         self.progressBarSet(0)
 
-        out_file_name = os.getcwd() + "/Output/dcm_surface.dat"
+        out_file_name = os.getcwd() + "/Output/DCM_FEM_Surface.dat"
         out_file = open(out_file_name, "w")
 
         if self.debug_mode:
@@ -116,7 +116,7 @@ class DCMSurfaceConverter(widget.OWWidget):
 
         self.progressBarSet(10)
 
-        points = self.readInputFile()
+        points, min_value = self.readInputFile()
 
         self.progressBarSet(20)
 
@@ -160,10 +160,10 @@ class DCMSurfaceConverter(widget.OWWidget):
                     self.out_file_2.flush()
 
                 if first:
-                    row += self.string_format(16, z_value, 8)
+                    row += self.string_format(16, z_value-min_value, 8)
                     first = False
                 else:
-                    row = self.string_format(16, z_value, 8)
+                    row = self.string_format(16, z_value-min_value, 8)
 
                 previous_z = z_value
 
@@ -208,6 +208,7 @@ class DCMSurfaceConverter(widget.OWWidget):
 
         rows = input_file.readlines()
         points = []
+        min_value = 0.0
 
         if len(rows) > 0:
             for row in rows:
@@ -218,6 +219,8 @@ class DCMSurfaceConverter(widget.OWWidget):
                     quote = float(values[1].strip())
                     y_val = round(float(values[2].strip())*100, 8)
                     z_val = round(float(values[3].strip())*100, 8)
+
+                    if z_val < min_value: min_value = z_val
 
                     point = [x_val, y_val, z_val]
 
@@ -230,7 +233,7 @@ class DCMSurfaceConverter(widget.OWWidget):
                 except:
                     pass
 
-        return points
+        return points, min_value
 
 if __name__ == "__main__":
     a = QApplication(sys.argv)

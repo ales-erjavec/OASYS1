@@ -310,10 +310,12 @@ class PlotXY(AutomaticElement):
                 QtGui.QMessageBox.Ok)
 
     def plot_results(self):
+
+        self.error()
+
         sys.stdout = EmittingStream(textWritten=self.writeStdOut)
         grabber = TTYGrabber()
         grabber.start()
-
 
         if not self.input_beam == None:
 
