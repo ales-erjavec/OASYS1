@@ -1,4 +1,5 @@
 import sys, math, os, numpy
+from scipy import interpolate
 from Orange.widgets import widget
 from Orange.widgets import gui
 from Orange.widgets.settings import Setting
@@ -83,20 +84,20 @@ class DCMSurfaceConverter(widget.OWWidget):
             out_file_name_3 = os.getcwd() + "/Output/dcm_surface_original_points.dat"
             self.out_file_3 = open(out_file_name_3, "w")
 
-        step_x = (self.x_max - self.x_min)/self.number_of_x_cells
-        step_y = (self.y_max - self.y_min)/self.number_of_y_cells
+        step_x = (self.x_max - self.x_min)/(self.number_of_x_cells-1)
+        step_y = (self.y_max - self.y_min)/(self.number_of_y_cells-1)
 
         y_values = []
 
-        for n_step in range(0, self.number_of_y_cells+1):
-           y_values.append(self.y_min + n_step*step_y)
+        for n_step in range(0, self.number_of_y_cells):
+           y_values.append(round(self.y_min + n_step*step_y, 2))
 
         x_values = []
 
-        for n_step in range(0, self.number_of_x_cells+1):
-           x_values.append(self.x_min + n_step*step_x)
+        for n_step in range(0, self.number_of_x_cells):
+           x_values.append(round(self.x_min + n_step*step_x, 2))
 
-        out_file.write(self.string_format(12, self.number_of_x_cells+1, 0) + self.string_format(12, self.number_of_y_cells+1, 0) +"\n")
+        out_file.write(self.string_format(12, self.number_of_x_cells, 0) + self.string_format(12, self.number_of_y_cells, 0) +"\n")
 
         counter = 0
         row = ""
@@ -118,31 +119,42 @@ class DCMSurfaceConverter(widget.OWWidget):
 
         points, min_value = self.readInputFile()
 
+        ########################################
+        #
+        # SMOOTH
+        #
+        ########################################
+
         self.progressBarSet(20)
+        barstep = 75/len(y_values)
 
-        barstep = 80/len(x_values)
+        values_by_y = []
 
-        for x_value in x_values:
-            row = self.string_format(16, x_value, 8)
+        for y_value in y_values:
 
-            first = True
-            for y_value in y_values:
+            value_by_y = ValuesByY(y_value)
+            value_by_y.x_values = []
+            value_by_y.z_values = []
+
+            for x_value in x_values:
                 z_values = []
                 previous_z = 0.0
                 for point in points:
+
+                    sigma_x = 1.0
+                    sigma_y = 1.5
+
                     if (x_value == self.x_min and y_value == self.y_min) or \
                        (x_value == self.x_min and y_value == self.y_max) or \
                        (x_value == self.x_max and y_value == self.y_min) or \
                        (x_value == self.x_max and y_value == self.y_max):
-                        x_liminf = x_value-2*(step_x)
-                        x_limsup = x_value+2*(step_x)
-                        y_liminf = y_value-2*(step_y)
-                        y_limsup = y_value+2*(step_y)
-                    else:
-                        x_liminf = x_value-(step_x)
-                        x_limsup = x_value+(step_x)
-                        y_liminf = y_value-(step_y)
-                        y_limsup = y_value+(step_y)
+                        sigma_x = 2.0
+                        sigma_y = 2.0
+
+                    x_liminf = x_value-sigma_x*(step_x)
+                    x_limsup = x_value+sigma_x*(step_x)
+                    y_liminf = y_value-sigma_y*(step_y)
+                    y_limsup = y_value+sigma_y*(step_y)
 
                     if point[0] >= x_liminf \
                             and point[0] <= x_limsup \
@@ -155,17 +167,47 @@ class DCMSurfaceConverter(widget.OWWidget):
                 else:
                     z_value = numpy.average(z_values)
 
+                value_by_y.x_values.append(x_value)
+                value_by_y.z_values.append(z_value-min_value)
+
+            value_by_y.interpolate()
+
+            values_by_y.append(value_by_y)
+
+            self.progressBarAdvance(barstep)
+
+        ########################################
+        #
+        # SCRITTURA FILE OUT
+        #
+        ########################################
+
+        barstep = 5/len(x_values)
+
+        for x_value in x_values:
+            row = self.string_format(16, x_value, 8)
+
+            first = True
+            for y_value in y_values:
+                z_value = 0.0
+                for value_by_y in values_by_y:
+                    if value_by_y.y_value == y_value:
+                        for index in range(0, len(value_by_y.x_values)):
+                            if value_by_y.x_values[index] == x_value:
+                                z_value = round(value_by_y.z_values_spline[index], 6)
+                                break
+                        else:
+                            continue
+
                 if self.debug_mode:
                     self.out_file_2.write(str(x_value) + " " + str(y_value) + " " + str(z_value) + "\n")
                     self.out_file_2.flush()
 
                 if first:
-                    row += self.string_format(16, z_value-min_value, 8)
+                    row += self.string_format(16, z_value, 8)
                     first = False
                 else:
-                    row = self.string_format(16, z_value-min_value, 8)
-
-                previous_z = z_value
+                    row = self.string_format(16, z_value, 8)
 
                 out_file.write(row + "\n")
                 out_file.flush()
@@ -234,6 +276,34 @@ class DCMSurfaceConverter(widget.OWWidget):
                     pass
 
         return points, min_value
+
+class ValuesByY:
+    y_value = 0.0
+    x_values = []
+    z_values = []
+    z_values_spline = []
+
+    def __init__(self, y_value):
+        self.y_value = y_value
+        self.x_values = []
+        self.z_values = []
+        self.z_values_spline = []
+
+
+    def interpolate(self):
+        poly_fit = numpy.poly1d(numpy.polyfit(self.x_values, self.z_values, 5))
+        self.z_values_spline = poly_fit(self.x_values)
+
+class ValuesByX:
+    x_value = 0.0
+    y_values = []
+    z_values = []
+
+    def __init__(self, x_value):
+        self.x_value = x_value
+        self.y_values = []
+        self.z_values = []
+
 
 if __name__ == "__main__":
     a = QApplication(sys.argv)
