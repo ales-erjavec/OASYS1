@@ -565,12 +565,14 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                 self.progressBarInit()
 
                 self.information(0, "Running XRD Capillary Simulation")
+                if (self.number_of_executions > 1):
+                    self.setStatusMessage("Running XRD Capillary Simulation: " + str(execution+1) + " of " + str(self.number_of_executions))
+                else:
+                    self.setStatusMessage("Running XRD Capillary Simulation")
+
                 qApp.processEvents()
 
                 self.progressBarSet(0)
-
-                self.information(0, "Calculating intersections with capillary")
-                qApp.processEvents()
 
                 bar_value, diffracted_rays = self.generateDiffractedRays(0,
                                                                          capillary_radius,
@@ -592,6 +594,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             self.setTabsAndButtonEnabled(True)
 
             self.information()
+            self.setStatusMessage("")
             qApp.processEvents()
 
             self.progressBarFinished()
@@ -618,15 +621,9 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             self.initialize()
 
         if self.add_background ==  1:
-            self.information(0, "Adding Background")
-            qApp.processEvents()
-
             self.calculateBackground(0)
             self.plotResult()
             self.writeOutFile()
-
-        self.information()
-        qApp.processEvents()
 
         self.progressBarFinished()
         qApp.processEvents()

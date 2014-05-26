@@ -1301,6 +1301,7 @@ class OpticalElement(ow_generic_element.GenericElement):
 
     def completeOperations(self, shadow_oe=None):
         self.information(0, "Running SHADOW")
+        self.setStatusMessage("Running SHADOW")
         qApp.processEvents()
 
         sys.stdout = EmittingStream(textWritten=self.writeStdOut)
@@ -1319,12 +1320,14 @@ class OpticalElement(ow_generic_element.GenericElement):
            self.writeStdOut(row)
 
         self.information(0, "Plotting Results")
+        self.setStatusMessage("Plotting Results")
         qApp.processEvents()
 
         self.progressBarSet(80)
         self.plot_results(beam_out)
 
         self.information()
+        self.setStatusMessage("")
         qApp.processEvents()
 
         self.send("Beam", beam_out)

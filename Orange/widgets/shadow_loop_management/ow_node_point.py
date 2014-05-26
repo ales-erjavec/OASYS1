@@ -73,11 +73,14 @@ class LoopPoint(widget.OWWidget):
     def startLoop(self):
         self.current_new_beam = 1
         self.start_button.setEnabled(False)
+        self.setStatusMessage("Running Beam " + str(self.current_new_beam) + " of " + str(self.number_of_new_beams))
         self.send("Trigger", ShadowTriggerOut(new_beam=True))
 
     def stopLoop(self):
         if ConfirmDialog.confirmed(parent=self, message="Confirm Interruption of the Loop?"):
             self.run_loop = False
+
+            self.setStatusMessage("Interrupted by user")
             self.warning("Interrupted by user")
 
     def passTrigger(self, trigger):
@@ -86,21 +89,25 @@ class LoopPoint(widget.OWWidget):
                 if trigger.interrupt:
                     self.current_new_beam = 0
                     self.start_button.setEnabled(True)
+                    self.setStatusMessage("")
                     self.send("Trigger", ShadowTriggerOut(new_beam=False))
                 elif trigger.new_beam:
                     if self.current_new_beam < self.number_of_new_beams:
                         self.current_new_beam += 1
+                        self.setStatusMessage("Running Beam " + str(self.current_new_beam) + " of " + str(self.number_of_new_beams))
                         self.start_button.setEnabled(False)
                         self.send("Trigger", ShadowTriggerOut(new_beam=True))
                     else:
                         self.current_new_beam = 0
                         self.start_button.setEnabled(True)
+                        self.setStatusMessage("")
                         self.send("Trigger", ShadowTriggerOut(new_beam=False))
         else:
             self.current_new_beam = 0
             self.start_button.setEnabled(True)
             self.send("Trigger", ShadowTriggerOut(new_beam=False))
             self.warning()
+            self.setStatusMessage("")
             self.run_loop = True
 
 if __name__ == "__main__":
