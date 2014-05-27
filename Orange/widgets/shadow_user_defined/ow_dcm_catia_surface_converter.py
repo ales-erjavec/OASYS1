@@ -15,7 +15,7 @@ class DCMCatiaSurfaceConverter(widget.OWWidget):
     icon = "icons/dcm_surface_converter.png"
     maintainer = "Luca Rebuffi"
     maintainer_email = "luca.rebuffi(@at@)elettra.eu"
-    priority = 4
+    priority = 3
     category = "User Defined"
     keywords = ["data", "file", "load", "read"]
 
