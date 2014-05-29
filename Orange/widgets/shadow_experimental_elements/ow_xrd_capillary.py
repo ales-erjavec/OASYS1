@@ -11,7 +11,7 @@ import Shadow.ShadowTools as ST
 
 from Orange.shadow.shadow_objects import ShadowTriggerIn
 from Orange.widgets.shadow_gui import ow_automatic_element
-from Orange.shadow.shadow_util import ShadowGui, ShadowMath, ShadowPhysics
+from Orange.shadow.shadow_util import ShadowGui, ShadowMath, ShadowPhysics, ConfirmDialog
 
 from PyMca.widgets.PlotWindow import PlotWindow
 
@@ -412,37 +412,40 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     ############################################################
 
     def stopSimulation(self):
-        self.run_simulation = False
+        if ConfirmDialog.confirmed(parent=self, message="Confirm Interruption of the Simulation?"):
+            self.run_simulation = False
 
     def resetBackground(self):
-        cursor = range(0, len(self.noise))
+        if ConfirmDialog.confirmed(parent=self, message="Confirm Reset of the Simulated Background?"):
+            cursor = range(0, len(self.noise))
 
-        for angle_index in cursor:
-            self.noise[angle_index] = 0
+            for angle_index in cursor:
+                self.noise[angle_index] = 0
 
-        self.plotResult()
-        self.writeOutFile()
+            self.plotResult()
+            self.writeOutFile()
 
     def resetSimulation(self):
-        self.current_new_beam = 0
+        if ConfirmDialog.confirmed(parent=self, message="Confirm Reset of the Simulated Data?"):
+            self.current_new_beam = 0
 
-        cursor = range(0, len(self.counts))
+            cursor = range(0, len(self.counts))
 
-        for angle_index in cursor:
-            self.current_counts[angle_index] = 0
-            self.counts[angle_index] = 0
-            self.squared_counts[angle_index] = 0
-            self.points_per_bin[angle_index] = 0
+            for angle_index in cursor:
+                self.current_counts[angle_index] = 0
+                self.counts[angle_index] = 0
+                self.squared_counts[angle_index] = 0
+                self.points_per_bin[angle_index] = 0
 
-        cursor = range(0, len(self.noise))
+            cursor = range(0, len(self.noise))
 
-        for angle_index in cursor:
-            self.noise[angle_index] = 0
+            for angle_index in cursor:
+                self.noise[angle_index] = 0
 
-        self.plotResult()
-        self.writeOutFile()
+            self.plotResult()
+            self.writeOutFile()
 
-        self.reset_button_pressed = True
+            self.reset_button_pressed = True
 
     def initialize(self):
         steps = range(0, math.floor((self.stop_angle_na - self.start_angle_na) / self.step) + 1)

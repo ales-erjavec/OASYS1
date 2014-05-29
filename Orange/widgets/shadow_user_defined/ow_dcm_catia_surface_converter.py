@@ -38,7 +38,7 @@ class DCMCatiaSurfaceConverter(widget.OWWidget):
 
     def __init__(self):
         self.setFixedWidth(590)
-        self.setFixedHeight(380)
+        self.setFixedHeight(390)
 
         left_box_1 = ShadowGui.widgetBox(self.controlArea, "Ansys Surface", addSpace=True, orientation="vertical")
 
