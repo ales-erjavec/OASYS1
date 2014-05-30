@@ -4,7 +4,7 @@ from Orange.widgets import widget, gui
 from Orange.widgets.settings import Setting
 from PyQt4.QtGui import QApplication
 from PyQt4.QtCore import QRect
-from Orange.shadow.shadow_util import ShadowGui
+from Orange.shadow.shadow_util import ConfirmDialog
 
 class AutomaticElement(widget.OWWidget):
 
@@ -27,6 +27,14 @@ class AutomaticElement(widget.OWWidget):
         if show_automatic_box :
             gui.checkBox(gui.widgetBox(self.controlArea, "General Options", addSpace=True, orientation="vertical"), \
                          self, 'is_automatic_run', 'Automatic Execution')
+
+
+    def callResetSettings(self):
+        if ConfirmDialog.confirmed(parent=self, message="Confirm Reset of the Fields?"):
+            try:
+                self.resetSettings()
+            except:
+                pass
 
 if __name__ == "__main__":
     a = QApplication(sys.argv)

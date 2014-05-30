@@ -419,7 +419,7 @@ class OpticalElement(ow_generic_element.GenericElement):
             ##########################################
 
 
-            if graphical_options.is_curved:
+            if self.graphical_options.is_curved:
                 surface_box = ShadowGui.widgetBox(tab_bas_shape, "Surface Shape Parameter", addSpace=False, orientation="vertical")
 
                 gui.comboBox(surface_box, self, "surface_shape_parameters", label="Type", items=["internal/calculated", "external/user_defined"], labelWidth=240,
@@ -817,15 +817,6 @@ class OpticalElement(ow_generic_element.GenericElement):
 
         button_box = ShadowGui.widgetBox(self.controlArea, "", addSpace=False, orientation="horizontal")
 
-        button = gui.button(button_box, self, "Reset Fields", callback=self.callResetSettings)
-        font = QFont(button.font())
-        font.setItalic(True)
-        button.setFont(font)
-        palette = QPalette(button.palette()) # make a copy of the palette
-        palette.setColor(QPalette.ButtonText, QColor('Dark Red'))
-        button.setPalette(palette) # assign new palette
-        button.setFixedHeight(45)
-
         button = gui.button(button_box, self, "Run Shadow/trace", callback=self.traceOpticalElement)
         font = QFont(button.font())
         font.setBold(True)
@@ -835,15 +826,47 @@ class OpticalElement(ow_generic_element.GenericElement):
         button.setPalette(palette) # assign new palette
         button.setFixedHeight(45)
 
+        button = gui.button(button_box, self, "Reset Fields", callback=self.callResetSettings)
+        font = QFont(button.font())
+        font.setItalic(True)
+        button.setFont(font)
+        palette = QPalette(button.palette()) # make a copy of the palette
+        palette.setColor(QPalette.ButtonText, QColor('Dark Red'))
+        button.setPalette(palette) # assign new palette
+        button.setFixedHeight(45)
+        button.setFixedWidth(100)
+
+    def callResetSettings(self):
+        super().callResetSettings()
+
+        if self.graphical_options.is_screen_slit:
+            self.set_Aperturing()
+            self.set_Absorption()
+        else:
+            self.calculate_incidence_angle_mrad()
+            self.calculate_reflection_angle_mrad()
+
+            if self.graphical_options.is_curved:
+                self.set_IntExt_Parameters()
+                self.set_isCyl_Parameters()
+
+            if self.graphical_options.is_mirror:
+                self.set_Refl_Parameters()
+            else:
+                self.set_Autosetting()
+                self.set_Mosaic()
+
+            self.set_Dim_Parameters()
+            self.set_ModifiedSurface()
+
+        self.set_MirrorMovement()
+        self.set_SourceMovement()
+
     ############################################################
     #
     # GRAPHIC USER INTERFACE MANAGEMENT
     #
     ############################################################
-
-    def callResetSettings(self):
-        if ConfirmDialog.confirmed(parent=self, message="Confirm Reset of the Fields?"):
-            self.resetSettings()
 
     # TAB 1.1
 

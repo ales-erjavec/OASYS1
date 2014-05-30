@@ -62,7 +62,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     slit_1_horizontal_displacement = Setting(0.0)
     slit_2_horizontal_displacement = Setting(0.0)
 
-    detector_distance = Setting(95.0)
+    detector_distance = Setting(0.0)
     slit_1_distance = Setting(0.0)
     slit_1_vertical_aperture = Setting(0.0)
     slit_1_horizontal_aperture = Setting(0.0)
@@ -90,7 +90,11 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     output_file_name = Setting('XRD_Profile.xy')
 
     add_background = Setting(0)
-    n_sigma=Setting(0.0)
+    n_sigma=Setting(0)
+
+    add_constant = Setting(0)
+    constant_value = Setting(0.0)
+
     add_chebyshev = Setting(0)
     cheb_coeff_0 = Setting(0.0)
     cheb_coeff_1 = Setting(0.0)
@@ -99,7 +103,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     cheb_coeff_4 = Setting(0.0)
     cheb_coeff_5 = Setting(0.0)
 
-    add_expdecay = Setting(0.0)
+    add_expdecay = Setting(0)
     expd_coeff_0 = Setting(0.0)
     expd_coeff_1 = Setting(0.0)
     expd_coeff_2 = Setting(0.0)
@@ -164,12 +168,13 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         self.le_number_of_executions = ShadowGui.lineEdit(box_simulation, self, "number_of_executions", "Number of Executions", labelWidth=350, valueType=int, orientation="horizontal")
 
         self.setIncremental()
+
         self.le_current_execution = ShadowGui.lineEdit(box_simulation, self, "current_execution", "Current Execution", labelWidth=350, valueType=int, orientation="horizontal")
         self.le_current_execution.setReadOnly(True)
         font = QFont(self.le_current_execution.font())
         font.setBold(True)
         self.le_current_execution.setFont(font)
-        palette = QPalette(self.le_current_execution.palette()) # make a copy of the palette
+        palette = QPalette(self.le_current_execution.palette())
         palette.setColor(QPalette.Text, QColor('dark blue'))
         palette.setColor(QPalette.Base, QColor(243, 240, 160))
         self.le_current_execution.setPalette(palette)
@@ -236,7 +241,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         #####################
 
-        box_background = ShadowGui.widgetBox(self.tab_background, "Background Parameters", addSpace=True, orientation="vertical", height=510, width=420)
+        box_background = ShadowGui.widgetBox(self.tab_background, "Background Parameters", addSpace=True, orientation="vertical", height=610, width=420)
 
         gui.comboBox(box_background, self, "add_background", label="Add Background", labelWidth=370, items=["No", "Yes"],
                      callback=self.setAddBackground, sendSelectedValue=False, orientation="horizontal")
@@ -247,6 +252,15 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         self.box_background_1 = ShadowGui.widgetBox(box_background, "", addSpace=True, orientation="vertical")
 
         gui.comboBox(self.box_background_1, self, "n_sigma", label="Noise (Nr. Sigma)", labelWidth=347, items=["0.5", "1", "1.5", "2", "2.5", "3"], sendSelectedValue=False, orientation="horizontal")
+
+        self.box_background_const  = ShadowGui.widgetBox(box_background, "Constant", addSpace=True, orientation="vertical")
+
+        gui.checkBox(self.box_background_const, self, "add_constant", "add Background", callback=self.setConstant)
+        gui.separator(self.box_background_const)
+
+        self.box_background_const_2 = ShadowGui.widgetBox(self.box_background_const, "", addSpace=True, orientation="vertical")
+
+        ShadowGui.lineEdit(self.box_background_const_2, self, "constant_value", "Value", labelWidth=300, valueType=float, orientation="horizontal")
 
         self.box_background_2 = ShadowGui.widgetBox(box_background, "", addSpace=True, orientation="horizontal")
 
@@ -305,18 +319,28 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         button_box_2 = ShadowGui.widgetBox(self.controlArea, "", addSpace=False, orientation="horizontal", height=30)
 
-        ShadowGui.widgetBox(button_box_2, "", addSpace=False, orientation="horizontal", height=30, width=145)
+        self.reset_fields_button = gui.button(button_box_2, self, "Reset Fields", callback=self.callResetSettings)
+        font = QFont(self.reset_fields_button.font())
+        font.setItalic(True)
+        self.reset_fields_button.setFont(font)
+        self.reset_fields_button.setFixedHeight(30)
 
-        self.reset_bkg_Button = gui.button(button_box_2, self, "Reset Background", callback=self.resetBackground)
-        self.reset_bkg_Button.setFixedHeight(30)
-        palette = QPalette(self.reset_bkg_Button.palette()) # make a copy of the palette
+        self.reset_bkg_button = gui.button(button_box_2, self, "Reset Background", callback=self.resetBackground)
+        self.reset_bkg_button.setFixedHeight(30)
+        font = QFont(self.reset_bkg_button.font())
+        font.setItalic(True)
+        self.reset_bkg_button.setFont(font)
+        palette = QPalette(self.reset_bkg_button.palette()) # make a copy of the palette
         palette.setColor(QPalette.ButtonText, QColor('dark blue'))
-        self.reset_bkg_Button.setPalette(palette) # assign new palette
+        self.reset_bkg_button.setPalette(palette) # assign new palette
 
         self.reset_button = gui.button(button_box_2, self, "Reset Data", callback=self.resetSimulation)
         self.reset_button.setFixedHeight(30)
+        font = QFont(self.reset_button.font())
+        font.setItalic(True)
+        self.reset_button.setFont(font)
         palette = QPalette(self.reset_button.palette()) # make a copy of the palette
-        palette.setColor(QPalette.ButtonText, QColor('dark red'))
+        palette.setColor(QPalette.ButtonText, QColor('red'))
         self.reset_button.setPalette(palette) # assign new palette
 
         self.setAddBackground()
@@ -339,20 +363,29 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     # GUI MANAGEMENT METHODS
     ############################################################
 
+    def callResetSettings(self):
+        super().callResetSettings()
+
+        self.setIncremental()
+        self.setNumberOfPeaks()
+        self.setAddBackground()
+
+
     def setTabsAndButtonEnabled(self, enabled=True):
         self.tab_simulation.setEnabled(enabled)
         self.tab_physical.setEnabled(enabled)
         self.tab_aberrations.setEnabled(enabled)
         self.tab_background.setEnabled(enabled)
 
+        self.reset_fields_button.setEnabled(enabled)
         self.reset_button.setEnabled(enabled)
 
         if not enabled:
             self.background_button.setEnabled(False)
-            self.reset_bkg_Button.setEnabled(False)
+            self.reset_bkg_button.setEnabled(False)
         else:
             self.background_button.setEnabled(self.add_background == 1)
-            self.reset_bkg_Button.setEnabled(self.add_background == 1)
+            self.reset_bkg_button.setEnabled(self.add_background == 1)
 
     def setIncremental(self):
         self.le_number_of_executions.setEnabled(self.incremental == 1)
@@ -363,12 +396,18 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     def setAddBackground(self):
         self.box_background_1_hidden.setVisible(self.add_background == 0)
         self.box_background_1.setVisible(self.add_background == 1)
+        self.box_background_const.setVisible(self.add_background == 1)
         self.box_background_2.setVisible(self.add_background == 1)
+
+        self.setConstant()
         self.setChebyshev()
         self.setExpDecay()
         self.background_button.setEnabled(self.add_background == 1)
-        self.reset_bkg_Button.setEnabled(self.add_background == 1)
-    
+        self.reset_bkg_button.setEnabled(self.add_background == 1)
+
+    def setConstant(self):
+        self.box_background_const_2.setEnabled(self.add_constant == 1)
+
     def setChebyshev(self):
         self.box_chebyshev_2.setEnabled(self.add_chebyshev == 1)
         

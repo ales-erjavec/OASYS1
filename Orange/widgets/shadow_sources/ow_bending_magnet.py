@@ -92,15 +92,6 @@ class BendingMagnet(ow_generic_element.GenericElement):
 
         button_box = ShadowGui.widgetBox(self.controlArea, "", addSpace=False, orientation="horizontal")
 
-        button = gui.button(button_box, self, "Reset Fields", callback=self.callResetSettings)
-        font = QFont(button.font())
-        font.setItalic(True)
-        button.setFont(font)
-        palette = QPalette(button.palette()) # make a copy of the palette
-        palette.setColor(QPalette.ButtonText, QColor('Dark Red'))
-        button.setPalette(palette) # assign new palette
-        button.setFixedHeight(45)
-
         button = gui.button(button_box, self, "Run Shadow/trace", callback=self.runShadowSource)
         font = QFont(button.font())
         font.setBold(True)
@@ -110,13 +101,19 @@ class BendingMagnet(ow_generic_element.GenericElement):
         button.setPalette(palette) # assign new palette
         button.setFixedHeight(45)
 
+        button = gui.button(button_box, self, "Reset Fields", callback=self.callResetSettings)
+        font = QFont(button.font())
+        font.setItalic(True)
+        button.setFont(font)
+        palette = QPalette(button.palette()) # make a copy of the palette
+        palette.setColor(QPalette.ButtonText, QColor('Dark Red'))
+        button.setPalette(palette) # assign new palette
+        button.setFixedHeight(45)
+        button.setFixedWidth(100)
+
         gui.rubber(self.controlArea)
 
         gui.rubber(self.mainArea)
-
-    def callResetSettings(self):
-        if ConfirmDialog.confirmed(parent=self, message="Confirm Reset of the Fields?"):
-            self.resetSettings()
 
     def calculateMagneticField(self):
         self.magnetic_radius=abs(self.magnetic_radius)
