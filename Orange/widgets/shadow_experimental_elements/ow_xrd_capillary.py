@@ -89,6 +89,11 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     normalize = Setting(1)
     output_file_name = Setting('XRD_Profile.xy')
 
+
+    add_lorentz_polarization_factor = Setting(1)
+    degree_of_polarization = Setting(0.95)
+    monochromator_angle = Setting(28.446)
+
     add_background = Setting(0)
     n_sigma=Setting(0)
 
@@ -127,8 +132,11 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     current_counts = []
     squared_counts = []
     points_per_bin = []
+    bragg_angles = []
     counts = []
     noise = []
+
+    materials = []
 
     random_generator = random.Random()
 
@@ -137,13 +145,15 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     def __init__(self):
         super().__init__()
 
+        self.readMaterialConfigurationFiles()
+
         self.controlArea.setFixedWidth(self.CONTROL_AREA_WIDTH)
 
         tabs = ShadowGui.tabWidget(self.controlArea, height=self.TABS_AREA_HEIGHT, width=self.TABS_AREA_WIDTH)
 
         self.tab_simulation = ShadowGui.createTabPage(tabs, "Simulation")
         self.tab_physical = ShadowGui.createTabPage(tabs, "Experiment")
-
+        self.tab_beam = ShadowGui.createTabPage(tabs, "Beam")
         self.tab_aberrations = ShadowGui.createTabPage(tabs, "Aberrations")
         self.tab_background = ShadowGui.createTabPage(tabs, "Background")
 
@@ -185,7 +195,14 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         ShadowGui.lineEdit(box_sample, self, "capillary_diameter", "Capillary Diameter [mm]", labelWidth=350, valueType=float, orientation="horizontal")
         gui.comboBox(box_sample, self, "capillary_material", label="Capillary Material", labelWidth=300, items=["Glass", "Kapton"], sendSelectedValue=False, orientation="horizontal")
-        gui.comboBox(box_sample, self, "sample_material", label="Material", items=["LaB6", "Si", "ZnO"], labelWidth=300, sendSelectedValue=False, orientation="horizontal")
+
+        chemical_formulas = []
+
+        for material in self.materials:
+            chemical_formulas.append(material.chemical_formula)
+
+        gui.comboBox(box_sample, self, "sample_material", label="Material", items=chemical_formulas, labelWidth=300, sendSelectedValue=False, orientation="horizontal")
+
         ShadowGui.lineEdit(box_sample, self, "packing_factor", "Packing Factor (0.0...1.0)", labelWidth=350, valueType=float, orientation="horizontal")
 
         box_2theta_arm = ShadowGui.widgetBox(self.tab_physical, "2Theta Arm Parameters", addSpace=True, orientation="vertical")
@@ -217,6 +234,21 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         gui.separator(box_diffraction)
 
         self.setNumberOfPeaks()
+
+        #####################
+
+        box_beam = ShadowGui.widgetBox(self.tab_beam, "Lorentz-Polarization Factor", addSpace=True, orientation="vertical")
+
+        gui.comboBox(box_beam, self, "add_lorentz_polarization_factor", label="Add L.P. Factor", labelWidth=370, items=["No", "Yes"], sendSelectedValue=False, orientation="horizontal", callback=self.setPolarization)
+
+        gui.separator(box_beam)
+
+        self.box_polarization =  ShadowGui.widgetBox(box_beam, "", addSpace=True, orientation="vertical")
+
+        ShadowGui.lineEdit(self.box_polarization, self, "degree_of_polarization", "Degree of Polarization [(Ih-Iv)/(Ih+Iv)]", labelWidth=350, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_polarization, self, "monochromator_angle", "Monochromator 2Theta Angle (deg)", labelWidth=300, valueType=float, orientation="horizontal")
+
+        self.setPolarization()
 
         #####################
 
@@ -368,12 +400,14 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         self.setIncremental()
         self.setNumberOfPeaks()
+        self.setPolarization()
         self.setAddBackground()
 
 
     def setTabsAndButtonEnabled(self, enabled=True):
         self.tab_simulation.setEnabled(enabled)
         self.tab_physical.setEnabled(enabled)
+        self.tab_beam.setEnabled(enabled)
         self.tab_aberrations.setEnabled(enabled)
         self.tab_background.setEnabled(enabled)
 
@@ -392,6 +426,9 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     def setNumberOfPeaks(self):
         self.le_number_of_peaks.setEnabled(self.set_number_of_peaks == 1)
+
+    def setPolarization(self):
+        self.box_polarization.setVisible(self.add_lorentz_polarization_factor == 1)
 
     def setAddBackground(self):
         self.box_background_1_hidden.setVisible(self.add_background == 0)
@@ -475,6 +512,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                 self.counts[angle_index] = 0
                 self.squared_counts[angle_index] = 0
                 self.points_per_bin[angle_index] = 0
+                self.bragg_angles[angle_index] = 0.0
 
             cursor = range(0, len(self.noise))
 
@@ -485,44 +523,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             self.writeOutFile()
 
             self.reset_button_pressed = True
-
-    def initialize(self):
-        steps = range(0, math.floor((self.stop_angle_na - self.start_angle_na) / self.step) + 1)
-
-        self.start_angle = self.start_angle_na + self.shift_2theta
-        self.stop_angle = self.stop_angle_na + self.shift_2theta
-
-        if self.keep_result == 0 or len(self.twotheta_angles) == 0 or self.reset_button_pressed:
-            self.twotheta_angles = []
-            self.counts = []
-            self.noise = []
-            self.squared_counts = []
-            self.points_per_bin = []
-
-            for step_index in steps:
-                self.twotheta_angles.append(self.start_angle + step_index * self.step)
-                self.counts.append(0)
-                self.noise.append(0)
-                self.squared_counts.append(0)
-                self.points_per_bin.append(0)
-
-            self.twotheta_angles = numpy.array(self.twotheta_angles)
-            self.counts = numpy.array(self.counts)
-            self.noise = numpy.array(self.noise)
-            self.squared_counts = numpy.array(self.squared_counts)
-            self.points_per_bin = numpy.array(self.points_per_bin)
-
-        self.reset_button_pressed = False
-
-        self.resetCurrentCounts(steps)
-
-        return steps
-
-    def resetCurrentCounts(self, steps):
-        self.current_counts = []
-        for step_index in steps:
-            self.current_counts.append(0)
-
 
     def checkFields(self):
         pass
@@ -558,7 +558,11 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             go_input_beam.beam.rays = copy.deepcopy(self.input_beam.beam.rays[go])
 
             lattice_parameter = self.getLatticeParameter(self.sample_material)
-            reflections = self.getReflections(self.sample_material, self.number_of_peaks)
+
+            if self.set_number_of_peaks == 1:
+                reflections = self.getReflections(self.sample_material, self.number_of_peaks)
+            else:
+                reflections = self.getReflections(self.sample_material, 0)
 
             number_of_input_rays = len(go_input_beam.beam.rays)
             input_rays = range(0, number_of_input_rays)
@@ -585,14 +589,19 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
             theta_slit = math.atan(self.vertical_acceptance_1/self.D_1)
 
+            avg_k_modulus = numpy.average(go_input_beam.beam.rays[:,10])
+
             if self.calculate_absorption == 1:
-                avg_wavelength = (2*math.pi/numpy.average(go_input_beam.beam.rays[:,10]))*1e+8 # in Angstrom
+                avg_wavelength = (2*math.pi/avg_k_modulus)*1e+8 # in Angstrom
                 self.absorption_normalization_factor = 1/self.getTransmittance(capillary_radius*2, avg_wavelength)
 
             ################################
             # ARRAYS FOR OUTPUT AND PLOTS
 
             steps = self.initialize()
+
+            if self.add_lorentz_polarization_factor:
+                self.initializeLorentzPolarizationFactor(avg_k_modulus, lattice_parameter, reflections)
 
             ################################
             # EXECUTION CYCLES
@@ -653,6 +662,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             QtGui.QMessageBox.critical(self, "QMessageBox.critical()",
                 exception.args[0],
                 QtGui.QMessageBox.Ok)
+            raise exception
 
     #######################################################
 
@@ -670,144 +680,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         self.progressBarFinished()
         qApp.processEvents()
 
-    def writeOutFile(self):
-
-        directory_out = os.getcwd() + '/Output'
-
-        if not os.path.exists(directory_out): os.mkdir(directory_out)
-
-        output_file_name = str(self.output_file_name).strip()
-
-        if output_file_name == "":
-            out_file = open(directory_out + '/XRD_Profile.xy',"w")
-        else:
-            out_file = open(directory_out + '/' + output_file_name,"w")
-
-        out_file.write("tth counts error\n")
-
-        for angle_index in range(0, len(self.twotheta_angles)):
-            if not self.run_simulation: break
-            out_file.write(str(self.twotheta_angles[angle_index]) + " "
-                           + str(self.calculateSignal(angle_index)) + " "
-                           + str(self.calculateStatisticError(angle_index))
-                           + "\n")
-            out_file.flush()
-
-        out_file.close()
-
-    def calculateSignal(self, angle_index):
-        return int(self.counts[angle_index] + self.noise[angle_index])
-
-    def calculateStatisticError(self, angle_index):
-        error_on_counts = 0.0
-        if self.points_per_bin[angle_index] > 0:
-            error_on_counts = math.sqrt(max((self.counts[angle_index]**2-self.squared_counts[angle_index])/self.points_per_bin[angle_index], 0)) # RANDOM-GAUSSIAN
-
-        error_on_noise = math.sqrt(self.noise[angle_index]) # POISSON
-
-        return math.sqrt(error_on_counts**2 + error_on_noise**2)
-
-    def backupOutFile(self):
-
-        directory_out = os.getcwd() + '/Output'
-
-        srcfile = directory_out + '/XRD_Profile.xy'
-        bkpfile = directory_out + '/XRD_Profile_BKP.xy'
-
-        if not os.path.exists(directory_out): return
-        if not os.path.exists(srcfile): return
-        if os.path.exists(bkpfile): os.remove(bkpfile)
-
-        shutil.copyfile(srcfile, bkpfile)
-
     ############################################################
-    # ACCESSORY METHODS
-    ############################################################
-
-    def getTransmittance(self, path, wavelength):
-        mu = xraylib.CS_Total_CP(self.getChemicalFormula(self.sample_material), 12.397639/wavelength)
-        rho = self.getDensity(self.sample_material)*self.packing_factor
-
-        return math.exp(-mu*rho*path)
-
-    ############################################################
-
-    def getChemicalFormula(self, material):
-        if material == 0: # LaB6
-            return "LaB6"
-        elif material ==1: #Si
-            return "Si"
-        else:
-            return -1
-
-    ############################################################
-
-    def getLatticeParameter(self, material):
-        if material == 0: # LaB6
-            return 4.15689 #Angstrom
-        elif material ==1: #Si
-            return 5.43123 #Angstrom
-        else:
-            return -1
-
-    ############################################################
-
-    def getDensity(self, material):
-        if material == 0: # LaB6
-            return 4.835 #g/cm3
-        elif material ==1: #Si
-            return 4.665 #g/cm3
-        else:
-            return -1
-
-    ############################################################
-
-    def getReflections(self, material, number_of_peaks):
-        reflections = []
-
-        if material == 0: # LaB6
-            if(number_of_peaks > 0): reflections.append(Reflection(1,0,0,0.54))
-            if(number_of_peaks > 1): reflections.append(Reflection(1,1,0,1.00 ))
-            if(number_of_peaks > 2): reflections.append(Reflection(1,1,1,0.41))
-            if(number_of_peaks > 3): reflections.append(Reflection(2,0,0,0.22))
-            if(number_of_peaks > 4): reflections.append(Reflection(2,1,0,0.46))
-            if(number_of_peaks > 5): reflections.append(Reflection(2,1,1,0.24))
-            if(number_of_peaks > 6): reflections.append(Reflection(2,2,0,0.08))
-            if(number_of_peaks > 7): reflections.append(Reflection(3,0,0,0.23))
-            if(number_of_peaks > 8): reflections.append(Reflection(3,1,0,0.16))
-            if(number_of_peaks > 9): reflections.append(Reflection(3,1,1,0.10))
-            if(number_of_peaks > 10): reflections.append(Reflection(2,2,2,0.02))
-            if(number_of_peaks > 11): reflections.append(Reflection(3,2,0,0.06))
-            if(number_of_peaks > 12): reflections.append(Reflection(3,2,1,0.13))
-            if(number_of_peaks > 13): reflections.append(Reflection(4,0,0,0.02))
-            if(number_of_peaks > 14): reflections.append(Reflection(4,1,0,0.08))
-            if(number_of_peaks > 15): reflections.append(Reflection(3,3,0,0.07))
-            if(number_of_peaks > 16): reflections.append(Reflection(3,3,1,0.03))
-            if(number_of_peaks > 17): reflections.append(Reflection(4,2,0,0.04))
-            if(number_of_peaks > 18): reflections.append(Reflection(4,2,1,0.09))
-            if(number_of_peaks > 19): reflections.append(Reflection(3,3,2,0.03))
-            if(number_of_peaks > 20): reflections.append(Reflection(4,2,2,0.03))
-            if(number_of_peaks > 21): reflections.append(Reflection(5,0,0,0.03))
-            if(number_of_peaks > 22): reflections.append(Reflection(5,1,0,0.10))
-            if(number_of_peaks > 23): reflections.append(Reflection(5,1,1,0.06))
-        elif material == 1: # Si
-            if(number_of_peaks > 0): reflections.append(Reflection(1,1,1))
-            if(number_of_peaks > 1): reflections.append(Reflection(2,2,0))
-            if(number_of_peaks > 2): reflections.append(Reflection(3,1,1))
-            if(number_of_peaks > 3): reflections.append(Reflection(4,0,0))
-            if(number_of_peaks > 4): reflections.append(Reflection(3,3,1))
-            if(number_of_peaks > 5): reflections.append(Reflection(4,2,2))
-            if(number_of_peaks > 6): reflections.append(Reflection(5,1,1))
-            if(number_of_peaks > 7): reflections.append(Reflection(4,4,0))
-            if(number_of_peaks > 8): reflections.append(Reflection(5,3,1))
-            if(number_of_peaks > 9): reflections.append(Reflection(6,2,0))
-            if(number_of_peaks > 10): reflections.append(Reflection(5,3,3))
-        else:
-            return None
-
-
-        return reflections
-
+    # SIMULATION ALGORITHM METHODS
     ############################################################
 
     def generateDiffractedRays(self, bar_value, capillary_radius, displacement_h, displacement_v, go_input_beam, input_rays,
@@ -927,7 +801,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                     # genesi del nuovo raggio diffratto attenuato dell'intensità relativa e dell'assorbimento
                                     #
 
-                                    diffracted_ray = numpy.zeros(19)
+                                    diffracted_ray = numpy.zeros(20)
 
                                     diffracted_ray[0] = origin_point[0]  # X
                                     diffracted_ray[1] = origin_point[1]  # Y
@@ -963,6 +837,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                                                                                        displacement_v)
 
                                     diffracted_ray[18] = ray_intensity * reduction_factor
+                                    diffracted_ray[19] = twotheta_reflection/2
 
                                     if (self.number_of_rotated_rays == 1):
                                         diffracted_rays.append(diffracted_ray)
@@ -1059,6 +934,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                 v_z_i = diffracted_ray[5]
 
                 intensity_i = diffracted_ray[18]
+                bragg_angle_i = diffracted_ray[19]
 
                 #
                 # calcolo dell'angolo di intercettato dal vettore con il piano xy
@@ -1099,113 +975,10 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             for index in range(0, len(self.counts)):
                 if (statistic_factor != 1): self.current_counts[index] = round(self.current_counts[index] * statistic_factor)
 
-                self.counts[index] += self.current_counts[index]
+                self.counts[index] += self.current_counts[index]*self.lorentz_polarization_factors[index]
 
             self.plotResult()
             self.writeOutFile()
-
-    ############################################################
-
-    def calculateBraggAngle(self, k_modulus, h, k, l, a):
-
-        #
-        # k = 2 pi / lambda
-        #
-        # lambda = 2 pi / k = 2 d sen(th)
-        #
-        # sen(th) = lambda / (2  d)
-        #
-        # d = a/sqrt(h^2 + k^2 + l^2)
-        #
-        # sen(th) = (sqrt(h^2 + k^2 + l^2) * lambda)/(2 a)
-
-        wl = (2*math.pi/k_modulus)*1e+8
-
-        return math.asin((wl*math.sqrt(h**2+k**2+l**2))/(2*a))
-
-    ############################################################
-
-    def calculateAbsorption(self, k_mod, entry_point, origin_point, direction_versor, capillary_radius, displacement_h, displacement_v):
-
-        absorption = 0
-
-        #
-        # calcolo intersezione con superficie del capillare:
-        #
-        # x = xo + x' t
-        # y = yo + y' t
-        # z = zo + z' t
-        #
-        # (y-dh)^2 + (z-dv)^2 = (Dc/2)^2
-        #
-
-        x_0 = origin_point[0]
-        y_0 = origin_point[1]
-        z_0 = origin_point[2]
-
-        k_1 = direction_versor[1]/direction_versor[0]
-        k_2 = direction_versor[2]/direction_versor[0]
-
-        #
-        # parametri a b c per l'equazione a(x-x0)^2 + b(x-x0) + c = 0
-        #
-
-        a = (k_1**2 + k_2**2)
-        b = 2*(k_1*(y_0+displacement_h) + k_2*(z_0+displacement_v))
-        c = (y_0**2 + z_0**2 + 2*displacement_h*y_0 + 2*displacement_v*z_0) - capillary_radius**2 + (displacement_h**2 + displacement_v**2)
-
-        discriminant = b**2 - 4*a*c
-
-        if (discriminant > 0):
-
-            # equazioni risolte per x-x0
-            x_1 = (-b + math.sqrt(discriminant))/(2*a) # (x-x0)_1
-            x_2 = (-b - math.sqrt(discriminant))/(2*a) # (x-x0)_2
-
-            x_sol = 0
-            y_sol = 0
-            z_sol = 0
-
-
-            # solutions only with z > 0 and
-            # se y-y0 > 0 allora il versore deve avere y' > 0
-            # se y-y0 < 0 allora il versore deve avere y' < 0
-
-            z_1 = z_0 + k_2*x_1
-
-            find_solution = False
-
-            if (z_1 >= 0 or (z_1 < 0 and direction_versor[1] > 0)):
-                if (numpy.sign((k_1*x_1))==numpy.sign(direction_versor[1])):
-                    x_sol = x_1 + x_0
-                    y_sol = y_0 + k_1*x_1
-                    z_sol = z_1
-
-                    find_solution = True
-
-            if not find_solution:
-                z_2 = z_0 + k_2*x_2
-
-                if (z_2 >= 0 or (z_1 < 0 and direction_versor[1] > 0)):
-                    if (numpy.sign((k_1*x_2))==numpy.sign(direction_versor[1])):
-                        x_sol = x_2 + x_0
-                        y_sol = y_0 + k_1*x_2
-                        z_sol = z_2
-
-                        find_solution = True
-
-            if find_solution:
-                wavelength = (2*math.pi/k_mod)*1e+8 # in Angstrom
-
-                exit_point = [x_sol, y_sol, z_sol]
-
-                distance = min((ShadowMath.point_distance(entry_point, origin_point) + ShadowMath.point_distance(origin_point, exit_point)), capillary_radius*2)
-
-                absorption = self.getTransmittance(distance, wavelength)*self.absorption_normalization_factor
-            else:
-                absorption = 0 # kill the ray
-
-        return absorption
 
     ############################################################
 
@@ -1336,18 +1109,393 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     ############################################################
 
+    def calculateSignal(self, angle_index):
+        return int(self.counts[angle_index] + self.noise[angle_index])
+
+    ############################################################
+
+    def calculateStatisticError(self, angle_index):
+        error_on_counts = 0.0
+        if self.points_per_bin[angle_index] > 0:
+            error_on_counts = math.sqrt(max((self.counts[angle_index]**2-self.squared_counts[angle_index])/self.points_per_bin[angle_index], 0)) # RANDOM-GAUSSIAN
+
+        error_on_noise = math.sqrt(self.noise[angle_index]) # POISSON
+
+        return math.sqrt(error_on_counts**2 + error_on_noise**2)
+
+    ############################################################
+    # PHYSICAL CALCULATIONS
+    ############################################################
+
+    def calculateBraggAngle(self, k_modulus, h, k, l, a):
+
+        #
+        # k = 2 pi / lambda
+        #
+        # lambda = 2 pi / k = 2 d sen(th)
+        #
+        # sen(th) = lambda / (2  d)
+        #
+        # d = a/sqrt(h^2 + k^2 + l^2)
+        #
+        # sen(th) = (sqrt(h^2 + k^2 + l^2) * lambda)/(2 a)
+
+        wl = (2*math.pi/k_modulus)*1e+8
+
+        return math.asin((wl*math.sqrt(h**2+k**2+l**2))/(2*a))
+
+    ############################################################
+
+    def calculateAbsorption(self, k_mod, entry_point, origin_point, direction_versor, capillary_radius, displacement_h, displacement_v):
+
+        absorption = 0
+
+        #
+        # calcolo intersezione con superficie del capillare:
+        #
+        # x = xo + x' t
+        # y = yo + y' t
+        # z = zo + z' t
+        #
+        # (y-dh)^2 + (z-dv)^2 = (Dc/2)^2
+        #
+
+        x_0 = origin_point[0]
+        y_0 = origin_point[1]
+        z_0 = origin_point[2]
+
+        k_1 = direction_versor[1]/direction_versor[0]
+        k_2 = direction_versor[2]/direction_versor[0]
+
+        #
+        # parametri a b c per l'equazione a(x-x0)^2 + b(x-x0) + c = 0
+        #
+
+        a = (k_1**2 + k_2**2)
+        b = 2*(k_1*(y_0+displacement_h) + k_2*(z_0+displacement_v))
+        c = (y_0**2 + z_0**2 + 2*displacement_h*y_0 + 2*displacement_v*z_0) - capillary_radius**2 + (displacement_h**2 + displacement_v**2)
+
+        discriminant = b**2 - 4*a*c
+
+        if (discriminant > 0):
+
+            # equazioni risolte per x-x0
+            x_1 = (-b + math.sqrt(discriminant))/(2*a) # (x-x0)_1
+            x_2 = (-b - math.sqrt(discriminant))/(2*a) # (x-x0)_2
+
+            x_sol = 0
+            y_sol = 0
+            z_sol = 0
+
+
+            # solutions only with z > 0 and
+            # se y-y0 > 0 allora il versore deve avere y' > 0
+            # se y-y0 < 0 allora il versore deve avere y' < 0
+
+            z_1 = z_0 + k_2*x_1
+
+            find_solution = False
+
+            if (z_1 >= 0 or (z_1 < 0 and direction_versor[1] > 0)):
+                if (numpy.sign((k_1*x_1))==numpy.sign(direction_versor[1])):
+                    x_sol = x_1 + x_0
+                    y_sol = y_0 + k_1*x_1
+                    z_sol = z_1
+
+                    find_solution = True
+
+            if not find_solution:
+                z_2 = z_0 + k_2*x_2
+
+                if (z_2 >= 0 or (z_1 < 0 and direction_versor[1] > 0)):
+                    if (numpy.sign((k_1*x_2))==numpy.sign(direction_versor[1])):
+                        x_sol = x_2 + x_0
+                        y_sol = y_0 + k_1*x_2
+                        z_sol = z_2
+
+                        find_solution = True
+
+            if find_solution:
+                wavelength = (2*math.pi/k_mod)*1e+8 # in Angstrom
+
+                exit_point = [x_sol, y_sol, z_sol]
+
+                distance = min((ShadowMath.point_distance(entry_point, origin_point) + ShadowMath.point_distance(origin_point, exit_point)), capillary_radius*2)
+
+                absorption = self.getTransmittance(distance, wavelength)*self.absorption_normalization_factor
+            else:
+                absorption = 0 # kill the ray
+
+        return absorption
+
+    ############################################################
+
+    def getTransmittance(self, path, wavelength):
+        mu = xraylib.CS_Total_CP(self.getChemicalFormula(self.sample_material), 12.397639/wavelength)
+        rho = self.getDensity(self.sample_material)*self.packing_factor
+
+        return math.exp(-mu*rho*path)
+
+    ############################################################
+
+    def calculateLPFactor(self, twotheta_deg, bragg_angle):
+        twotheta_mon = math.radians(self.monochromator_angle)
+        twotheta = math.radians(twotheta_deg)
+
+        lorentz_factor = 1/(math.sin(twotheta/2)*math.sin(bragg_angle))
+
+        polarization_factor_num = (1 - self.degree_of_polarization) + ((1 + self.degree_of_polarization)*(math.cos(twotheta)**2)*(math.cos(twotheta_mon)**2))
+        polarization_factor_den = 1 + math.cos(twotheta_mon)**2
+
+        polarization_factor = polarization_factor_num/polarization_factor_den
+
+        return lorentz_factor*polarization_factor
+
+    ############################################################
+    # ACCESSORY METHODS
+    ############################################################
+
+    def initialize(self):
+        steps = range(0, math.floor((self.stop_angle_na - self.start_angle_na) / self.step) + 1)
+
+        self.start_angle = self.start_angle_na + self.shift_2theta
+        self.stop_angle = self.stop_angle_na + self.shift_2theta
+
+        if self.keep_result == 0 or len(self.twotheta_angles) == 0 or self.reset_button_pressed:
+            self.twotheta_angles = []
+            self.counts = []
+            self.noise = []
+            self.squared_counts = []
+            self.points_per_bin = []
+            self.lorentz_polarization_factors = []
+
+            for step_index in steps:
+                self.twotheta_angles.append(self.start_angle + step_index * self.step)
+                self.counts.append(0)
+                self.noise.append(0)
+                self.squared_counts.append(0)
+                self.points_per_bin.append(0)
+                self.lorentz_polarization_factors.append(1.0)
+
+            self.twotheta_angles = numpy.array(self.twotheta_angles)
+            self.counts = numpy.array(self.counts)
+            self.noise = numpy.array(self.noise)
+            self.squared_counts = numpy.array(self.squared_counts)
+            self.points_per_bin = numpy.array(self.points_per_bin)
+            self.lorentz_polarization_factors = numpy.array(self.lorentz_polarization_factors)
+
+        self.reset_button_pressed = False
+
+        self.resetCurrentCounts(steps)
+
+        return steps
+
+    ############################################################
+
+    def initializeLorentzPolarizationFactor(self, avg_k_modulus, lattice_parameter, reflections):
+
+        max_position = len(self.twotheta_angles) - 1
+
+        for reflection in reflections:
+
+            theta_bragg = self.calculateBraggAngle(avg_k_modulus, reflection.h, reflection.k, reflection.l, lattice_parameter)
+
+            theta_lim_inf = math.degrees(2*math.degrees(theta_bragg) - 0.1)
+            theta_lim_sup = math.degrees(2*math.degrees(theta_bragg) + 0.1)
+
+            if (theta_lim_inf < self.stop_angle and theta_lim_sup > self.start_angle):
+                n_steps_inf = math.floor((max(theta_lim_inf, self.start_angle) - self.start_angle) / self.step)
+                n_steps_sup = math.ceil((min(theta_lim_sup, self.stop_angle) - self.start_angle) / self.step)
+
+                steps_between_limits = range(0, n_steps_sup - n_steps_inf)
+
+                for n_step in steps_between_limits:
+                    twotheta = self.start_angle + (n_steps_inf + n_step) * self.step
+                    position = min(n_steps_inf + n_step, max_position)
+
+                    self.lorentz_polarization_factors[position] = self.calculateLPFactor(twotheta, theta_bragg)
+
+    ############################################################
+
+    def resetCurrentCounts(self, steps):
+        self.current_counts = []
+        for step_index in steps:
+            self.current_counts.append(0)
+
+    ############################################################
+
+    def writeOutFile(self):
+
+        directory_out = os.getcwd() + '/Output'
+
+        if not os.path.exists(directory_out): os.mkdir(directory_out)
+
+        output_file_name = str(self.output_file_name).strip()
+
+        if output_file_name == "":
+            out_file = open(directory_out + '/XRD_Profile.xy',"w")
+        else:
+            out_file = open(directory_out + '/' + output_file_name,"w")
+
+        out_file.write("tth counts error\n")
+
+        for angle_index in range(0, len(self.twotheta_angles)):
+            if not self.run_simulation: break
+            out_file.write(str(self.twotheta_angles[angle_index]) + " "
+                           + str(self.calculateSignal(angle_index)) + " "
+                           + str(self.calculateStatisticError(angle_index))
+                           + "\n")
+            out_file.flush()
+
+        out_file.close()
+
+    ############################################################
+
+    def backupOutFile(self):
+
+        directory_out = os.getcwd() + '/Output'
+
+        srcfile = directory_out + '/XRD_Profile.xy'
+        bkpfile = directory_out + '/XRD_Profile_BKP.xy'
+
+        if not os.path.exists(directory_out): return
+        if not os.path.exists(srcfile): return
+        if os.path.exists(bkpfile): os.remove(bkpfile)
+
+        shutil.copyfile(srcfile, bkpfile)
+
+    ############################################################
+    # MATERIALS DB
+    ############################################################
+
+    def getChemicalFormula(self, material):
+        if material < len(self.materials):
+            return self.materials[material].chemical_formula
+        else:
+            return None
+
+    ############################################################
+
+    def getLatticeParameter(self, material):
+        if material < len(self.materials):
+            return self.materials[material].lattice_parameter
+        else:
+            return -1
+
+    ############################################################
+
+    def getDensity(self, material):
+        if material < len(self.materials):
+            return self.materials[material].density
+        else:
+            return -1
+
+    ############################################################
+
+    def getReflections(self, material, number_of_peaks):
+        reflections = []
+
+        if material < len(self.materials):
+            if number_of_peaks == 0:
+                max_index = len(self.materials[material].reflections)
+            else:
+                max_index = min(len(self.materials[material].reflections), number_of_peaks)
+
+            for index in range(0, max_index):
+                reflections.append(self.materials[material].reflections[index])
+
+            return reflections
+        else:
+            return None
+
+    ############################################################
+
+    def readMaterialConfigurationFiles(self):
+        self.materials = []
+
+        foundMaterialFile = True
+        materialIndex = 0
+
+        directory_files = os.getcwd() + '/Files'
+
+        try:
+            while(foundMaterialFile):
+                materialFileName =  directory_files + "/material_" + str(materialIndex) + ".dat"
+
+                if not os.path.exists(materialFileName):
+                    foundMaterialFile = False
+                else:
+                    materialFile = open(materialFileName, "r")
+
+                    rows = materialFile.readlines()
+
+                    if (len(rows) > 3):
+
+                        chemical_formula = rows[0].split('#')[0].strip()
+                        density = float(rows[1].split('#')[0].strip())
+                        lattice_parameter = float(rows[2].split('#')[0].strip())
+
+                        current_material = Material(chemical_formula, density, lattice_parameter)
+
+                        for index in range(3, len(rows)):
+                            if not rows[index].strip() == "" and \
+                               not rows[index].strip().startswith('#'):
+                                row_elements = rows[index].split(',')
+
+                                h = int(row_elements[0].strip())
+                                k = int(row_elements[1].strip())
+                                l = int(row_elements[2].strip())
+
+                                rel_int = 1.0
+                                form_factor_2 = 1.0
+
+                                if (len(row_elements)>3):
+                                    rel_int = float(row_elements[3].strip())
+                                if (len(row_elements)>4):
+                                    form_factor_2 = float(row_elements[4].strip())
+
+                                current_material.reflections.append(Reflection(h, k, l, relative_intensity=rel_int, form_factor_2=form_factor_2))
+
+                        self.materials.append(current_material)
+
+                    materialIndex += 1
+
+        except Exception as err:
+            raise Exception("Problems reading Materials Configuration file: {0}".format(err))
+        except:
+            raise Exception("Unexpected error reading Materials Configuration file: ", sys.exc_info()[0])
+
+    ############################################################
+    ############################################################
+    ############################################################
+
+class Material:
+    chemical_formula=""
+    density = 0.0
+    lattice_parameter=0.0
+
+    reflections = []
+
+    def __init__(self, chemical_formula, density, lattice_parameter):
+        self.chemical_formula=chemical_formula
+        self.density=density
+        self.lattice_parameter=lattice_parameter
+        self.reflections=[]
+
+
 class Reflection:
     h=0
     k=0
     l=0
     relative_intensity=1.0
+    form_factor_2=0.0
 
-    def __init__(self, h, k, l, relative_intensity=1.0):
+    def __init__(self, h, k, l, relative_intensity=1.0, form_factor_2=0.0):
         self.h=h
         self.k=k
         self.l=l
         self.relative_intensity=relative_intensity
-
+        self.form_factor_2=form_factor_2
 
 if __name__ == "__main__":
     a = QApplication(sys.argv)
