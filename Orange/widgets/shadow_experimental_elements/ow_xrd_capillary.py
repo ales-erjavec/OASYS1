@@ -89,8 +89,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     normalize = Setting(1)
     output_file_name = Setting('XRD_Profile.xy')
 
-
     add_lorentz_polarization_factor = Setting(1)
+    pm2k_fullprof = Setting(0)
     degree_of_polarization = Setting(0.95)
     monochromator_angle = Setting(28.446)
 
@@ -132,7 +132,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     current_counts = []
     squared_counts = []
     points_per_bin = []
-    bragg_angles = []
     counts = []
     noise = []
 
@@ -245,7 +244,13 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         self.box_polarization =  ShadowGui.widgetBox(box_beam, "", addSpace=True, orientation="vertical")
 
-        ShadowGui.lineEdit(self.box_polarization, self, "degree_of_polarization", "Degree of Polarization [(Ih-Iv)/(Ih+Iv)]", labelWidth=350, valueType=float, orientation="horizontal")
+        gui.comboBox(self.box_polarization, self, "pm2k_fullprof", label="Kind of Calculation", labelWidth=370, items=["PM2K", "FULLPROF"], sendSelectedValue=False, orientation="horizontal", callback=self.setKindOfCalculation)
+
+        self.box_degree_of_polarization_pm2k =  ShadowGui.widgetBox(self.box_polarization, "", addSpace=True, orientation="vertical")
+        ShadowGui.lineEdit(self.box_degree_of_polarization_pm2k, self, "degree_of_polarization", "Degree of Polarization [(Ih-Iv)/(Ih+Iv)]", labelWidth=350, valueType=float, orientation="horizontal")
+        self.box_degree_of_polarization_fullprof =  ShadowGui.widgetBox(self.box_polarization, "", addSpace=True, orientation="vertical")
+        ShadowGui.lineEdit(self.box_degree_of_polarization_fullprof, self, "degree_of_polarization", "K Factor", labelWidth=350, valueType=float, orientation="horizontal")
+
         ShadowGui.lineEdit(self.box_polarization, self, "monochromator_angle", "Monochromator 2Theta Angle (deg)", labelWidth=300, valueType=float, orientation="horizontal")
 
         self.setPolarization()
@@ -427,8 +432,13 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     def setNumberOfPeaks(self):
         self.le_number_of_peaks.setEnabled(self.set_number_of_peaks == 1)
 
+    def setKindOfCalculation(self):
+        self.box_degree_of_polarization_pm2k.setVisible(self.pm2k_fullprof==0)
+        self.box_degree_of_polarization_fullprof.setVisible(self.pm2k_fullprof==1)
+
     def setPolarization(self):
         self.box_polarization.setVisible(self.add_lorentz_polarization_factor == 1)
+        if (self.add_lorentz_polarization_factor==1): self.setKindOfCalculation()
 
     def setAddBackground(self):
         self.box_background_1_hidden.setVisible(self.add_background == 0)
@@ -508,11 +518,10 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             cursor = range(0, len(self.counts))
 
             for angle_index in cursor:
-                self.current_counts[angle_index] = 0
-                self.counts[angle_index] = 0
-                self.squared_counts[angle_index] = 0
+                self.current_counts[angle_index] = 0.0
+                self.counts[angle_index] = 0.0
+                self.squared_counts[angle_index] = 0.0
                 self.points_per_bin[angle_index] = 0
-                self.bragg_angles[angle_index] = 0.0
 
             cursor = range(0, len(self.noise))
 
@@ -558,6 +567,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             go_input_beam.beam.rays = copy.deepcopy(self.input_beam.beam.rays[go])
 
             lattice_parameter = self.getLatticeParameter(self.sample_material)
+            debye_waller_B = self.getDebyeWallerB(self.sample_material)
 
             if self.set_number_of_peaks == 1:
                 reflections = self.getReflections(self.sample_material, self.number_of_peaks)
@@ -590,9 +600,9 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             theta_slit = math.atan(self.vertical_acceptance_1/self.D_1)
 
             avg_k_modulus = numpy.average(go_input_beam.beam.rays[:,10])
+            avg_wavelength = (2*math.pi/avg_k_modulus)*1e+8 # in Angstrom
 
             if self.calculate_absorption == 1:
-                avg_wavelength = (2*math.pi/avg_k_modulus)*1e+8 # in Angstrom
                 self.absorption_normalization_factor = 1/self.getTransmittance(capillary_radius*2, avg_wavelength)
 
             ################################
@@ -600,8 +610,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
             steps = self.initialize()
 
-            if self.add_lorentz_polarization_factor:
-                self.initializeLorentzPolarizationFactor(avg_k_modulus, lattice_parameter, reflections)
+            self.initializeIntegralIntensityFactors(avg_k_modulus, avg_wavelength, lattice_parameter, debye_waller_B, reflections)
 
             ################################
             # EXECUTION CYCLES
@@ -616,7 +625,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                 self.progressBarInit()
 
                 self.information(0, "Running XRD Capillary Simulation")
-                if (self.number_of_executions > 1):
+                if (self.incremental == 1 and self.number_of_executions > 1):
                     self.setStatusMessage("Running XRD Capillary Simulation: " + str(execution+1) + " of " + str(self.number_of_executions))
                 else:
                     self.setStatusMessage("Running XRD Capillary Simulation")
@@ -801,7 +810,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                     # genesi del nuovo raggio diffratto attenuato dell'intensità relativa e dell'assorbimento
                                     #
 
-                                    diffracted_ray = numpy.zeros(20)
+                                    diffracted_ray = numpy.zeros(19)
 
                                     diffracted_ray[0] = origin_point[0]  # X
                                     diffracted_ray[1] = origin_point[1]  # Y
@@ -837,7 +846,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                                                                                        displacement_v)
 
                                     diffracted_ray[18] = ray_intensity * reduction_factor
-                                    diffracted_ray[19] = twotheta_reflection/2
 
                                     if (self.number_of_rotated_rays == 1):
                                         diffracted_rays.append(diffracted_ray)
@@ -934,7 +942,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                 v_z_i = diffracted_ray[5]
 
                 intensity_i = diffracted_ray[18]
-                bragg_angle_i = diffracted_ray[19]
 
                 #
                 # calcolo dell'angolo di intercettato dal vettore con il piano xy
@@ -975,7 +982,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             for index in range(0, len(self.counts)):
                 if (statistic_factor != 1): self.current_counts[index] = round(self.current_counts[index] * statistic_factor)
 
-                self.counts[index] += self.current_counts[index]*self.lorentz_polarization_factors[index]
+                self.counts[index] += self.current_counts[index]*self.debye_waller_factors[index]*self.lorentz_polarization_factors[index]
 
             self.plotResult()
             self.writeOutFile()
@@ -1110,7 +1117,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     ############################################################
 
     def calculateSignal(self, angle_index):
-        return int(self.counts[angle_index] + self.noise[angle_index])
+        return round(self.counts[angle_index] + self.noise[angle_index], 0)
 
     ############################################################
 
@@ -1237,8 +1244,9 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         return math.exp(-mu*rho*path)
 
     ############################################################
+    # PM2K
 
-    def calculateLPFactor(self, twotheta_deg, bragg_angle):
+    def calculateLPFactorPM2K(self, twotheta_deg, bragg_angle, normalization=1.0):
         twotheta_mon = math.radians(self.monochromator_angle)
         twotheta = math.radians(twotheta_deg)
 
@@ -1249,7 +1257,29 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         polarization_factor = polarization_factor_num/polarization_factor_den
 
-        return lorentz_factor*polarization_factor
+        return lorentz_factor*polarization_factor/normalization
+
+    ############################################################
+    # FULL PROF
+
+    def calculateLPFactorFullProf(self, twotheta_deg, normalization=1.0):
+        twotheta_mon = math.radians(self.monochromator_angle)
+        twotheta = math.radians(twotheta_deg)
+
+        lorentz_factor = 1/(math.cos(twotheta)*math.sin(twotheta/2)**2)
+
+        polarization_factor = ((1 - self.degree_of_polarization) + (self.degree_of_polarization*(math.cos(twotheta)**2)*(math.cos(twotheta_mon)**2)))/2
+
+        return lorentz_factor*polarization_factor/normalization
+
+    ############################################################
+
+    def calculateDebyeWallerFactor(self, twotheta_deg, wavelength, B):
+
+        theta = math.radians(twotheta_deg)/2
+        M = B*(math.sin(theta)/wavelength)**2
+
+        return math.exp(-2*M)
 
     ############################################################
     # ACCESSORY METHODS
@@ -1268,14 +1298,16 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             self.squared_counts = []
             self.points_per_bin = []
             self.lorentz_polarization_factors = []
+            self.debye_waller_factors = []
 
             for step_index in steps:
                 self.twotheta_angles.append(self.start_angle + step_index * self.step)
-                self.counts.append(0)
-                self.noise.append(0)
-                self.squared_counts.append(0)
+                self.counts.append(0.0)
+                self.noise.append(0.0)
+                self.squared_counts.append(0.0)
                 self.points_per_bin.append(0)
                 self.lorentz_polarization_factors.append(1.0)
+                self.debye_waller_factors.append(1.0)
 
             self.twotheta_angles = numpy.array(self.twotheta_angles)
             self.counts = numpy.array(self.counts)
@@ -1283,6 +1315,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             self.squared_counts = numpy.array(self.squared_counts)
             self.points_per_bin = numpy.array(self.points_per_bin)
             self.lorentz_polarization_factors = numpy.array(self.lorentz_polarization_factors)
+            self.debye_waller_factors = numpy.array(self.debye_waller_factors)
 
         self.reset_button_pressed = False
 
@@ -1292,35 +1325,47 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     ############################################################
 
-    def initializeLorentzPolarizationFactor(self, avg_k_modulus, lattice_parameter, reflections):
+    def initializeIntegralIntensityFactors(self, avg_k_modulus, avg_wavelength, lattice_parameter, debye_waller_B, reflections):
 
-        max_position = len(self.twotheta_angles) - 1
+        if len(reflections) > 0:
+            max_position = len(self.twotheta_angles) - 1
 
-        for reflection in reflections:
+            if self.pm2k_fullprof == 0:
+                normalization = self.calculateLPFactorPM2K(self.start_angle, self.calculateBraggAngle(avg_k_modulus, reflections[0].h, reflections[0].k, reflections[0].l, lattice_parameter))
+            else:
+                normalization = self.calculateLPFactorFullProf(self.start_angle)
 
-            theta_bragg = self.calculateBraggAngle(avg_k_modulus, reflection.h, reflection.k, reflection.l, lattice_parameter)
+            for reflection in reflections:
+                theta_bragg = self.calculateBraggAngle(avg_k_modulus, reflection.h, reflection.k, reflection.l, lattice_parameter)
 
-            theta_lim_inf = math.degrees(2*math.degrees(theta_bragg) - 0.1)
-            theta_lim_sup = math.degrees(2*math.degrees(theta_bragg) + 0.1)
+                theta_lim_inf = 2*math.degrees(theta_bragg) - 0.1
+                theta_lim_sup = 2*math.degrees(theta_bragg) + 0.1
 
-            if (theta_lim_inf < self.stop_angle and theta_lim_sup > self.start_angle):
-                n_steps_inf = math.floor((max(theta_lim_inf, self.start_angle) - self.start_angle) / self.step)
-                n_steps_sup = math.ceil((min(theta_lim_sup, self.stop_angle) - self.start_angle) / self.step)
+                if (theta_lim_inf < self.stop_angle and theta_lim_sup > self.start_angle):
+                    n_steps_inf = math.floor((max(theta_lim_inf, self.start_angle) - self.start_angle) / self.step)
+                    n_steps_sup = math.ceil((min(theta_lim_sup, self.stop_angle) - self.start_angle) / self.step)
 
-                steps_between_limits = range(0, n_steps_sup - n_steps_inf)
+                    steps_between_limits = range(0, n_steps_sup - n_steps_inf)
 
-                for n_step in steps_between_limits:
-                    twotheta = self.start_angle + (n_steps_inf + n_step) * self.step
-                    position = min(n_steps_inf + n_step, max_position)
 
-                    self.lorentz_polarization_factors[position] = self.calculateLPFactor(twotheta, theta_bragg)
+                    for n_step in steps_between_limits:
+                        twotheta = self.start_angle + (n_steps_inf + n_step) * self.step
+                        position = min(n_steps_inf + n_step, max_position)
+
+                        self.debye_waller_factors[position] = self.calculateDebyeWallerFactor(twotheta, avg_wavelength, debye_waller_B)
+                        if self.add_lorentz_polarization_factor:
+                            if self.pm2k_fullprof == 0:
+                                self.lorentz_polarization_factors[position] = self.calculateLPFactorPM2K(twotheta, theta_bragg, normalization=normalization)
+                            else:
+                                self.lorentz_polarization_factors[position] = self.calculateLPFactorFullProf(twotheta, normalization=normalization)
+
 
     ############################################################
 
     def resetCurrentCounts(self, steps):
         self.current_counts = []
         for step_index in steps:
-            self.current_counts.append(0)
+            self.current_counts.append(0.0)
 
     ############################################################
 
@@ -1392,6 +1437,14 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     ############################################################
 
+    def getDebyeWallerB(self, material):
+        if material < len(self.materials):
+            return self.materials[material].debye_waller_B
+        else:
+            return None
+
+    ############################################################
+
     def getReflections(self, material, number_of_peaks):
         reflections = []
 
@@ -1434,10 +1487,11 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                         chemical_formula = rows[0].split('#')[0].strip()
                         density = float(rows[1].split('#')[0].strip())
                         lattice_parameter = float(rows[2].split('#')[0].strip())
+                        debye_waller_B = float(rows[3].split('#')[0].strip())
 
-                        current_material = Material(chemical_formula, density, lattice_parameter)
+                        current_material = Material(chemical_formula, density, lattice_parameter, debye_waller_B)
 
-                        for index in range(3, len(rows)):
+                        for index in range(4, len(rows)):
                             if not rows[index].strip() == "" and \
                                not rows[index].strip().startswith('#'):
                                 row_elements = rows[index].split(',')
@@ -1473,13 +1527,15 @@ class Material:
     chemical_formula=""
     density = 0.0
     lattice_parameter=0.0
+    debye_waller_B=0.0
 
     reflections = []
 
-    def __init__(self, chemical_formula, density, lattice_parameter):
+    def __init__(self, chemical_formula, density, lattice_parameter, debye_waller_B):
         self.chemical_formula=chemical_formula
         self.density=density
         self.lattice_parameter=lattice_parameter
+        self.debye_waller_B=debye_waller_B
         self.reflections=[]
 
 
