@@ -1376,10 +1376,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
             if self.add_lorentz_polarization_factor:
                 if self.pm2k_fullprof == 0:
-                    print("PM2K")
                     normalization = self.calculateLPFactorPM2K(self.start_angle, self.calculateBraggAngle(avg_k_modulus, reflections[0].h, reflections[0].k, reflections[0].l, lattice_parameter))
                 else:
-                    print("FULLPROF")
                     normalization = self.calculateLPFactorFullProf(self.start_angle)
 
             if self.add_debye_waller_factor:
@@ -1387,8 +1385,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                     debye_waller_B = self.getDebyeWallerB(self.sample_material)
                 else:
                     debye_waller_B = self.new_debye_waller_B
-
-                print("DWF", debye_waller_B)
 
             for reflection in reflections:
                 theta_bragg = self.calculateBraggAngle(avg_k_modulus, reflection.h, reflection.k, reflection.l, lattice_parameter)
