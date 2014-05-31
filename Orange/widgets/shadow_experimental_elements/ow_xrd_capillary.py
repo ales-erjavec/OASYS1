@@ -94,6 +94,11 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     degree_of_polarization = Setting(0.95)
     monochromator_angle = Setting(28.446)
 
+    add_debye_waller_factor = Setting(1)
+    use_default_dwf = Setting(1)
+    default_debye_waller_B = 0.0
+    new_debye_waller_B = Setting(0.000)
+
     add_background = Setting(0)
     n_sigma=Setting(0)
 
@@ -200,7 +205,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         for material in self.materials:
             chemical_formulas.append(material.chemical_formula)
 
-        gui.comboBox(box_sample, self, "sample_material", label="Material", items=chemical_formulas, labelWidth=300, sendSelectedValue=False, orientation="horizontal")
+        gui.comboBox(box_sample, self, "sample_material", label="Material", items=chemical_formulas, labelWidth=300, sendSelectedValue=False, orientation="horizontal", callback=self.setSampleMaterial)
 
         ShadowGui.lineEdit(box_sample, self, "packing_factor", "Packing Factor (0.0...1.0)", labelWidth=350, valueType=float, orientation="horizontal")
 
@@ -238,13 +243,13 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         box_beam = ShadowGui.widgetBox(self.tab_beam, "Lorentz-Polarization Factor", addSpace=True, orientation="vertical")
 
-        gui.comboBox(box_beam, self, "add_lorentz_polarization_factor", label="Add L.P. Factor", labelWidth=370, items=["No", "Yes"], sendSelectedValue=False, orientation="horizontal", callback=self.setPolarization)
+        gui.comboBox(box_beam, self, "add_lorentz_polarization_factor", label="Add Lorentz-Polarization Factor", labelWidth=370, items=["No", "Yes"], sendSelectedValue=False, orientation="horizontal", callback=self.setPolarization)
 
         gui.separator(box_beam)
 
         self.box_polarization =  ShadowGui.widgetBox(box_beam, "", addSpace=True, orientation="vertical")
 
-        gui.comboBox(self.box_polarization, self, "pm2k_fullprof", label="Kind of Calculation", labelWidth=370, items=["PM2K", "FULLPROF"], sendSelectedValue=False, orientation="horizontal", callback=self.setKindOfCalculation)
+        gui.comboBox(self.box_polarization, self, "pm2k_fullprof", label="Kind of Calculation", labelWidth=340, items=["PM2K", "FULLPROF"], sendSelectedValue=False, orientation="horizontal", callback=self.setKindOfCalculation)
 
         self.box_degree_of_polarization_pm2k =  ShadowGui.widgetBox(self.box_polarization, "", addSpace=True, orientation="vertical")
         ShadowGui.lineEdit(self.box_degree_of_polarization_pm2k, self, "degree_of_polarization", "Degree of Polarization [(Ih-Iv)/(Ih+Iv)]", labelWidth=350, valueType=float, orientation="horizontal")
@@ -254,6 +259,31 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         ShadowGui.lineEdit(self.box_polarization, self, "monochromator_angle", "Monochromator 2Theta Angle (deg)", labelWidth=300, valueType=float, orientation="horizontal")
 
         self.setPolarization()
+
+        box_beam_2 = ShadowGui.widgetBox(self.tab_beam, "Debye-Waller Factor", addSpace=True, orientation="vertical")
+
+        gui.comboBox(box_beam_2, self, "add_debye_waller_factor", label="Add Debye-Waller Factor", labelWidth=370, items=["No", "Yes"], sendSelectedValue=False, orientation="horizontal", callback=self.setDebyeWallerFactor)
+
+        gui.separator(box_beam_2)
+
+        self.box_debye_waller =  ShadowGui.widgetBox(box_beam_2, "", addSpace=True, orientation="vertical")
+
+        gui.comboBox(self.box_debye_waller, self, "use_default_dwf", label="Use Stored D.W.F. (B) [Angstrom-2]", labelWidth=370, items=["No", "Yes"], sendSelectedValue=False, orientation="horizontal", callback=self.setUseDefaultDWF)
+
+        self.box_use_default_dwf_1 =  ShadowGui.widgetBox(self.box_debye_waller, "", addSpace=True, orientation="vertical")
+        ShadowGui.lineEdit(self.box_use_default_dwf_1, self, "new_debye_waller_B", "Debye-Waller Factor (B)", labelWidth=300, valueType=float, orientation="horizontal")
+        self.box_use_default_dwf_2 =  ShadowGui.widgetBox(self.box_debye_waller, "", addSpace=True, orientation="vertical")
+        le_dwf = ShadowGui.lineEdit(self.box_use_default_dwf_2, self, "default_debye_waller_B", "Stored Debye-Waller Factor (B) [Angstrom-2]", labelWidth=300, valueType=float, orientation="horizontal")
+        le_dwf.setReadOnly(True)
+        font = QFont(le_dwf.font())
+        font.setBold(True)
+        le_dwf.setFont(font)
+        palette = QPalette(le_dwf.palette())
+        palette.setColor(QPalette.Text, QColor('dark blue'))
+        palette.setColor(QPalette.Base, QColor(243, 240, 160))
+        le_dwf.setPalette(palette)
+
+        self.setDebyeWallerFactor()
 
         #####################
 
@@ -406,8 +436,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         self.setIncremental()
         self.setNumberOfPeaks()
         self.setPolarization()
+        self.setDebyeWallerFactor()
         self.setAddBackground()
-
 
     def setTabsAndButtonEnabled(self, enabled=True):
         self.tab_simulation.setEnabled(enabled)
@@ -432,6 +462,9 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     def setNumberOfPeaks(self):
         self.le_number_of_peaks.setEnabled(self.set_number_of_peaks == 1)
 
+    def setSampleMaterial(self):
+        self.default_debye_waller_B = self.getDebyeWallerB(self.sample_material)
+
     def setKindOfCalculation(self):
         self.box_degree_of_polarization_pm2k.setVisible(self.pm2k_fullprof==0)
         self.box_degree_of_polarization_fullprof.setVisible(self.pm2k_fullprof==1)
@@ -439,6 +472,16 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     def setPolarization(self):
         self.box_polarization.setVisible(self.add_lorentz_polarization_factor == 1)
         if (self.add_lorentz_polarization_factor==1): self.setKindOfCalculation()
+
+    def setUseDefaultDWF(self):
+        self.box_use_default_dwf_1.setVisible(self.use_default_dwf==0)
+        self.box_use_default_dwf_2.setVisible(self.use_default_dwf==1)
+
+    def setDebyeWallerFactor(self):
+        self.box_debye_waller.setVisible(self.add_debye_waller_factor == 1)
+        if (self.add_debye_waller_factor==1):
+            self.setUseDefaultDWF()
+            self.setSampleMaterial()
 
     def setAddBackground(self):
         self.box_background_1_hidden.setVisible(self.add_background == 0)
@@ -544,6 +587,17 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         try:
             if self.input_beam is None: raise Exception("No input beam, run the previous simulation first")
 
+            go = numpy.where(self.input_beam.beam.rays[:,9] == 1)
+
+            go_input_beam = Orange.shadow.ShadowBeam()
+            go_input_beam.beam.rays = copy.deepcopy(self.input_beam.beam.rays[go])
+
+            number_of_input_rays = len(go_input_beam.beam.rays)
+
+            if number_of_input_rays == 0: raise Exception("No good rays, modify the beamline simulation")
+
+            input_rays = range(0, number_of_input_rays)
+
             self.checkFields()
 
             if (self.debug_mode): self.debug_file_1 = open(os.getcwd() + '/Output/generated_rays.dat', 'w')
@@ -561,21 +615,12 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             ################################
             # VALUE CALCULATED ONCE
 
-            go = numpy.where(self.input_beam.beam.rays[:,9] == 1)
-
-            go_input_beam = Orange.shadow.ShadowBeam()
-            go_input_beam.beam.rays = copy.deepcopy(self.input_beam.beam.rays[go])
-
             lattice_parameter = self.getLatticeParameter(self.sample_material)
-            debye_waller_B = self.getDebyeWallerB(self.sample_material)
 
             if self.set_number_of_peaks == 1:
                 reflections = self.getReflections(self.sample_material, self.number_of_peaks)
             else:
                 reflections = self.getReflections(self.sample_material, 0)
-
-            number_of_input_rays = len(go_input_beam.beam.rays)
-            input_rays = range(0, number_of_input_rays)
 
             # distances in CM
 
@@ -610,7 +655,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
             steps = self.initialize()
 
-            self.initializeIntegralIntensityFactors(avg_k_modulus, avg_wavelength, lattice_parameter, debye_waller_B, reflections)
+            self.initializeIntegralIntensityFactors(avg_k_modulus, avg_wavelength, lattice_parameter, reflections)
 
             ################################
             # EXECUTION CYCLES
@@ -671,7 +716,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             QtGui.QMessageBox.critical(self, "QMessageBox.critical()",
                 exception.args[0],
                 QtGui.QMessageBox.Ok)
-            raise exception
 
     #######################################################
 
@@ -969,8 +1013,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                         if self.isCollectedRay(math.radians(twotheta_angle), x_0_i, y_0_i, z_0_i, v_x_i, v_y_i, v_z_i):
                             position = min(n_steps_inf + n_step, max_position)
 
-                            self.current_counts[position] += round(intensity_i)
-                            self.squared_counts[position] += round(intensity_i)**2
+                            self.current_counts[position] += intensity_i
+                            self.squared_counts[position] += intensity_i**2
                             self.points_per_bin[position] += 1
 
                 bar_value += percentage_fraction
@@ -980,7 +1024,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             if (self.normalize): statistic_factor = 1 / (self.number_of_origin_points * self.number_of_rotated_rays)
 
             for index in range(0, len(self.counts)):
-                if (statistic_factor != 1): self.current_counts[index] = round(self.current_counts[index] * statistic_factor)
+                if (statistic_factor != 1): self.current_counts[index] = self.current_counts[index] * statistic_factor
 
                 self.counts[index] += self.current_counts[index]*self.debye_waller_factors[index]*self.lorentz_polarization_factors[index]
 
@@ -1117,7 +1161,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     ############################################################
 
     def calculateSignal(self, angle_index):
-        return round(self.counts[angle_index] + self.noise[angle_index], 0)
+        return round(self.counts[angle_index] + self.noise[angle_index], 2)
 
     ############################################################
 
@@ -1325,15 +1369,26 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     ############################################################
 
-    def initializeIntegralIntensityFactors(self, avg_k_modulus, avg_wavelength, lattice_parameter, debye_waller_B, reflections):
+    def initializeIntegralIntensityFactors(self, avg_k_modulus, avg_wavelength, lattice_parameter, reflections):
 
-        if len(reflections) > 0:
+        if len(reflections) > 0 and (self.add_debye_waller_factor or self.add_lorentz_polarization_factor):
             max_position = len(self.twotheta_angles) - 1
 
-            if self.pm2k_fullprof == 0:
-                normalization = self.calculateLPFactorPM2K(self.start_angle, self.calculateBraggAngle(avg_k_modulus, reflections[0].h, reflections[0].k, reflections[0].l, lattice_parameter))
-            else:
-                normalization = self.calculateLPFactorFullProf(self.start_angle)
+            if self.add_lorentz_polarization_factor:
+                if self.pm2k_fullprof == 0:
+                    print("PM2K")
+                    normalization = self.calculateLPFactorPM2K(self.start_angle, self.calculateBraggAngle(avg_k_modulus, reflections[0].h, reflections[0].k, reflections[0].l, lattice_parameter))
+                else:
+                    print("FULLPROF")
+                    normalization = self.calculateLPFactorFullProf(self.start_angle)
+
+            if self.add_debye_waller_factor:
+                if self.use_default_dwf:
+                    debye_waller_B = self.getDebyeWallerB(self.sample_material)
+                else:
+                    debye_waller_B = self.new_debye_waller_B
+
+                print("DWF", debye_waller_B)
 
             for reflection in reflections:
                 theta_bragg = self.calculateBraggAngle(avg_k_modulus, reflection.h, reflection.k, reflection.l, lattice_parameter)
@@ -1347,18 +1402,18 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
                     steps_between_limits = range(0, n_steps_sup - n_steps_inf)
 
-
                     for n_step in steps_between_limits:
                         twotheta = self.start_angle + (n_steps_inf + n_step) * self.step
                         position = min(n_steps_inf + n_step, max_position)
 
-                        self.debye_waller_factors[position] = self.calculateDebyeWallerFactor(twotheta, avg_wavelength, debye_waller_B)
                         if self.add_lorentz_polarization_factor:
                             if self.pm2k_fullprof == 0:
                                 self.lorentz_polarization_factors[position] = self.calculateLPFactorPM2K(twotheta, theta_bragg, normalization=normalization)
                             else:
                                 self.lorentz_polarization_factors[position] = self.calculateLPFactorFullProf(twotheta, normalization=normalization)
 
+                        if self.add_debye_waller_factor:
+                            self.debye_waller_factors[position] = self.calculateDebyeWallerFactor(twotheta, avg_wavelength, debye_waller_B)
 
     ############################################################
 
