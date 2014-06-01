@@ -1376,9 +1376,11 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
             if self.add_lorentz_polarization_factor:
                 if self.pm2k_fullprof == 0:
-                    normalization = self.calculateLPFactorPM2K(self.start_angle, self.calculateBraggAngle(avg_k_modulus, reflections[0].h, reflections[0].k, reflections[0].l, lattice_parameter))
+                    normalization = self.calculateLPFactorPM2K((self.stop_angle - self.start_angle)/2,
+                                                                self.calculateBraggAngle(avg_k_modulus, reflections[0].h, reflections[0].k, reflections[0].l, lattice_parameter))
                 else:
-                    normalization = self.calculateLPFactorFullProf(self.start_angle)
+                    normalization = self.calculateLPFactorFullProf((self.stop_angle - self.start_angle)/2)
+
 
             if self.add_debye_waller_factor:
                 if self.use_default_dwf:
@@ -1551,15 +1553,15 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                 k = int(row_elements[1].strip())
                                 l = int(row_elements[2].strip())
 
-                                rel_int = 1.0
+                                relative_intensity = 1.0
                                 form_factor_2 = 1.0
 
                                 if (len(row_elements)>3):
-                                    rel_int = float(row_elements[3].strip())
+                                    relative_intensity = float(row_elements[3].strip())
                                 if (len(row_elements)>4):
                                     form_factor_2 = float(row_elements[4].strip())
 
-                                current_material.reflections.append(Reflection(h, k, l, relative_intensity=rel_int, form_factor_2=form_factor_2))
+                                current_material.reflections.append(Reflection(h, k, l, relative_intensity=relative_intensity, form_factor_2=form_factor_2))
 
                         self.materials.append(current_material)
 
