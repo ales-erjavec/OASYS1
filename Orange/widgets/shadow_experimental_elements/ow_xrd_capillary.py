@@ -1561,7 +1561,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                 if (len(row_elements)>4):
                                     form_factor_2 = float(row_elements[4].strip())
 
-                                current_material.reflections.append(Reflection(h, k, l, relative_intensity=relative_intensity, form_factor_2=form_factor_2))
+                                current_material.reflections.append(Reflection(h, k, l, relative_intensity=relative_intensity, form_factor_2_mult=form_factor_2))
 
                         self.materials.append(current_material)
 
@@ -1597,14 +1597,14 @@ class Reflection:
     k=0
     l=0
     relative_intensity=1.0
-    form_factor_2=0.0
+    form_factor_2_mult=0.0
 
-    def __init__(self, h, k, l, relative_intensity=1.0, form_factor_2=0.0):
+    def __init__(self, h, k, l, relative_intensity=1.0, form_factor_2_mult=0.0):
         self.h=h
         self.k=k
         self.l=l
         self.relative_intensity=relative_intensity
-        self.form_factor_2=form_factor_2
+        self.form_factor_2_mult=form_factor_2_mult
 
 if __name__ == "__main__":
     a = QApplication(sys.argv)
