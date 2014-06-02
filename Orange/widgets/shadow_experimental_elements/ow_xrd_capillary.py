@@ -9,6 +9,7 @@ from PyQt4.QtGui import QApplication, qApp, QPalette, QColor, QFont
 import xraylib
 import Shadow.ShadowTools as ST
 
+import Orange.canvas.resources as resources
 from Orange.shadow.shadow_objects import ShadowTriggerIn
 from Orange.widgets.shadow_gui import ow_automatic_element
 from Orange.shadow.shadow_util import ShadowGui, ShadowMath, ShadowPhysics, ConfirmDialog
@@ -37,7 +38,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     input_beam = None
 
-    TABS_AREA_HEIGHT = 650
+    TABS_AREA_HEIGHT = 670
     TABS_AREA_WIDTH = 442
     CONTROL_AREA_WIDTH = 450
 
@@ -63,12 +64,20 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     slit_2_horizontal_displacement = Setting(0.0)
 
     detector_distance = Setting(0.0)
+
+    diffracted_arm_type = Setting(0)
+
     slit_1_distance = Setting(0.0)
     slit_1_vertical_aperture = Setting(0.0)
     slit_1_horizontal_aperture = Setting(0.0)
     slit_2_distance = Setting(0.0)
     slit_2_vertical_aperture = Setting(0.0)
     slit_2_horizontal_aperture = Setting(0.0)
+
+    analyzer_distance = Setting(0.0)
+    analyzer_bragg_angle = Setting(0.0)
+    rocking_curve_file = Setting("NONE SPECIFIED")
+
 
     start_angle_na = Setting(10.0)
     stop_angle_na = Setting(120.0)
@@ -141,6 +150,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     noise = []
 
     materials = []
+    rocking_data = []
 
     random_generator = random.Random()
 
@@ -209,21 +219,33 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         ShadowGui.lineEdit(box_sample, self, "packing_factor", "Packing Factor (0.0...1.0)", labelWidth=350, valueType=float, orientation="horizontal")
 
-        box_2theta_arm = ShadowGui.widgetBox(self.tab_physical, "2Theta Arm Parameters", addSpace=True, orientation="vertical")
+        box_2theta_arm = ShadowGui.widgetBox(self.tab_physical, "2Theta Arm Parameters", addSpace=True, orientation="vertical", height=260)
 
-        ShadowGui.lineEdit(box_2theta_arm, self, "detector_distance", "Detector Distance (cm)", labelWidth=300, tooltip="Detector Distance (cm)", valueType=float, orientation="horizontal")
+        gui.comboBox(box_2theta_arm, self, "diffracted_arm_type", label="Diffracted Arm Setup", items=["Slits", "Analyzer"], labelWidth=300, sendSelectedValue=False, orientation="horizontal", callback=self.setDiffractedArmType)
 
-        gui.separator(box_2theta_arm)
+        self.box_2theta_arm_1 = ShadowGui.widgetBox(box_2theta_arm, "", addSpace=False, orientation="vertical")
 
-        ShadowGui.lineEdit(box_2theta_arm, self, "slit_1_distance", "Slit 1 Distance from Goniometer Center (cm)", labelWidth=300, valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(box_2theta_arm, self, "slit_1_vertical_aperture", "Slit 1 Vertical Aperture (um)",  labelWidth=300, valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(box_2theta_arm, self, "slit_1_horizontal_aperture", "Slit 1 Horizontal Aperture (um)",  labelWidth=300, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_2theta_arm_1, self, "detector_distance", "Detector Distance (cm)", labelWidth=300, tooltip="Detector Distance (cm)", valueType=float, orientation="horizontal")
 
-        gui.separator(box_2theta_arm)
+        gui.separator(self.box_2theta_arm_1)
 
-        ShadowGui.lineEdit(box_2theta_arm, self, "slit_2_distance", "Slit 2 Distance from Goniometer Center (cm)", labelWidth=300, valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(box_2theta_arm, self, "slit_2_vertical_aperture", "Slit 2 Vertical Aperture (um)", labelWidth=300, valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(box_2theta_arm, self, "slit_2_horizontal_aperture", "Slit 2 Horizontal Aperture (um)", labelWidth=300, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_2theta_arm_1, self, "slit_1_distance", "Slit 1 Distance from Goniometer Center (cm)", labelWidth=300, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_2theta_arm_1, self, "slit_1_vertical_aperture", "Slit 1 Vertical Aperture (um)",  labelWidth=300, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_2theta_arm_1, self, "slit_1_horizontal_aperture", "Slit 1 Horizontal Aperture (um)",  labelWidth=300, valueType=float, orientation="horizontal")
+
+        gui.separator(self.box_2theta_arm_1)
+
+        ShadowGui.lineEdit(self.box_2theta_arm_1, self, "slit_2_distance", "Slit 2 Distance from Goniometer Center (cm)", labelWidth=300, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_2theta_arm_1, self, "slit_2_vertical_aperture", "Slit 2 Vertical Aperture (um)", labelWidth=300, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_2theta_arm_1, self, "slit_2_horizontal_aperture", "Slit 2 Horizontal Aperture (um)", labelWidth=300, valueType=float, orientation="horizontal")
+
+        self.box_2theta_arm_2 = ShadowGui.widgetBox(box_2theta_arm, "", addSpace=False, orientation="vertical")
+
+        ShadowGui.lineEdit(self.box_2theta_arm_2, self, "analyzer_distance", "Analyzer Distance", labelWidth=300, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_2theta_arm_2, self, "analyzer_bragg_angle", "Analyzer Bragg Angle",  labelWidth=300, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_2theta_arm_2, self, "rocking_curve_file", "Rocking Curve File",  labelWidth=200, valueType=str, orientation="horizontal")
+
+        self.setDiffractedArmType()
 
         box_scan = ShadowGui.widgetBox(self.tab_physical, "Scan Parameters", addSpace=True, orientation="vertical")
 
@@ -362,7 +384,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         #####################
 
-        gui.separator(self.controlArea, height=25)
+        gui.separator(self.controlArea, height=5)
 
         button_box = ShadowGui.widgetBox(self.controlArea, "", addSpace=True, orientation="horizontal", height=30)
 
@@ -458,6 +480,10 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     def setIncremental(self):
         self.le_number_of_executions.setEnabled(self.incremental == 1)
+
+    def setDiffractedArmType(self):
+        self.box_2theta_arm_1.setVisible(self.diffracted_arm_type == 0)
+        self.box_2theta_arm_2.setVisible(self.diffracted_arm_type == 1)
 
     def setNumberOfPeaks(self):
         self.le_number_of_peaks.setEnabled(self.set_number_of_peaks == 1)
@@ -643,6 +669,12 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             self.slit_2_horizontal_displacement_cm = self.slit_2_horizontal_displacement*1e-4
 
             theta_slit = math.atan(self.vertical_acceptance_1/self.D_1)
+            theta_analyzer = math.radians(1e-3)
+
+            if self.diffracted_arm_type == 0:
+                theta_limit = theta_slit
+            else:
+                theta_limit = theta_analyzer
 
             avg_k_modulus = numpy.average(go_input_beam.beam.rays[:,10])
             avg_wavelength = (2*math.pi/avg_k_modulus)*1e+8 # in Angstrom
@@ -656,6 +688,9 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             steps = self.initialize()
 
             self.initializeIntegralIntensityFactors(avg_k_modulus, avg_wavelength, lattice_parameter, reflections)
+
+            if self.diffracted_arm_type == 1:
+                self.readRockingCurveFile()
 
             ################################
             # EXECUTION CYCLES
@@ -689,7 +724,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                                                          (50/number_of_input_rays),
                                                                          reflections)
 
-                self.generateXRDPattern(bar_value, diffracted_rays, theta_slit)
+                self.generateXRDPattern(bar_value, diffracted_rays, theta_limit)
 
             if (self.debug_mode): self.debug_file_1.close()
 
@@ -716,6 +751,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             QtGui.QMessageBox.critical(self, "QMessageBox.critical()",
                 exception.args[0],
                 QtGui.QMessageBox.Ok)
+            raise exception
 
     #######################################################
 
@@ -961,7 +997,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     ############################################################
 
-    def generateXRDPattern(self, bar_value, diffracted_rays, theta_slit):
+    def generateXRDPattern(self, bar_value, diffracted_rays, theta_limit):
 
         number_of_diffracted_rays = len(diffracted_rays)
 
@@ -985,6 +1021,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                 v_y_i = diffracted_ray[4]
                 v_z_i = diffracted_ray[5]
 
+                k_modulus_i = diffracted_ray[10]
                 intensity_i = diffracted_ray[18]
 
                 #
@@ -993,11 +1030,11 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
                 theta_ray = math.atan(v_z_i / math.sqrt(v_x_i ** 2 + v_y_i ** 2))
 
-                theta_lim_inf = math.degrees(theta_ray - 3 * theta_slit)
-                theta_lim_sup = math.degrees(theta_ray + 3 * theta_slit)
+                theta_lim_inf = math.degrees(theta_ray - 5 * theta_limit)
+                theta_lim_sup = math.degrees(theta_ray + 5 * theta_limit)
 
                 # il ciclo sugli step del detector dovrebbe essere attorno a quest'angolo +- un fattore sufficiente di volte
-                # l'angolo intercettato dalla prima slit
+                # l'angolo limite indicato
 
                 if (theta_lim_inf < self.stop_angle and theta_lim_sup > self.start_angle):
                     n_steps_inf = math.floor((max(theta_lim_inf, self.start_angle) - self.start_angle) / self.step)
@@ -1010,11 +1047,19 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
                         twotheta_angle = self.start_angle + (n_steps_inf + n_step) * self.step
 
-                        if self.isCollectedRay(math.radians(twotheta_angle), x_0_i, y_0_i, z_0_i, v_x_i, v_y_i, v_z_i):
-                            position = min(n_steps_inf + n_step, max_position)
+                        position = min(n_steps_inf + n_step, max_position)
 
-                            self.current_counts[position] += intensity_i
-                            self.squared_counts[position] += intensity_i**2
+                        if self.diffracted_arm_type == 0:
+                            if self.isCollectedRaySlits(math.radians(twotheta_angle), x_0_i, y_0_i, z_0_i, v_x_i, v_y_i, v_z_i):
+
+                                self.current_counts[position] += intensity_i
+                                self.squared_counts[position] += intensity_i**2
+                                self.points_per_bin[position] += 1
+                        else:
+                            rocking_curve_intensity = self.sendRayOnAnalyzer(math.radians(twotheta_angle), y_0_i, z_0_i, v_y_i, v_z_i, k_modulus_i)
+
+                            self.current_counts[position] += intensity_i*rocking_curve_intensity
+                            self.squared_counts[position] += (intensity_i*rocking_curve_intensity)**2
                             self.points_per_bin[position] += 1
 
                 bar_value += percentage_fraction
@@ -1051,7 +1096,61 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     ############################################################
 
-    def isCollectedRay(self, twotheta_angle,
+    def sendRayOnAnalyzer(self, twotheta_angle,
+                               y_0,
+                               z_0,
+                               v_y,
+                               v_z,
+                               k_modulus):
+
+        sin_twotheta = math.sin(twotheta_angle)
+        cos_twotheta = math.cos(twotheta_angle)
+
+        y_c_s1 = self.analyzer_distance*cos_twotheta
+        z_c_s1 = self.analyzer_distance*sin_twotheta
+
+        # intersezione del raggio con il piano intercettato dalla slit
+        #
+        #  equazione piano y * cos(2th) + z * sen(2th) = D
+        #
+        #           D + [(vx/vz) * z0 - y0] * cos(2th)
+        #  z_int = -----------------------------------
+        #             sen(2th) + (vy/vz) * cos(2th)
+        #
+        #           D - z_int * sen(2th)
+        #  y_int = ---------------------
+        #               cos(2th)
+        #
+        #  x_int = x0 + (vx/vz) * (z_int - z0)
+        #
+
+        z_1_int = (self.analyzer_distance + ((v_y/v_z)*z_0 - y_0)*cos_twotheta)/(sin_twotheta + (v_y/v_z)*cos_twotheta)
+        y_1_int = (self.analyzer_distance - z_1_int*sin_twotheta)/cos_twotheta
+
+        d_1_y = y_1_int-y_c_s1
+        d_1_z = z_1_int-z_c_s1
+
+        dist_yz = math.sqrt(d_1_y*d_1_y + d_1_z*d_1_z)
+
+        if y_1_int > y_c_s1 : sign = -1.0
+        else: sign = 1.0
+
+        theta_incidence_ray = math.radians(self.analyzer_bragg_angle) + sign*math.atan(dist_yz/self.analyzer_distance)
+
+        #TODO CONFIGURABILITY
+
+        theta_bragg_ray = self.calculateBraggAngle(k_modulus, 1, 1, 1, 5.43123) # Si 111
+
+        delta_theta = theta_incidence_ray-theta_bragg_ray
+
+        rocking_curve_intensity = self.getRockingCurveIntensity(delta_theta)
+
+        return  rocking_curve_intensity
+
+
+    ############################################################
+
+    def isCollectedRaySlits(self, twotheta_angle,
                            x_0, 
                            y_0, 
                            z_0, 
@@ -1288,6 +1387,31 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         return math.exp(-mu*rho*path)
 
     ############################################################
+
+    def getRockingCurveIntensity(self, delta_theta):
+
+        if delta_theta < self.rocking_data[0].delta_theta or \
+           delta_theta > self.rocking_data[len(self.rocking_data)-1].delta_theta:
+            return 1.0e-4
+
+        intensity = 1e-4
+
+        for index in range(1, len(self.rocking_data)):
+            previous_rocking_element = self.rocking_data[index - 1]
+            next_rocking_element = self.rocking_data[index]
+
+            if delta_theta < next_rocking_element.delta_theta:
+                dist_prev = delta_theta - previous_rocking_element.delta_theta
+                dist_next = next_rocking_element.delta_theta - delta_theta
+                weight_prev = 1 - dist_prev/(dist_next+dist_prev)
+                weight_next = 1 - dist_next/(dist_next+dist_prev)
+
+                intensity = previous_rocking_element.intensity*weight_prev + next_rocking_element.intensity*weight_next
+                break
+
+        return intensity
+
+    ############################################################
     # PM2K
 
     def calculateLPFactorPM2K(self, twotheta_deg, bragg_angle, normalization=1.0):
@@ -1516,13 +1640,38 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     ############################################################
 
+    def readRockingCurveFile(self):
+        self.rocking_data = []
+
+        file_path = os.getcwd() + '/' + self.rocking_curve_file
+
+        if not os.path.exists(file_path):
+            raise Exception("Rocking Curve File not found")
+        else:
+            rocking_file = open(file_path, "r")
+
+            rows = rocking_file.readlines()
+
+            for row in rows:
+                row_elements = row.split(',')
+
+                if len(row_elements) < 2: raise Exception("Rocking Curve File malformed")
+                delta_theta = float(row_elements[0].strip())
+                intensity = float(row_elements[1].strip())
+
+                rocking_element = RockingCurveElement(delta_theta=delta_theta, intensity=intensity)
+
+                self.rocking_data.append(rocking_element)
+
+    ############################################################
+
     def readMaterialConfigurationFiles(self):
         self.materials = []
 
         foundMaterialFile = True
         materialIndex = 0
 
-        directory_files = os.getcwd() + '/Files'
+        directory_files = resources.package_dirname("Orange.widgets.shadow_experimental_elements")
 
         try:
             while(foundMaterialFile):
@@ -1576,9 +1725,18 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     ############################################################
     ############################################################
 
+class RockingCurveElement:
+    delta_theta=0.0
+    intensity=0.0
+
+    def __init__(self, delta_theta, intensity):
+        self.delta_theta=delta_theta
+        self.intensity=intensity
+
+
 class Material:
     chemical_formula=""
-    density = 0.0
+    density=0.0
     lattice_parameter=0.0
     debye_waller_B=0.0
 
