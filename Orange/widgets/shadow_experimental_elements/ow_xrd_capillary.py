@@ -99,12 +99,13 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     number_of_origin_points = Setting(1)
     number_of_rotated_rays = Setting(5)
     normalize = Setting(1)
+    degrees_around_peak = Setting(0.01)
     output_file_name = Setting('XRD_Profile.xy')
 
-    add_lorentz_polarization_factor = Setting(1)
-    pm2k_fullprof = Setting(0)
-    degree_of_polarization = Setting(0.95)
-    monochromator_angle = Setting(28.446)
+    #add_lorentz_polarization_factor = Setting(1)
+    #pm2k_fullprof = Setting(0)
+    #degree_of_polarization = Setting(0.95)
+    #monochromator_angle = Setting(28.446)
 
     add_debye_waller_factor = Setting(1)
     use_default_dwf = Setting(1)
@@ -183,6 +184,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         gui.comboBox(box_rays, self, "normalize", label="Normalize", labelWidth=370, items=["No", "Yes"], sendSelectedValue=False, orientation="horizontal")
 
+
         box_simulation = ShadowGui.widgetBox(self.tab_simulation, "Simulation Management", addSpace=True, orientation="vertical")
 
         ShadowGui.lineEdit(box_simulation, self, "output_file_name", "Output File Name", labelWidth=120, valueType=str, orientation="horizontal")
@@ -205,6 +207,10 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         palette.setColor(QPalette.Text, QColor('dark blue'))
         palette.setColor(QPalette.Base, QColor(243, 240, 160))
         self.le_current_execution.setPalette(palette)
+
+        box_ray_tracing = ShadowGui.widgetBox(self.tab_simulation, "Ray Tracing Management", addSpace=True, orientation="vertical")
+
+        ShadowGui.lineEdit(box_ray_tracing, self, "degrees_around_peak", "Degrees around Peak", labelWidth=355, valueType=float, orientation="horizontal")
 
         #####################
 
@@ -272,24 +278,24 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         #####################
 
-        box_beam = ShadowGui.widgetBox(self.tab_beam, "Lorentz-Polarization Factor", addSpace=True, orientation="vertical")
-
-        gui.comboBox(box_beam, self, "add_lorentz_polarization_factor", label="Add Lorentz-Polarization Factor", labelWidth=370, items=["No", "Yes"], sendSelectedValue=False, orientation="horizontal", callback=self.setPolarization)
-
-        gui.separator(box_beam)
-
-        self.box_polarization =  ShadowGui.widgetBox(box_beam, "", addSpace=True, orientation="vertical")
-
-        gui.comboBox(self.box_polarization, self, "pm2k_fullprof", label="Kind of Calculation", labelWidth=340, items=["PM2K", "FULLPROF"], sendSelectedValue=False, orientation="horizontal", callback=self.setKindOfCalculation)
-
-        self.box_degree_of_polarization_pm2k =  ShadowGui.widgetBox(self.box_polarization, "", addSpace=True, orientation="vertical")
-        ShadowGui.lineEdit(self.box_degree_of_polarization_pm2k, self, "degree_of_polarization", "Degree of Polarization [(Ih-Iv)/(Ih+Iv)]", labelWidth=350, valueType=float, orientation="horizontal")
-        self.box_degree_of_polarization_fullprof =  ShadowGui.widgetBox(self.box_polarization, "", addSpace=True, orientation="vertical")
-        ShadowGui.lineEdit(self.box_degree_of_polarization_fullprof, self, "degree_of_polarization", "K Factor", labelWidth=350, valueType=float, orientation="horizontal")
-
-        ShadowGui.lineEdit(self.box_polarization, self, "monochromator_angle", "Monochromator 2Theta Angle (deg)", labelWidth=300, valueType=float, orientation="horizontal")
-
-        self.setPolarization()
+        # box_beam = ShadowGui.widgetBox(self.tab_beam, "Lorentz-Polarization Factor", addSpace=True, orientation="vertical")
+        #
+        # gui.comboBox(box_beam, self, "add_lorentz_polarization_factor", label="Add Lorentz-Polarization Factor", labelWidth=370, items=["No", "Yes"], sendSelectedValue=False, orientation="horizontal", callback=self.setPolarization)
+        #
+        # gui.separator(box_beam)
+        #
+        # self.box_polarization =  ShadowGui.widgetBox(box_beam, "", addSpace=True, orientation="vertical")
+        #
+        # gui.comboBox(self.box_polarization, self, "pm2k_fullprof", label="Kind of Calculation", labelWidth=340, items=["PM2K", "FULLPROF"], sendSelectedValue=False, orientation="horizontal", callback=self.setKindOfCalculation)
+        #
+        # self.box_degree_of_polarization_pm2k =  ShadowGui.widgetBox(self.box_polarization, "", addSpace=True, orientation="vertical")
+        # ShadowGui.lineEdit(self.box_degree_of_polarization_pm2k, self, "degree_of_polarization", "Degree of Polarization [(Ih-Iv)/(Ih+Iv)]", labelWidth=350, valueType=float, orientation="horizontal")
+        # self.box_degree_of_polarization_fullprof =  ShadowGui.widgetBox(self.box_polarization, "", addSpace=True, orientation="vertical")
+        # ShadowGui.lineEdit(self.box_degree_of_polarization_fullprof, self, "degree_of_polarization", "K Factor", labelWidth=350, valueType=float, orientation="horizontal")
+        #
+        # ShadowGui.lineEdit(self.box_polarization, self, "monochromator_angle", "Monochromator 2Theta Angle (deg)", labelWidth=300, valueType=float, orientation="horizontal")
+        #
+        # self.setPolarization()
 
         box_beam_2 = ShadowGui.widgetBox(self.tab_beam, "Debye-Waller Factor", addSpace=True, orientation="vertical")
 
@@ -504,9 +510,9 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         self.box_degree_of_polarization_pm2k.setVisible(self.pm2k_fullprof==0)
         self.box_degree_of_polarization_fullprof.setVisible(self.pm2k_fullprof==1)
 
-    def setPolarization(self):
-        self.box_polarization.setVisible(self.add_lorentz_polarization_factor == 1)
-        if (self.add_lorentz_polarization_factor==1): self.setKindOfCalculation()
+    # def setPolarization(self):
+    #     self.box_polarization.setVisible(self.add_lorentz_polarization_factor == 1)
+    #     if (self.add_lorentz_polarization_factor==1): self.setKindOfCalculation()
 
     def setUseDefaultDWF(self):
         self.box_use_default_dwf_1.setVisible(self.use_default_dwf==0)
@@ -692,8 +698,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
             steps = self.initialize()
 
-            self.initializeIntegralIntensityFactors(avg_k_modulus, avg_wavelength, lattice_parameter, reflections)
-
             ################################
             # EXECUTION CYCLES
 
@@ -726,10 +730,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                                                          (50/number_of_input_rays),
                                                                          reflections)
 
-                if self.diffracted_arm_type == 0:
-                    self.generateXRDPattern(bar_value, diffracted_rays)
-                else:
-                    self.generateXRDPattern(bar_value, diffracted_rays)
+                self.generateXRDPattern(bar_value, diffracted_rays, avg_k_modulus, avg_wavelength, lattice_parameter, reflections)
 
             if (self.debug_mode): self.debug_file_1.close()
 
@@ -1002,7 +1003,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     ############################################################
 
-    def generateXRDPattern(self, bar_value, diffracted_rays, analyzer_wavelength=0.0):
+    def generateXRDPattern(self, bar_value, diffracted_rays, k_modulus, wavelength, lattice_parameter, reflections):
 
         number_of_diffracted_rays = len(diffracted_rays)
 
@@ -1011,29 +1012,73 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             diffracted_beam = ShadowBeam()
             diffracted_beam.beam.rays = numpy.array(diffracted_rays)
 
-            percentage_fraction = 50 / len(self.twotheta_angles)
+            percentage_fraction = 50 / len(reflections)
 
-            for angle_index in range(0, len(self.twotheta_angles)):
+            max_position = len(self.twotheta_angles) - 1
 
+            # if self.add_lorentz_polarization_factor:
+            #     if self.pm2k_fullprof == 0:
+            #         normalization = self.calculateLPFactorPM2K((self.stop_angle - self.start_angle)/2,
+            #                                                     self.calculateBraggAngle(k_modulus, reflections[0].h, reflections[0].k, reflections[0].l, lattice_parameter))
+            #     else:
+            #         normalization = self.calculateLPFactorFullProf((self.stop_angle - self.start_angle)/2)
+
+            if self.add_debye_waller_factor:
+                if self.use_default_dwf:
+                    debye_waller_B = self.getDebyeWallerB(self.sample_material)
+                else:
+                    debye_waller_B = self.new_debye_waller_B
+
+            for reflection in reflections:
                 if not self.run_simulation: break
 
-                if self.diffracted_arm_type == 0:
-                    out_beam = self.traceFromSlits(diffracted_beam, angle_index)
-                else:
-                    out_beam = self.traceFromAnalyzer(diffracted_beam, angle_index)
+                theta_bragg = self.calculateBraggAngle(k_modulus, reflection.h, reflection.k, reflection.l, lattice_parameter)
 
-                go_rays = out_beam.beam.rays[numpy.where(out_beam.beam.rays[:,9] == 1)]
+                theta_lim_inf = 2*math.degrees(theta_bragg) - self.degrees_around_peak
+                theta_lim_sup = 2*math.degrees(theta_bragg) + self.degrees_around_peak
 
-                for ray_index in range(0, len(go_rays)):
-                    intensity_i = go_rays[ray_index, 6]**2 + go_rays[ray_index, 7]**2 + go_rays[ray_index, 8]**2 + \
-                                  go_rays[ray_index, 15]**2 + go_rays[ray_index, 16]**2 + go_rays[ray_index, 17]**2
+                if (theta_lim_inf < self.stop_angle and theta_lim_sup > self.start_angle):
+                    n_steps_inf = math.floor((max(theta_lim_inf, self.start_angle) - self.start_angle) / self.step)
+                    n_steps_sup = math.ceil((min(theta_lim_sup, self.stop_angle) - self.start_angle) / self.step)
 
-                    self.current_counts[angle_index] += intensity_i
-                    self.squared_counts[angle_index] += intensity_i**2
-                    self.points_per_bin[angle_index] += 1
+                    n_steps = n_steps_sup - n_steps_inf
 
-                bar_value += percentage_fraction
-                self.progressBarSet(bar_value)
+                    if n_steps > 0:
+                        percentage_fraction_2 = percentage_fraction/n_steps
+
+                    for step in range(0, n_steps):
+                        angle_index = min(n_steps_inf + step, max_position)
+
+                        if self.diffracted_arm_type == 0:
+                            out_beam = self.traceFromSlits(diffracted_beam, angle_index)
+                        else:
+                            out_beam = self.traceFromAnalyzer(diffracted_beam, angle_index)
+
+                        go_rays = out_beam.beam.rays[numpy.where(out_beam.beam.rays[:,9] == 1)]
+
+                        physical_coefficent = 1.0
+
+                        # if self.add_lorentz_polarization_factor:
+                        #     if self.pm2k_fullprof == 0:
+                        #         lorentz_polarization_factor = self.calculateLPFactorPM2K(self.twotheta_angles[angle_index], theta_bragg, normalization=normalization)
+                        #     else:
+                        #         lorentz_polarization_factor = self.calculateLPFactorFullProf(self.twotheta_angles[angle_index], normalization=normalization)
+                        #
+                        #     physical_coefficent *= lorentz_polarization_factor
+
+                        if self.add_debye_waller_factor:
+                            physical_coefficent *= self.calculateDebyeWallerFactor(self.twotheta_angles[angle_index], wavelength, debye_waller_B)
+
+                        for ray_index in range(0, len(go_rays)):
+                            intensity_i = go_rays[ray_index, 6]**2 + go_rays[ray_index, 7]**2 + go_rays[ray_index, 8]**2 + \
+                                          go_rays[ray_index, 15]**2 + go_rays[ray_index, 16]**2 + go_rays[ray_index, 17]**2
+
+                            self.current_counts[angle_index] += physical_coefficent*intensity_i
+                            self.squared_counts[angle_index] += (physical_coefficent*intensity_i)**2
+                            self.points_per_bin[angle_index] += 1
+
+                        bar_value += percentage_fraction_2
+                        self.progressBarSet(bar_value)
 
             statistic_factor = 1
             if (self.normalize): statistic_factor = 1 / (self.number_of_origin_points * self.number_of_rotated_rays)
@@ -1041,7 +1086,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             for index in range(0, len(self.counts)):
                 if (statistic_factor != 1): self.current_counts[index] = self.current_counts[index] * statistic_factor
 
-                self.counts[index] += self.current_counts[index]*self.debye_waller_factors[index]*self.lorentz_polarization_factors[index]
+                self.counts[index] += self.current_counts[index]
 
             self.plotResult()
             self.writeOutFile()
@@ -1241,31 +1286,31 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     ############################################################
     # PM2K
 
-    def calculateLPFactorPM2K(self, twotheta_deg, bragg_angle, normalization=1.0):
-        twotheta_mon = math.radians(self.monochromator_angle)
-        twotheta = math.radians(twotheta_deg)
-
-        lorentz_factor = 1/(math.sin(twotheta/2)*math.sin(bragg_angle))
-
-        polarization_factor_num = (1 - self.degree_of_polarization) + ((1 + self.degree_of_polarization)*(math.cos(twotheta)**2)*(math.cos(twotheta_mon)**2))
-        polarization_factor_den = 1 + math.cos(twotheta_mon)**2
-
-        polarization_factor = polarization_factor_num/polarization_factor_den
-
-        return lorentz_factor*polarization_factor/normalization
+    # def calculateLPFactorPM2K(self, twotheta_deg, bragg_angle, normalization=1.0):
+    #     twotheta_mon = math.radians(self.monochromator_angle)
+    #     twotheta = math.radians(twotheta_deg)
+    #
+    #     lorentz_factor = 1/(math.sin(twotheta/2)*math.sin(bragg_angle))
+    #
+    #     polarization_factor_num = (1 - self.degree_of_polarization) + ((1 + self.degree_of_polarization)*(math.cos(twotheta)**2)*(math.cos(twotheta_mon)**2))
+    #     polarization_factor_den = 1 + math.cos(twotheta_mon)**2
+    #
+    #     polarization_factor = polarization_factor_num/polarization_factor_den
+    #
+    #     return lorentz_factor*polarization_factor/normalization
 
     ############################################################
     # FULL PROF
 
-    def calculateLPFactorFullProf(self, twotheta_deg, normalization=1.0):
-        twotheta_mon = math.radians(self.monochromator_angle)
-        twotheta = math.radians(twotheta_deg)
-
-        lorentz_factor = 1/(math.cos(twotheta)*math.sin(twotheta/2)**2)
-
-        polarization_factor = ((1 - self.degree_of_polarization) + (self.degree_of_polarization*(math.cos(twotheta)**2)*(math.cos(twotheta_mon)**2)))/2
-
-        return lorentz_factor*polarization_factor/normalization
+    # def calculateLPFactorFullProf(self, twotheta_deg, normalization=1.0):
+    #     twotheta_mon = math.radians(self.monochromator_angle)
+    #     twotheta = math.radians(twotheta_deg)
+    #
+    #     lorentz_factor = 1/(math.cos(twotheta)*math.sin(twotheta/2)**2)
+    #
+    #     polarization_factor = ((1 - self.degree_of_polarization) + (self.degree_of_polarization*(math.cos(twotheta)**2)*(math.cos(twotheta_mon)**2)))/2
+    #
+    #     return lorentz_factor*polarization_factor/normalization
 
     ############################################################
 
@@ -1474,52 +1519,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         self.resetCurrentCounts(steps)
 
         return steps
-
-    ############################################################
-
-    def initializeIntegralIntensityFactors(self, avg_k_modulus, avg_wavelength, lattice_parameter, reflections):
-
-        if len(reflections) > 0 and (self.add_debye_waller_factor or self.add_lorentz_polarization_factor):
-            max_position = len(self.twotheta_angles) - 1
-
-            if self.add_lorentz_polarization_factor:
-                if self.pm2k_fullprof == 0:
-                    normalization = self.calculateLPFactorPM2K((self.stop_angle - self.start_angle)/2,
-                                                                self.calculateBraggAngle(avg_k_modulus, reflections[0].h, reflections[0].k, reflections[0].l, lattice_parameter))
-                else:
-                    normalization = self.calculateLPFactorFullProf((self.stop_angle - self.start_angle)/2)
-
-
-            if self.add_debye_waller_factor:
-                if self.use_default_dwf:
-                    debye_waller_B = self.getDebyeWallerB(self.sample_material)
-                else:
-                    debye_waller_B = self.new_debye_waller_B
-
-            for reflection in reflections:
-                theta_bragg = self.calculateBraggAngle(avg_k_modulus, reflection.h, reflection.k, reflection.l, lattice_parameter)
-
-                theta_lim_inf = 2*math.degrees(theta_bragg) - 0.1
-                theta_lim_sup = 2*math.degrees(theta_bragg) + 0.1
-
-                if (theta_lim_inf < self.stop_angle and theta_lim_sup > self.start_angle):
-                    n_steps_inf = math.floor((max(theta_lim_inf, self.start_angle) - self.start_angle) / self.step)
-                    n_steps_sup = math.ceil((min(theta_lim_sup, self.stop_angle) - self.start_angle) / self.step)
-
-                    steps_between_limits = range(0, n_steps_sup - n_steps_inf)
-
-                    for n_step in steps_between_limits:
-                        twotheta = self.start_angle + (n_steps_inf + n_step) * self.step
-                        position = min(n_steps_inf + n_step, max_position)
-
-                        if self.add_lorentz_polarization_factor:
-                            if self.pm2k_fullprof == 0:
-                                self.lorentz_polarization_factors[position] = self.calculateLPFactorPM2K(twotheta, theta_bragg, normalization=normalization)
-                            else:
-                                self.lorentz_polarization_factors[position] = self.calculateLPFactorFullProf(twotheta, normalization=normalization)
-
-                        if self.add_debye_waller_factor:
-                            self.debye_waller_factors[position] = self.calculateDebyeWallerFactor(twotheta, avg_wavelength, debye_waller_B)
 
     ############################################################
 
