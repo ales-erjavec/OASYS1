@@ -102,10 +102,10 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     degrees_around_peak = Setting(0.01)
     output_file_name = Setting('XRD_Profile.xy')
 
-    #add_lorentz_polarization_factor = Setting(1)
-    #pm2k_fullprof = Setting(0)
-    #degree_of_polarization = Setting(0.95)
-    #monochromator_angle = Setting(28.446)
+    add_lorentz_polarization_factor = Setting(1)
+    pm2k_fullprof = Setting(0)
+    degree_of_polarization = Setting(0.95)
+    monochromator_angle = Setting(28.446)
 
     add_debye_waller_factor = Setting(1)
     use_default_dwf = Setting(1)
@@ -278,24 +278,24 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         #####################
 
-        # box_beam = ShadowGui.widgetBox(self.tab_beam, "Lorentz-Polarization Factor", addSpace=True, orientation="vertical")
-        #
-        # gui.comboBox(box_beam, self, "add_lorentz_polarization_factor", label="Add Lorentz-Polarization Factor", labelWidth=370, items=["No", "Yes"], sendSelectedValue=False, orientation="horizontal", callback=self.setPolarization)
-        #
-        # gui.separator(box_beam)
-        #
-        # self.box_polarization =  ShadowGui.widgetBox(box_beam, "", addSpace=True, orientation="vertical")
-        #
-        # gui.comboBox(self.box_polarization, self, "pm2k_fullprof", label="Kind of Calculation", labelWidth=340, items=["PM2K", "FULLPROF"], sendSelectedValue=False, orientation="horizontal", callback=self.setKindOfCalculation)
-        #
-        # self.box_degree_of_polarization_pm2k =  ShadowGui.widgetBox(self.box_polarization, "", addSpace=True, orientation="vertical")
-        # ShadowGui.lineEdit(self.box_degree_of_polarization_pm2k, self, "degree_of_polarization", "Degree of Polarization [(Ih-Iv)/(Ih+Iv)]", labelWidth=350, valueType=float, orientation="horizontal")
-        # self.box_degree_of_polarization_fullprof =  ShadowGui.widgetBox(self.box_polarization, "", addSpace=True, orientation="vertical")
-        # ShadowGui.lineEdit(self.box_degree_of_polarization_fullprof, self, "degree_of_polarization", "K Factor", labelWidth=350, valueType=float, orientation="horizontal")
-        #
-        # ShadowGui.lineEdit(self.box_polarization, self, "monochromator_angle", "Monochromator 2Theta Angle (deg)", labelWidth=300, valueType=float, orientation="horizontal")
-        #
-        # self.setPolarization()
+        box_beam = ShadowGui.widgetBox(self.tab_beam, "Lorentz-Polarization Factor", addSpace=True, orientation="vertical")
+
+        gui.comboBox(box_beam, self, "add_lorentz_polarization_factor", label="Add Lorentz-Polarization Factor", labelWidth=370, items=["No", "Yes"], sendSelectedValue=False, orientation="horizontal", callback=self.setPolarization)
+
+        gui.separator(box_beam)
+
+        self.box_polarization =  ShadowGui.widgetBox(box_beam, "", addSpace=True, orientation="vertical")
+
+        gui.comboBox(self.box_polarization, self, "pm2k_fullprof", label="Kind of Calculation", labelWidth=340, items=["PM2K", "FULLPROF"], sendSelectedValue=False, orientation="horizontal", callback=self.setKindOfCalculation)
+
+        self.box_degree_of_polarization_pm2k =  ShadowGui.widgetBox(self.box_polarization, "", addSpace=True, orientation="vertical")
+        ShadowGui.lineEdit(self.box_degree_of_polarization_pm2k, self, "degree_of_polarization", "Degree of Polarization [(Ih-Iv)/(Ih+Iv)]", labelWidth=350, valueType=float, orientation="horizontal")
+        self.box_degree_of_polarization_fullprof =  ShadowGui.widgetBox(self.box_polarization, "", addSpace=True, orientation="vertical")
+        ShadowGui.lineEdit(self.box_degree_of_polarization_fullprof, self, "degree_of_polarization", "K Factor", labelWidth=350, valueType=float, orientation="horizontal")
+
+        ShadowGui.lineEdit(self.box_polarization, self, "monochromator_angle", "Monochromator 2Theta Angle (deg)", labelWidth=300, valueType=float, orientation="horizontal")
+
+        self.setPolarization()
 
         box_beam_2 = ShadowGui.widgetBox(self.tab_beam, "Debye-Waller Factor", addSpace=True, orientation="vertical")
 
@@ -510,9 +510,9 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         self.box_degree_of_polarization_pm2k.setVisible(self.pm2k_fullprof==0)
         self.box_degree_of_polarization_fullprof.setVisible(self.pm2k_fullprof==1)
 
-    # def setPolarization(self):
-    #     self.box_polarization.setVisible(self.add_lorentz_polarization_factor == 1)
-    #     if (self.add_lorentz_polarization_factor==1): self.setKindOfCalculation()
+    def setPolarization(self):
+        self.box_polarization.setVisible(self.add_lorentz_polarization_factor == 1)
+        if (self.add_lorentz_polarization_factor==1): self.setKindOfCalculation()
 
     def setUseDefaultDWF(self):
         self.box_use_default_dwf_1.setVisible(self.use_default_dwf==0)
@@ -1016,12 +1016,12 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
             max_position = len(self.twotheta_angles) - 1
 
-            # if self.add_lorentz_polarization_factor:
-            #     if self.pm2k_fullprof == 0:
-            #         normalization = self.calculateLPFactorPM2K((self.stop_angle - self.start_angle)/2,
-            #                                                     self.calculateBraggAngle(k_modulus, reflections[0].h, reflections[0].k, reflections[0].l, lattice_parameter))
-            #     else:
-            #         normalization = self.calculateLPFactorFullProf((self.stop_angle - self.start_angle)/2)
+            if self.add_lorentz_polarization_factor:
+                if self.pm2k_fullprof == 0:
+                    normalization = self.calculateLPFactorPM2K((self.stop_angle - self.start_angle)/2,
+                                                                self.calculateBraggAngle(k_modulus, reflections[0].h, reflections[0].k, reflections[0].l, lattice_parameter))
+                else:
+                    normalization = self.calculateLPFactorFullProf((self.stop_angle - self.start_angle)/2)
 
             if self.add_debye_waller_factor:
                 if self.use_default_dwf:
@@ -1058,13 +1058,13 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
                         physical_coefficent = 1.0
 
-                        # if self.add_lorentz_polarization_factor:
-                        #     if self.pm2k_fullprof == 0:
-                        #         lorentz_polarization_factor = self.calculateLPFactorPM2K(self.twotheta_angles[angle_index], theta_bragg, normalization=normalization)
-                        #     else:
-                        #         lorentz_polarization_factor = self.calculateLPFactorFullProf(self.twotheta_angles[angle_index], normalization=normalization)
-                        #
-                        #     physical_coefficent *= lorentz_polarization_factor
+                        if self.add_lorentz_polarization_factor:
+                            if self.pm2k_fullprof == 0:
+                                lorentz_polarization_factor = self.calculateLPFactorPM2K(self.twotheta_angles[angle_index], theta_bragg, normalization=normalization)
+                            else:
+                                lorentz_polarization_factor = self.calculateLPFactorFullProf(self.twotheta_angles[angle_index], normalization=normalization)
+
+                            physical_coefficent *= lorentz_polarization_factor
 
                         if self.add_debye_waller_factor:
                             physical_coefficent *= self.calculateDebyeWallerFactor(self.twotheta_angles[angle_index], wavelength, debye_waller_B)
@@ -1281,6 +1281,35 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         rho = self.getDensity(self.sample_material)*self.packing_factor
 
         return math.exp(-mu*rho*path)
+
+    ############################################################
+    # PM2K
+
+    def calculateLPFactorPM2K(self, twotheta_deg, bragg_angle, normalization=1.0):
+        twotheta_mon = math.radians(self.monochromator_angle)
+        twotheta = math.radians(twotheta_deg)
+
+        lorentz_factor = 1/(math.sin(twotheta/2)*math.sin(bragg_angle))
+
+        polarization_factor_num = (1 - self.degree_of_polarization) + ((1 + self.degree_of_polarization)*(math.cos(twotheta)**2)*(math.cos(twotheta_mon)**2))
+        polarization_factor_den = 1 + math.cos(twotheta_mon)**2
+
+        polarization_factor = polarization_factor_num/polarization_factor_den
+
+        return lorentz_factor*polarization_factor/normalization
+
+    ############################################################
+    # FULL PROF
+
+    def calculateLPFactorFullProf(self, twotheta_deg, normalization=1.0):
+        twotheta_mon = math.radians(self.monochromator_angle)
+        twotheta = math.radians(twotheta_deg)
+
+        lorentz_factor = 1/(math.cos(twotheta)*math.sin(twotheta/2)**2)
+
+        polarization_factor = ((1 - self.degree_of_polarization) + (self.degree_of_polarization*(math.cos(twotheta)**2)*(math.cos(twotheta_mon)**2)))/2
+
+        return lorentz_factor*polarization_factor/normalization
 
     ############################################################
 
@@ -1698,37 +1727,3 @@ if __name__ == "__main__":
     ow.show()
     a.exec_()
     ow.saveSettings()
-
-############################################################
-############################################################
-############################################################
-############################################################
-
-    ############################################################
-    # PM2K
-
-    # def calculateLPFactorPM2K(self, twotheta_deg, bragg_angle, normalization=1.0):
-    #     twotheta_mon = math.radians(self.monochromator_angle)
-    #     twotheta = math.radians(twotheta_deg)
-    #
-    #     lorentz_factor = 1/(math.sin(twotheta/2)*math.sin(bragg_angle))
-    #
-    #     polarization_factor_num = (1 - self.degree_of_polarization) + ((1 + self.degree_of_polarization)*(math.cos(twotheta)**2)*(math.cos(twotheta_mon)**2))
-    #     polarization_factor_den = 1 + math.cos(twotheta_mon)**2
-    #
-    #     polarization_factor = polarization_factor_num/polarization_factor_den
-    #
-    #     return lorentz_factor*polarization_factor/normalization
-
-    ############################################################
-    # FULL PROF
-
-    # def calculateLPFactorFullProf(self, twotheta_deg, normalization=1.0):
-    #     twotheta_mon = math.radians(self.monochromator_angle)
-    #     twotheta = math.radians(twotheta_deg)
-    #
-    #     lorentz_factor = 1/(math.cos(twotheta)*math.sin(twotheta/2)**2)
-    #
-    #     polarization_factor = ((1 - self.degree_of_polarization) + (self.degree_of_polarization*(math.cos(twotheta)**2)*(math.cos(twotheta_mon)**2)))/2
-    #
-    #     return lorentz_factor*polarization_factor/normalization
