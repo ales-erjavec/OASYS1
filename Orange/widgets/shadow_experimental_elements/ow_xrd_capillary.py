@@ -1282,36 +1282,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         return math.exp(-mu*rho*path)
 
-
-    ############################################################
-    # PM2K
-
-    # def calculateLPFactorPM2K(self, twotheta_deg, bragg_angle, normalization=1.0):
-    #     twotheta_mon = math.radians(self.monochromator_angle)
-    #     twotheta = math.radians(twotheta_deg)
-    #
-    #     lorentz_factor = 1/(math.sin(twotheta/2)*math.sin(bragg_angle))
-    #
-    #     polarization_factor_num = (1 - self.degree_of_polarization) + ((1 + self.degree_of_polarization)*(math.cos(twotheta)**2)*(math.cos(twotheta_mon)**2))
-    #     polarization_factor_den = 1 + math.cos(twotheta_mon)**2
-    #
-    #     polarization_factor = polarization_factor_num/polarization_factor_den
-    #
-    #     return lorentz_factor*polarization_factor/normalization
-
-    ############################################################
-    # FULL PROF
-
-    # def calculateLPFactorFullProf(self, twotheta_deg, normalization=1.0):
-    #     twotheta_mon = math.radians(self.monochromator_angle)
-    #     twotheta = math.radians(twotheta_deg)
-    #
-    #     lorentz_factor = 1/(math.cos(twotheta)*math.sin(twotheta/2)**2)
-    #
-    #     polarization_factor = ((1 - self.degree_of_polarization) + (self.degree_of_polarization*(math.cos(twotheta)**2)*(math.cos(twotheta_mon)**2)))/2
-    #
-    #     return lorentz_factor*polarization_factor/normalization
-
     ############################################################
 
     def calculateDebyeWallerFactor(self, twotheta_deg, wavelength, B):
@@ -1678,10 +1648,10 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         except:
             raise Exception("Unexpected error reading Materials Configuration file: ", sys.exc_info()[0])
 
-    ############################################################
-    ############################################################
-    ############################################################
-    ############################################################
+############################################################
+############################################################
+############################################################
+############################################################
 
 class RockingCurveElement:
     delta_theta=0.0
@@ -1728,3 +1698,37 @@ if __name__ == "__main__":
     ow.show()
     a.exec_()
     ow.saveSettings()
+
+############################################################
+############################################################
+############################################################
+############################################################
+
+    ############################################################
+    # PM2K
+
+    # def calculateLPFactorPM2K(self, twotheta_deg, bragg_angle, normalization=1.0):
+    #     twotheta_mon = math.radians(self.monochromator_angle)
+    #     twotheta = math.radians(twotheta_deg)
+    #
+    #     lorentz_factor = 1/(math.sin(twotheta/2)*math.sin(bragg_angle))
+    #
+    #     polarization_factor_num = (1 - self.degree_of_polarization) + ((1 + self.degree_of_polarization)*(math.cos(twotheta)**2)*(math.cos(twotheta_mon)**2))
+    #     polarization_factor_den = 1 + math.cos(twotheta_mon)**2
+    #
+    #     polarization_factor = polarization_factor_num/polarization_factor_den
+    #
+    #     return lorentz_factor*polarization_factor/normalization
+
+    ############################################################
+    # FULL PROF
+
+    # def calculateLPFactorFullProf(self, twotheta_deg, normalization=1.0):
+    #     twotheta_mon = math.radians(self.monochromator_angle)
+    #     twotheta = math.radians(twotheta_deg)
+    #
+    #     lorentz_factor = 1/(math.cos(twotheta)*math.sin(twotheta/2)**2)
+    #
+    #     polarization_factor = ((1 - self.degree_of_polarization) + (self.degree_of_polarization*(math.cos(twotheta)**2)*(math.cos(twotheta_mon)**2)))/2
+    #
+    #     return lorentz_factor*polarization_factor/normalization
