@@ -13,6 +13,7 @@ import Orange.canvas.resources as resources
 from Orange.shadow.shadow_objects import ShadowTriggerIn
 from Orange.widgets.shadow_gui import ow_automatic_element
 from Orange.shadow.shadow_util import ShadowGui, ShadowMath, ShadowPhysics, ConfirmDialog
+from Orange.shadow.shadow_objects import ShadowBeam, ShadowOpticalElement
 
 from PyMca.widgets.PlotWindow import PlotWindow
 
@@ -74,10 +75,13 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     slit_2_vertical_aperture = Setting(0.0)
     slit_2_horizontal_aperture = Setting(0.0)
 
+    acceptance_slit_distance = Setting(0.0)
+    acceptance_slit_vertical_aperture = Setting(0.0)
+    acceptance_slit_horizontal_aperture = Setting(0.0)
+
     analyzer_distance = Setting(0.0)
     analyzer_bragg_angle = Setting(0.0)
     rocking_curve_file = Setting("NONE SPECIFIED")
-
 
     start_angle_na = Setting(10.0)
     stop_angle_na = Setting(120.0)
@@ -241,9 +245,14 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         self.box_2theta_arm_2 = ShadowGui.widgetBox(box_2theta_arm, "", addSpace=False, orientation="vertical")
 
-        ShadowGui.lineEdit(self.box_2theta_arm_2, self, "analyzer_distance", "Analyzer Distance", labelWidth=300, valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(self.box_2theta_arm_2, self, "analyzer_bragg_angle", "Analyzer Bragg Angle",  labelWidth=300, valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(self.box_2theta_arm_2, self, "rocking_curve_file", "Rocking Curve File",  labelWidth=200, valueType=str, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_2theta_arm_2, self, "acceptance_slit_distance", "Slit Distance from Goniometer Center (cm)", labelWidth=300, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_2theta_arm_2, self, "acceptance_slit_vertical_aperture", "Slit Vertical Aperture (um)",  labelWidth=300, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_2theta_arm_2, self, "acceptance_slit_horizontal_aperture", "Slit Horizontal Aperture (um)",  labelWidth=300, valueType=float, orientation="horizontal")
+
+        gui.separator(self.box_2theta_arm_2)
+
+        ShadowGui.lineEdit(self.box_2theta_arm_2, self, "analyzer_distance", "Analyzer Distance from Goniometer Center (cm)", labelWidth=300, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_2theta_arm_2, self, "rocking_curve_file", "File with Crystal parameter",  labelWidth=200, valueType=str, orientation="horizontal")
 
         self.setDiffractedArmType()
 
@@ -657,24 +666,20 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             self.D_1 = self.slit_1_distance
             self.D_2 = self.slit_2_distance
 
-            self.horizontal_acceptance_1 = self.slit_1_horizontal_aperture*1e-4*0.5
-            self.vertical_acceptance_1 = self.slit_1_vertical_aperture*1e-4*0.5
+            self.horizontal_acceptance_slit_1 = self.slit_1_horizontal_aperture*1e-4
+            self.vertical_acceptance_slit_1 = self.slit_1_vertical_aperture*1e-4
 
-            self.horizontal_acceptance_2 = self.slit_2_horizontal_aperture*1e-4*0.5
-            self.vertical_acceptance_2 = self.slit_2_vertical_aperture*1e-4*0.5
+            self.horizontal_acceptance_slit_2 = self.slit_2_horizontal_aperture*1e-4
+            self.vertical_acceptance_slit_2 = self.slit_2_vertical_aperture*1e-4
 
             self.slit_1_vertical_displacement_cm = self.slit_1_vertical_displacement*1e-4
             self.slit_2_vertical_displacement_cm = self.slit_2_vertical_displacement*1e-4
             self.slit_1_horizontal_displacement_cm = self.slit_1_horizontal_displacement*1e-4
             self.slit_2_horizontal_displacement_cm = self.slit_2_horizontal_displacement*1e-4
 
-            theta_slit = math.atan(self.vertical_acceptance_1/self.D_1)
-            theta_analyzer = math.radians(1e-3)
 
-            if self.diffracted_arm_type == 0:
-                theta_limit = theta_slit
-            else:
-                theta_limit = theta_analyzer
+            self.horizontal_acceptance_analyzer = self.acceptance_slit_horizontal_aperture*1e-4
+            self.vertical_acceptance_analyzer = self.acceptance_slit_vertical_aperture*1e-4
 
             avg_k_modulus = numpy.average(go_input_beam.beam.rays[:,10])
             avg_wavelength = (2*math.pi/avg_k_modulus)*1e+8 # in Angstrom
@@ -689,8 +694,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
             self.initializeIntegralIntensityFactors(avg_k_modulus, avg_wavelength, lattice_parameter, reflections)
 
-            if self.diffracted_arm_type == 1:
-                self.readRockingCurveFile()
+            #if self.diffracted_arm_type == 1:
+            #    self.readRockingCurveFile()
 
             ################################
             # EXECUTION CYCLES
@@ -724,7 +729,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                                                          (50/number_of_input_rays),
                                                                          reflections)
 
-                self.generateXRDPattern(bar_value, diffracted_rays, theta_limit)
+                #self.generateXRDPattern(bar_value, diffracted_rays, theta_limit)
+                self.generateXRDPatternRayTracing(bar_value, diffracted_rays, avg_wavelength)
 
             if (self.debug_mode): self.debug_file_1.close()
 
@@ -886,34 +892,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                 # ok se P2 con z > 0
                                 if (P_2[2] >= 0):
 
-                                    #
-                                    # genesi del nuovo raggio diffratto attenuato dell'intensità relativa e dell'assorbimento
-                                    #
-
-                                    diffracted_ray = numpy.zeros(19)
-
-                                    diffracted_ray[0] = origin_point[0]  # X
-                                    diffracted_ray[1] = origin_point[1]  # Y
-                                    diffracted_ray[2] = origin_point[2]  # Z
-                                    diffracted_ray[3] = v_out[0]  # director cos x
-                                    diffracted_ray[4] = v_out[1]  # director cos y
-                                    diffracted_ray[5] = v_out[2]  # director cos z
-                                    diffracted_ray[6] = go_input_beam.beam.rays[ray_index, 6]  # Es_x
-                                    diffracted_ray[7] = go_input_beam.beam.rays[ray_index, 7]  # Es_y
-                                    diffracted_ray[8] = go_input_beam.beam.rays[ray_index, 8]  # Es_z
-                                    diffracted_ray[9] = go_input_beam.beam.rays[ray_index, 9]  # good/lost
-                                    diffracted_ray[10] = go_input_beam.beam.rays[ray_index, 10]  # |k|
-                                    diffracted_ray[11] = go_input_beam.beam.rays[ray_index, 11]  # ray index
-                                    diffracted_ray[12] = 1  # good only
-                                    diffracted_ray[13] = go_input_beam.beam.rays[ray_index, 12]  # Es_phi
-                                    diffracted_ray[14] = go_input_beam.beam.rays[ray_index, 13]  # Ep_phi
-                                    diffracted_ray[15] = go_input_beam.beam.rays[ray_index, 14]  # Ep_x
-                                    diffracted_ray[16] = go_input_beam.beam.rays[ray_index, 15]  # Ep_y
-                                    diffracted_ray[17] = go_input_beam.beam.rays[ray_index, 16]  # Ep_z
-
-                                    ray_intensity = diffracted_ray[6]**2 + diffracted_ray[7]**2 + diffracted_ray[8]**2 + \
-                                                    diffracted_ray[15]**2 + diffracted_ray[16]**2 + diffracted_ray[17]**2
-
                                     reduction_factor = reflection.relative_intensity
 
                                     if (self.calculate_absorption == 1):
@@ -925,7 +903,39 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                                                                                        displacement_h,
                                                                                                        displacement_v)
 
-                                    diffracted_ray[18] = ray_intensity * reduction_factor
+                                    reduction_factor = math.sqrt(reduction_factor)
+
+                                    #
+                                    # genesi del nuovo raggio diffratto attenuato dell'intensità relativa e dell'assorbimento
+                                    #
+
+                                    #diffracted_ray = numpy.zeros(19)
+                                    diffracted_ray = numpy.zeros(18)
+
+                                    diffracted_ray[0] = origin_point[0]  # X
+                                    diffracted_ray[1] = origin_point[1]  # Y
+                                    diffracted_ray[2] = origin_point[2]  # Z
+                                    diffracted_ray[3] = v_out[0]  # director cos x
+                                    diffracted_ray[4] = v_out[1]  # director cos y
+                                    diffracted_ray[5] = v_out[2]  # director cos z
+                                    diffracted_ray[6] = go_input_beam.beam.rays[ray_index, 6]*reduction_factor  # Es_x
+                                    diffracted_ray[7] = go_input_beam.beam.rays[ray_index, 7]*reduction_factor   # Es_y
+                                    diffracted_ray[8] = go_input_beam.beam.rays[ray_index, 8]*reduction_factor   # Es_z
+                                    diffracted_ray[9] = go_input_beam.beam.rays[ray_index, 9]  # good/lost
+                                    diffracted_ray[10] = go_input_beam.beam.rays[ray_index, 10]  # |k|
+                                    diffracted_ray[11] = go_input_beam.beam.rays[ray_index, 11]  # ray index
+                                    diffracted_ray[12] = 1  # good only
+                                    diffracted_ray[13] = go_input_beam.beam.rays[ray_index, 12]  # Es_phi
+                                    diffracted_ray[14] = go_input_beam.beam.rays[ray_index, 13]  # Ep_phi
+                                    diffracted_ray[15] = go_input_beam.beam.rays[ray_index, 14]*reduction_factor   # Ep_x
+                                    diffracted_ray[16] = go_input_beam.beam.rays[ray_index, 15]*reduction_factor   # Ep_y
+                                    diffracted_ray[17] = go_input_beam.beam.rays[ray_index, 16]*reduction_factor   # Ep_z
+
+                                    ray_intensity = diffracted_ray[6]**2 + diffracted_ray[7]**2 + diffracted_ray[8]**2 + \
+                                                    diffracted_ray[15]**2 + diffracted_ray[16]**2 + diffracted_ray[17]**2
+
+
+                                    #diffracted_ray[18] = ray_intensity
 
                                     if (self.number_of_rotated_rays == 1):
                                         diffracted_rays.append(diffracted_ray)
@@ -946,7 +956,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                         delta_range = range(0, len(delta_angles))
 
                                         for delta_index in delta_range:
-                                            diffracted_ray_circle = numpy.zeros(19)
+                                            #diffracted_ray_circle = numpy.zeros(19)
+                                            diffracted_ray_circle = numpy.zeros(18)
 
                                             diffracted_ray_circle[0] = diffracted_ray[0]
                                             diffracted_ray_circle[1] = diffracted_ray[1]
@@ -963,7 +974,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                             diffracted_ray_circle[15] = diffracted_ray[15]
                                             diffracted_ray_circle[16] = diffracted_ray[16]
                                             diffracted_ray_circle[17] = diffracted_ray[17]
-                                            diffracted_ray_circle[18] = diffracted_ray[18]
+                                            #diffracted_ray_circle[18] = diffracted_ray[18]
 
                                             delta_angle = delta_angles[delta_index]
 
@@ -997,70 +1008,35 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     ############################################################
 
-    def generateXRDPattern(self, bar_value, diffracted_rays, theta_limit):
+    def generateXRDPatternRayTracing(self, bar_value, diffracted_rays, beam_wavelength):
 
         number_of_diffracted_rays = len(diffracted_rays)
 
         if (number_of_diffracted_rays > 0):
-            diffracted_rays_set = range(0, number_of_diffracted_rays)
 
-            percentage_fraction = 50 / number_of_diffracted_rays
+            diffracted_beam = ShadowBeam()
+            diffracted_beam.beam.rays = numpy.array(diffracted_rays)
 
-            max_position = len(self.twotheta_angles) - 1
+            percentage_fraction = 50 / len(self.twotheta_angles)
 
-            for ray_index in diffracted_rays_set:
-                if not self.run_simulation: break
+            for angle_index in range(0, len(self.twotheta_angles)):
 
-                diffracted_ray = diffracted_rays[ray_index]
+                if self.diffracted_arm_type == 0:
+                    optical_element = self.getSlitsOpticalElement(angle_index)
+                else:
+                    optical_element = self.getAnalyzerOpticalElement(angle_index, beam_wavelength)
 
-                x_0_i = diffracted_ray[0]
-                y_0_i = diffracted_ray[1]
-                z_0_i = diffracted_ray[2]
+                out_beam = ShadowBeam.traceFromOENoHistory(diffracted_beam, optical_element)
 
-                v_x_i = diffracted_ray[3]
-                v_y_i = diffracted_ray[4]
-                v_z_i = diffracted_ray[5]
+                go_rays = copy.deepcopy(out_beam.beam.rays[numpy.where(out_beam.beam.rays[:,9] == 1)])
 
-                k_modulus_i = diffracted_ray[10]
-                intensity_i = diffracted_ray[18]
+                for ray_index in range(0, len(go_rays)):
+                    intensity_i = go_rays[ray_index, 6]**2 + go_rays[ray_index, 7]**2 + go_rays[ray_index, 8]**2 + \
+                                  go_rays[ray_index, 15]**2 + go_rays[ray_index, 16]**2 + go_rays[ray_index, 17]**2
 
-                #
-                # calcolo dell'angolo di intercettato dal vettore con il piano xy
-                #
-
-                theta_ray = math.atan(v_z_i / math.sqrt(v_x_i ** 2 + v_y_i ** 2))
-
-                theta_lim_inf = math.degrees(theta_ray - 5 * theta_limit)
-                theta_lim_sup = math.degrees(theta_ray + 5 * theta_limit)
-
-                # il ciclo sugli step del detector dovrebbe essere attorno a quest'angolo +- un fattore sufficiente di volte
-                # l'angolo limite indicato
-
-                if (theta_lim_inf < self.stop_angle and theta_lim_sup > self.start_angle):
-                    n_steps_inf = math.floor((max(theta_lim_inf, self.start_angle) - self.start_angle) / self.step)
-                    n_steps_sup = math.ceil((min(theta_lim_sup, self.stop_angle) - self.start_angle) / self.step)
-
-                    steps_between_limits = range(0, n_steps_sup - n_steps_inf)
-
-                    for n_step in steps_between_limits:
-                        if not self.run_simulation: break
-
-                        twotheta_angle = self.start_angle + (n_steps_inf + n_step) * self.step
-
-                        position = min(n_steps_inf + n_step, max_position)
-
-                        if self.diffracted_arm_type == 0:
-                            if self.isCollectedRaySlits(math.radians(twotheta_angle), x_0_i, y_0_i, z_0_i, v_x_i, v_y_i, v_z_i):
-
-                                self.current_counts[position] += intensity_i
-                                self.squared_counts[position] += intensity_i**2
-                                self.points_per_bin[position] += 1
-                        else:
-                            rocking_curve_intensity = self.sendRayOnAnalyzer(math.radians(twotheta_angle), y_0_i, z_0_i, v_y_i, v_z_i, k_modulus_i)
-
-                            self.current_counts[position] += intensity_i*rocking_curve_intensity
-                            self.squared_counts[position] += (intensity_i*rocking_curve_intensity)**2
-                            self.points_per_bin[position] += 1
+                    self.current_counts[angle_index] += intensity_i
+                    self.squared_counts[angle_index] += intensity_i**2
+                    self.points_per_bin[angle_index] += 1
 
                 bar_value += percentage_fraction
                 self.progressBarSet(bar_value)
@@ -1080,148 +1056,29 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     def calculateDeltaAngle(self, twotheta_reflection):
 
-        height = self.D_1*math.sin(twotheta_reflection) - self.slit_1_vertical_aperture*1e-4*0.5*math.cos(twotheta_reflection)
-        width = self.slit_1_horizontal_aperture*1e-4*0.5
+        delta = 0.0
 
-        delta_1 = math.atan(width/height)
+        if self.diffracted_arm_type == 0:
+            height = self.D_1*math.sin(twotheta_reflection) - self.slit_1_vertical_aperture*1e-4*0.5*math.cos(twotheta_reflection)
+            width = self.slit_1_horizontal_aperture*1e-4*0.5
 
-        height = self.D_2*math.sin(twotheta_reflection) - self.slit_2_vertical_aperture*1e-4*0.5*math.cos(twotheta_reflection)
-        width = self.slit_2_horizontal_aperture*1e-4*0.5
+            delta_1 = math.atan(width/height)
 
-        delta_2 = math.atan(width/height)
+            height = self.D_2*math.sin(twotheta_reflection) - self.slit_2_vertical_aperture*1e-4*0.5*math.cos(twotheta_reflection)
+            width = self.slit_2_horizontal_aperture*1e-4*0.5
+
+            delta_2 = math.atan(width/height)
+
+            delta = min(delta_1, delta_2)
+        else:
+            height = self.acceptance_slit_distance*math.sin(twotheta_reflection) - self.acceptance_slit_distance*1e-4*0.5*math.cos(twotheta_reflection)
+            width = self.acceptance_slit_horizontal_aperture*1e-4*0.5
+
+            delta = math.atan(width/height)
 
         expansion_factor=1.1
 
-        return expansion_factor*min(delta_1, delta_2)
-
-    ############################################################
-
-    def sendRayOnAnalyzer(self, twotheta_angle,
-                               y_0,
-                               z_0,
-                               v_y,
-                               v_z,
-                               k_modulus):
-
-        sin_twotheta = math.sin(twotheta_angle)
-        cos_twotheta = math.cos(twotheta_angle)
-
-        y_c_s1 = self.analyzer_distance*cos_twotheta
-        z_c_s1 = self.analyzer_distance*sin_twotheta
-
-        # intersezione del raggio con il piano intercettato dalla slit
-        #
-        #  equazione piano y * cos(2th) + z * sen(2th) = D
-        #
-        #           D + [(vx/vz) * z0 - y0] * cos(2th)
-        #  z_int = -----------------------------------
-        #             sen(2th) + (vy/vz) * cos(2th)
-        #
-        #           D - z_int * sen(2th)
-        #  y_int = ---------------------
-        #               cos(2th)
-        #
-        #  x_int = x0 + (vx/vz) * (z_int - z0)
-        #
-
-        z_1_int = (self.analyzer_distance + ((v_y/v_z)*z_0 - y_0)*cos_twotheta)/(sin_twotheta + (v_y/v_z)*cos_twotheta)
-        y_1_int = (self.analyzer_distance - z_1_int*sin_twotheta)/cos_twotheta
-
-        d_1_y = y_1_int-y_c_s1
-        d_1_z = z_1_int-z_c_s1
-
-        dist_yz = math.sqrt(d_1_y*d_1_y + d_1_z*d_1_z)
-
-        if y_1_int > y_c_s1 : sign = -1.0
-        else: sign = 1.0
-
-        theta_incidence_ray = math.radians(self.analyzer_bragg_angle) + sign*math.atan(dist_yz/self.analyzer_distance)
-
-        #TODO CONFIGURABILITY
-
-        theta_bragg_ray = self.calculateBraggAngle(k_modulus, 1, 1, 1, 5.43123) # Si 111
-
-        delta_theta = theta_incidence_ray-theta_bragg_ray
-
-        rocking_curve_intensity = self.getRockingCurveIntensity(delta_theta)
-
-        return  rocking_curve_intensity
-
-
-    ############################################################
-
-    def isCollectedRaySlits(self, twotheta_angle,
-                           x_0, 
-                           y_0, 
-                           z_0, 
-                           v_x, 
-                           v_y, 
-                           v_z):
-        is_collected_ray = False
-
-        sin_twotheta = math.sin(twotheta_angle)
-        cos_twotheta = math.cos(twotheta_angle)
-
-        x_c_s1 = self.slit_1_horizontal_displacement_cm
-        y_c_s1 = self.D_1*cos_twotheta - self.slit_1_vertical_displacement_cm*sin_twotheta
-        z_c_s1 = self.D_1*sin_twotheta + self.slit_1_vertical_displacement_cm*cos_twotheta
-
-        x_c_s2 = self.slit_2_horizontal_displacement_cm
-        y_c_s2 = self.D_2*cos_twotheta - self.slit_2_vertical_displacement_cm*sin_twotheta
-        z_c_s2 = self.D_2*sin_twotheta + self.slit_2_vertical_displacement_cm*cos_twotheta
-
-        # intersezione del raggio con il piano intercettato dalla slit
-        #
-        #  equazione piano y * cos(2th) + z * sen(2th) = D
-        #
-        #           D + [(vx/vz) * z0 - y0] * cos(2th)
-        #  z_int = -----------------------------------
-        #             sen(2th) + (vy/vz) * cos(2th)
-        #
-        #           D - z_int * sen(2th)
-        #  y_int = ---------------------
-        #               cos(2th)
-        #
-        #  x_int = x0 + (vx/vz) * (z_int - z0)
-        #
-
-        z_1_int = (self.D_1 + ((v_y/v_z)*z_0 - y_0)*cos_twotheta)/(sin_twotheta + (v_y/v_z)*cos_twotheta)
-        y_1_int = (self.D_1 - z_1_int*sin_twotheta)/cos_twotheta
-        x_1_int = x_0 + (v_x/v_z)*(z_1_int-z_0)
-
-        d_1_x = x_1_int-x_c_s1
-        d_1_y = y_1_int-y_c_s1
-        d_1_z = z_1_int-z_c_s1
-
-        dist_yz = math.sqrt(d_1_y*d_1_y + d_1_z*d_1_z)
-        dist_x  = abs(d_1_x)
-
-        if (self.debug_mode):
-            self.debug_file_1.write(str(x_1_int) + " " + str(y_1_int) + " " + str(z_1_int) + "\n")
-            self.debug_file_1.flush()
-
-        if dist_x <= self.horizontal_acceptance_1 and dist_yz <= self.vertical_acceptance_1:
-            # intersezione del raggio con il piano intercettato dalla slit
-
-            z_2_int = (self.D_2 + ((v_y/v_z)*z_0 - y_0)*cos_twotheta)/(sin_twotheta + (v_y/v_z)*cos_twotheta)
-            y_2_int = (self.D_2 - z_2_int*sin_twotheta)/cos_twotheta
-            x_2_int = x_0 + (v_x/v_z)*(z_2_int-z_0)
-
-            d_2_x = x_2_int-x_c_s2
-            d_2_y = y_2_int-y_c_s2
-            d_2_z = z_2_int-z_c_s2
-
-            dist_yz = math.sqrt(d_2_y*d_2_y + d_2_z*d_2_z)
-            dist_x  = abs(d_2_x)
-
-            if (self.debug_mode):
-                self.debug_file_1.write(str(x_2_int) + " " + str(y_2_int) + " " + str(z_2_int) + "\n")
-                self.debug_file_1.flush()
-
-            if dist_x <= self.horizontal_acceptance_2 and dist_yz <= self.vertical_acceptance_2:
-                is_collected_ray= True
-
-        return is_collected_ray
+        return expansion_factor*delta
 
     ############################################################
         
@@ -1386,30 +1243,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         return math.exp(-mu*rho*path)
 
-    ############################################################
-
-    def getRockingCurveIntensity(self, delta_theta):
-
-        if delta_theta < self.rocking_data[0].delta_theta or \
-           delta_theta > self.rocking_data[len(self.rocking_data)-1].delta_theta:
-            return 1.0e-4
-
-        intensity = 1e-4
-
-        for index in range(1, len(self.rocking_data)):
-            previous_rocking_element = self.rocking_data[index - 1]
-            next_rocking_element = self.rocking_data[index]
-
-            if delta_theta < next_rocking_element.delta_theta:
-                dist_prev = delta_theta - previous_rocking_element.delta_theta
-                dist_next = next_rocking_element.delta_theta - delta_theta
-                weight_prev = 1 - dist_prev/(dist_next+dist_prev)
-                weight_next = 1 - dist_next/(dist_next+dist_prev)
-
-                intensity = previous_rocking_element.intensity*weight_prev + next_rocking_element.intensity*weight_next
-                break
-
-        return intensity
 
     ############################################################
     # PM2K
@@ -1451,6 +1284,149 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     ############################################################
     # ACCESSORY METHODS
+    ############################################################
+
+    ############################################################
+
+    def getAnalyzerOpticalElement(self, angle_index, beam_wavelength):
+        crystal = ShadowOpticalElement.create_plane_crystal()
+
+        crystal.oe.setFrameOfReference(10,
+                                       1,
+                                       0,
+                                       0,
+                                       180)
+
+        crystal.oe.unsetReflectivity()
+        crystal.oe.setCrystal(file_refl=bytes(self.rocking_curve_file, 'utf-8'))
+
+        crystal.oe.setAutoTuning(f_phot_cent=1, phot_cent=0.0, r_lambda=beam_wavelength)
+        crystal.oe.FHIT_C = 0
+        crystal.oe.FWRITE = 3
+        crystal.oe.F_ANGLE = 0
+
+        n_screen = 1
+        i_screen = numpy.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        i_abs = numpy.zeros(10)
+        i_slit = numpy.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        i_stop = numpy.zeros(10)
+        k_slit = numpy.zeros(10)
+        thick = numpy.zeros(10)
+        file_abs = numpy.array(['', '', '', '', '', '', '', '', '', ''])
+        rx_slit = numpy.zeros(10)
+        rz_slit = numpy.zeros(10)
+        sl_dis = numpy.zeros(10)
+        file_src_ext = numpy.array(['', '', '', '', '', '', '', '', '', ''])
+        cx_slit = numpy.zeros(10)
+        cz_slit = numpy.zeros(10)
+
+        sl_dis[0] = self.analyzer_distance-self.acceptance_slit_distance
+        rx_slit[0] = self.horizontal_acceptance_analyzer
+        rz_slit[0] = self.vertical_acceptance_analyzer
+        cx_slit[0] = 0.0
+        cz_slit[0] = 0.0
+
+        crystal.oe.setScreens(n_screen,
+                                i_screen,
+                                i_abs,
+                                sl_dis,
+                                i_slit,
+                                i_stop,
+                                k_slit,
+                                thick,
+                                file_abs,
+                                rx_slit,
+                                rz_slit,
+                                cx_slit,
+                                cz_slit,
+                                file_src_ext)
+
+
+        crystal.oe.FSTAT=1
+        crystal.oe.RTHETA=0
+        crystal.oe.RDSOUR=self.analyzer_distance
+        crystal.oe.ALPHA_S=0.0
+        crystal.oe.OFF_SOUX=0.0
+        crystal.oe.OFF_SOUY=0.0
+        crystal.oe.OFF_SOUZ=0.0
+        crystal.oe.X_SOUR=0.0
+        crystal.oe.Y_SOUR=0.0
+        crystal.oe.Z_SOUR=0.0
+        crystal.oe.X_SOUR_ROT=-self.twotheta_angles[angle_index]
+        crystal.oe.Y_SOUR_ROT=0.0
+        crystal.oe.Z_SOUR_ROT=0.0
+
+    ############################################################
+
+    def getSlitsOpticalElement(self, angle_index):
+        acceptance_slits = ShadowOpticalElement.create_screen_slit()
+        acceptance_slits.oe.setFrameOfReference(self.detector_distance, 1,
+                                                 0,
+                                                 180,
+                                                 0)
+
+        acceptance_slits.oe.FSTAT=1
+        acceptance_slits.oe.RTHETA=0
+        acceptance_slits.oe.RDSOUR=self.slit_2_distance
+        acceptance_slits.oe.ALPHA_S=0.0
+        acceptance_slits.oe.OFF_SOUX=0.0
+        acceptance_slits.oe.OFF_SOUY=0.0
+        acceptance_slits.oe.OFF_SOUZ=0.0
+        acceptance_slits.oe.X_SOUR=0.0
+        acceptance_slits.oe.Y_SOUR=0.0
+        acceptance_slits.oe.Z_SOUR=0.0
+        acceptance_slits.oe.X_SOUR_ROT=-self.twotheta_angles[angle_index]
+        acceptance_slits.oe.Y_SOUR_ROT=0.0
+        acceptance_slits.oe.Z_SOUR_ROT=0.0
+
+
+        n_screen = 2
+        i_screen = numpy.array([1, 1, 0, 0, 0, 0, 0, 0, 0, 0])
+        i_abs = numpy.zeros(10)
+        i_slit = numpy.array([1, 1, 0, 0, 0, 0, 0, 0, 0, 0])
+        i_stop = numpy.zeros(10)
+        k_slit = numpy.zeros(10)
+        thick = numpy.zeros(10)
+        file_abs = numpy.array(['', '', '', '', '', '', '', '', '', ''])
+        rx_slit = numpy.zeros(10)
+        rz_slit = numpy.zeros(10)
+        sl_dis = numpy.zeros(10)
+        file_src_ext = numpy.array(['', '', '', '', '', '', '', '', '', ''])
+        cx_slit = numpy.zeros(10)
+        cz_slit = numpy.zeros(10)
+
+        sl_dis[0] = self.detector_distance-self.slit_1_distance
+        rx_slit[0] = self.horizontal_acceptance_slit_1
+        rz_slit[0] = self.horizontal_acceptance_slit_1
+        cx_slit[0] = 0.0 + self.slit_1_horizontal_displacement_cm
+        cz_slit[0] = 0.0 + self.slit_1_vertical_displacement_cm
+
+        sl_dis[1] = self.detector_distance-self.slit_2_distance
+        rx_slit[1] = self.horizontal_acceptance_slit_2
+        rz_slit[1] = self.vertical_acceptance_slit_2
+        cx_slit[1] = 0.0 + self.slit_2_horizontal_displacement_cm
+        cz_slit[1] = 0.0 + self.slit_2_vertical_displacement_cm
+
+        acceptance_slits.oe.setScreens(n_screen,
+                                i_screen,
+                                i_abs,
+                                sl_dis,
+                                i_slit,
+                                i_stop,
+                                k_slit,
+                                thick,
+                                file_abs,
+                                rx_slit,
+                                rz_slit,
+                                cx_slit,
+                                cz_slit,
+                                file_src_ext)
+
+        acceptance_slits.oe.FWRITE = 3
+        acceptance_slits.oe.F_ANGLE = 0
+
+        return acceptance_slits
+
     ############################################################
 
     def initialize(self):
@@ -1577,8 +1553,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         directory_out = os.getcwd() + '/Output'
 
-        srcfile = directory_out + '/XRD_Profile.xy'
-        bkpfile = directory_out + '/XRD_Profile_BKP.xy'
+        srcfile = directory_out + '/' + str(self.output_file_name).strip()
+        bkpfile = directory_out + '/Last_Profile_BKP.xy'
 
         if not os.path.exists(directory_out): return
         if not os.path.exists(srcfile): return
@@ -1640,31 +1616,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     ############################################################
 
-    def readRockingCurveFile(self):
-        self.rocking_data = []
-
-        file_path = os.getcwd() + '/' + self.rocking_curve_file
-
-        if not os.path.exists(file_path):
-            raise Exception("Rocking Curve File not found")
-        else:
-            rocking_file = open(file_path, "r")
-
-            rows = rocking_file.readlines()
-
-            for row in rows:
-                row_elements = row.split(',')
-
-                if len(row_elements) < 2: raise Exception("Rocking Curve File malformed")
-                delta_theta = float(row_elements[0].strip())
-                intensity = float(row_elements[1].strip())
-
-                rocking_element = RockingCurveElement(delta_theta=delta_theta, intensity=intensity)
-
-                self.rocking_data.append(rocking_element)
-
-    ############################################################
-
     def readMaterialConfigurationFiles(self):
         self.materials = []
 
@@ -1721,6 +1672,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         except:
             raise Exception("Unexpected error reading Materials Configuration file: ", sys.exc_info()[0])
 
+    ############################################################
     ############################################################
     ############################################################
     ############################################################

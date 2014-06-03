@@ -176,7 +176,7 @@ def setup_package():
             "Orange.canvas.styles": ["*.qss", "orange/*.svg"],
             "Orange.canvas.application.tutorials": ["*.ows"],
             "Orange.widgets": ["icons/*.png"],
-            "Orange.widgets.shadow_experimental_elements": ["icons/*.png"],
+            "Orange.widgets.shadow_experimental_elements": ["*.dat", "icons/*.png"],
             "Orange.widgets.shadow_optical_elements": ["icons/*.png"],
             "Orange.widgets.shadow_plots": ["icons/*.png", "icons/*.jpg"],
             "Orange.widgets.shadow_preprocessor": ["icons/*.png", "icons/*.jpg"],
