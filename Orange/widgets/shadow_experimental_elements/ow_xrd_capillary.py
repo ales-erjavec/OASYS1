@@ -1016,6 +1016,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
             for angle_index in range(0, len(self.twotheta_angles)):
 
+                if not self.run_simulation: break
+
                 if self.diffracted_arm_type == 0:
                     optical_element = self.getSlitsOpticalElement(angle_index)
                 else:
@@ -1374,7 +1376,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         acceptance_slits.oe.Y_SOUR_ROT=0.0
         acceptance_slits.oe.Z_SOUR_ROT=0.0
 
-
         n_screen = 2
         i_screen = numpy.array([1, 1, 0, 0, 0, 0, 0, 0, 0, 0])
         i_abs = numpy.zeros(10)
@@ -1533,7 +1534,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         out_file.write("tth counts error\n")
 
         for angle_index in range(0, len(self.twotheta_angles)):
-            if not self.run_simulation: break
             out_file.write(str(self.twotheta_angles[angle_index]) + " "
                            + str(self.calculateSignal(angle_index)) + " "
                            + str(self.calculateStatisticError(angle_index))
