@@ -78,7 +78,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     acceptance_slit_distance = Setting(0.0)
     acceptance_slit_vertical_aperture = Setting(0.0)
     acceptance_slit_horizontal_aperture = Setting(0.0)
-
     analyzer_distance = Setting(0.0)
     analyzer_bragg_angle = Setting(0.0)
     rocking_curve_file = Setting("NONE SPECIFIED")
@@ -251,8 +250,9 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         gui.separator(self.box_2theta_arm_2)
 
-        ShadowGui.lineEdit(self.box_2theta_arm_2, self, "analyzer_distance", "Analyzer Distance from Goniometer Center (cm)", labelWidth=300, valueType=float, orientation="horizontal")
-        ShadowGui.lineEdit(self.box_2theta_arm_2, self, "rocking_curve_file", "File with Crystal parameter",  labelWidth=200, valueType=str, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_2theta_arm_2, self, "analyzer_distance", "Crystal Distance from Goniometer Center (cm)", labelWidth=300, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_2theta_arm_2, self, "analyzer_bragg_angle", "Analyzer Incidence Angle (deg)", labelWidth=300, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_2theta_arm_2, self, "rocking_curve_file", "File with Crystal parameter",  labelWidth=180, valueType=str, orientation="horizontal")
 
         self.setDiffractedArmType()
 
@@ -694,9 +694,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
             self.initializeIntegralIntensityFactors(avg_k_modulus, avg_wavelength, lattice_parameter, reflections)
 
-            #if self.diffracted_arm_type == 1:
-            #    self.readRockingCurveFile()
-
             ################################
             # EXECUTION CYCLES
 
@@ -729,8 +726,10 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                                                          (50/number_of_input_rays),
                                                                          reflections)
 
-                #self.generateXRDPattern(bar_value, diffracted_rays, theta_limit)
-                self.generateXRDPatternRayTracing(bar_value, diffracted_rays, avg_wavelength)
+                if self.diffracted_arm_type == 0:
+                    self.generateXRDPattern(bar_value, diffracted_rays)
+                else:
+                    self.generateXRDPattern(bar_value, diffracted_rays)
 
             if (self.debug_mode): self.debug_file_1.close()
 
@@ -1003,7 +1002,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     ############################################################
 
-    def generateXRDPatternRayTracing(self, bar_value, diffracted_rays, beam_wavelength):
+    def generateXRDPattern(self, bar_value, diffracted_rays, analyzer_wavelength=0.0):
 
         number_of_diffracted_rays = len(diffracted_rays)
 
@@ -1019,13 +1018,11 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                 if not self.run_simulation: break
 
                 if self.diffracted_arm_type == 0:
-                    optical_element = self.getSlitsOpticalElement(angle_index)
+                    out_beam = self.traceFromSlits(diffracted_beam, angle_index)
                 else:
-                    optical_element = self.getAnalyzerOpticalElement(angle_index, beam_wavelength)
+                    out_beam = self.traceFromAnalyzer(diffracted_beam, angle_index)
 
-                out_beam = ShadowBeam.traceFromOENoHistory(diffracted_beam, optical_element)
-
-                go_rays = copy.deepcopy(out_beam.beam.rays[numpy.where(out_beam.beam.rays[:,9] == 1)])
+                go_rays = out_beam.beam.rays[numpy.where(out_beam.beam.rays[:,9] == 1)]
 
                 for ray_index in range(0, len(go_rays)):
                     intensity_i = go_rays[ray_index, 6]**2 + go_rays[ray_index, 7]**2 + go_rays[ray_index, 8]**2 + \
@@ -1285,22 +1282,27 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     ############################################################
 
-    def getAnalyzerOpticalElement(self, angle_index, beam_wavelength):
-        crystal = ShadowOpticalElement.create_plane_crystal()
+    def traceFromAnalyzer(self, diffracted_beam, angle_index):
 
-        crystal.oe.setFrameOfReference(10,
-                                       1,
-                                       0,
-                                       0,
-                                       180)
+        acceptance_slits = ShadowOpticalElement.create_screen_slit()
+        acceptance_slits.oe.setFrameOfReference(self.acceptance_slit_distance, (self.analyzer_distance-self.acceptance_slit_distance)/2,
+                                                0,
+                                                180,
+                                                0)
 
-        crystal.oe.unsetReflectivity()
-        crystal.oe.setCrystal(file_refl=bytes(self.rocking_curve_file, 'utf-8'))
-
-        crystal.oe.setAutoTuning(f_phot_cent=1, phot_cent=0.0, r_lambda=beam_wavelength)
-        crystal.oe.FHIT_C = 0
-        crystal.oe.FWRITE = 3
-        crystal.oe.F_ANGLE = 0
+        acceptance_slits.oe.FSTAT=1
+        acceptance_slits.oe.RTHETA=0.0
+        acceptance_slits.oe.RDSOUR=self.acceptance_slit_distance
+        acceptance_slits.oe.ALPHA_S=0.0
+        acceptance_slits.oe.OFF_SOUX=0.0
+        acceptance_slits.oe.OFF_SOUY=0.0
+        acceptance_slits.oe.OFF_SOUZ=0.0
+        acceptance_slits.oe.X_SOUR=0.0
+        acceptance_slits.oe.Y_SOUR=0.0
+        acceptance_slits.oe.Z_SOUR=0.0
+        acceptance_slits.oe.X_SOUR_ROT=-self.twotheta_angles[angle_index]
+        acceptance_slits.oe.Y_SOUR_ROT=0.0
+        acceptance_slits.oe.Z_SOUR_ROT=0.0
 
         n_screen = 1
         i_screen = numpy.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0])
@@ -1323,7 +1325,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         cx_slit[0] = 0.0
         cz_slit[0] = 0.0
 
-        crystal.oe.setScreens(n_screen,
+        acceptance_slits.oe.setScreens(n_screen,
                                 i_screen,
                                 i_abs,
                                 sl_dis,
@@ -1339,23 +1341,33 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                 file_src_ext)
 
 
-        crystal.oe.FSTAT=1
-        crystal.oe.RTHETA=0
-        crystal.oe.RDSOUR=self.analyzer_distance
-        crystal.oe.ALPHA_S=0.0
-        crystal.oe.OFF_SOUX=0.0
-        crystal.oe.OFF_SOUY=0.0
-        crystal.oe.OFF_SOUZ=0.0
-        crystal.oe.X_SOUR=0.0
-        crystal.oe.Y_SOUR=0.0
-        crystal.oe.Z_SOUR=0.0
-        crystal.oe.X_SOUR_ROT=-self.twotheta_angles[angle_index]
-        crystal.oe.Y_SOUR_ROT=0.0
-        crystal.oe.Z_SOUR_ROT=0.0
+        acceptance_slits.oe.FWRITE = 3
+        acceptance_slits.oe.F_ANGLE = 0
+
+        out_beam = ShadowBeam.traceFromOENoHistory(diffracted_beam, acceptance_slits)
+
+        crystal = ShadowOpticalElement.create_plane_crystal()
+
+        crystal.oe.setFrameOfReference((self.analyzer_distance-self.acceptance_slit_distance)/2,
+                                       1,
+                                       90-self.analyzer_bragg_angle,
+                                       90-self.analyzer_bragg_angle,
+                                       180)
+
+        crystal.oe.unsetReflectivity()
+        crystal.oe.setCrystal(file_refl=bytes(self.rocking_curve_file, 'utf-8'))
+
+        crystal.oe.F_CENTRAL=0
+        crystal.oe.FHIT_C = 0
+
+        crystal.oe.FWRITE = 3
+        crystal.oe.F_ANGLE = 0
+
+        return ShadowBeam.traceFromOENoHistory(out_beam, crystal)
 
     ############################################################
 
-    def getSlitsOpticalElement(self, angle_index):
+    def traceFromSlits(self, diffracted_beam, angle_index):
         acceptance_slits = ShadowOpticalElement.create_screen_slit()
         acceptance_slits.oe.setFrameOfReference(self.detector_distance, 1,
                                                  0,
@@ -1363,8 +1375,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                                  0)
 
         acceptance_slits.oe.FSTAT=1
-        acceptance_slits.oe.RTHETA=0
-        acceptance_slits.oe.RDSOUR=self.slit_2_distance
+        acceptance_slits.oe.RTHETA=0.0
+        acceptance_slits.oe.RDSOUR=self.detector_distance
         acceptance_slits.oe.ALPHA_S=0.0
         acceptance_slits.oe.OFF_SOUX=0.0
         acceptance_slits.oe.OFF_SOUY=0.0
@@ -1421,7 +1433,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         acceptance_slits.oe.FWRITE = 3
         acceptance_slits.oe.F_ANGLE = 0
 
-        return acceptance_slits
+        return ShadowBeam.traceFromOENoHistory(diffracted_beam, acceptance_slits)
 
     ############################################################
 
