@@ -909,7 +909,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                     # genesi del nuovo raggio diffratto attenuato dell'intensità relativa e dell'assorbimento
                                     #
 
-                                    #diffracted_ray = numpy.zeros(19)
                                     diffracted_ray = numpy.zeros(18)
 
                                     diffracted_ray[0] = origin_point[0]  # X
@@ -935,8 +934,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                                     diffracted_ray[15]**2 + diffracted_ray[16]**2 + diffracted_ray[17]**2
 
 
-                                    #diffracted_ray[18] = ray_intensity
-
                                     if (self.number_of_rotated_rays == 1):
                                         diffracted_rays.append(diffracted_ray)
                                     else:
@@ -956,7 +953,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                         delta_range = range(0, len(delta_angles))
 
                                         for delta_index in delta_range:
-                                            #diffracted_ray_circle = numpy.zeros(19)
                                             diffracted_ray_circle = numpy.zeros(18)
 
                                             diffracted_ray_circle[0] = diffracted_ray[0]
@@ -974,7 +970,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                             diffracted_ray_circle[15] = diffracted_ray[15]
                                             diffracted_ray_circle[16] = diffracted_ray[16]
                                             diffracted_ray_circle[17] = diffracted_ray[17]
-                                            #diffracted_ray_circle[18] = diffracted_ray[18]
 
                                             delta_angle = delta_angles[delta_index]
 
