@@ -19,8 +19,6 @@ from PyMca.widgets.PlotWindow import PlotWindow
 
 class XRDCapillary(ow_automatic_element.AutomaticElement):
 
-    debug_mode = False
-
     name = "XRD Capillary"
     description = "Shadow OE: XRD Capillary"
     icon = "icons/xrd_capillary.png"
@@ -158,8 +156,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     random_generator = random.Random()
 
-    debug_file_1 = None
-
     def __init__(self):
         super().__init__()
 
@@ -270,8 +266,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         box_diffraction = ShadowGui.widgetBox(self.tab_physical, "Diffraction Parameters", addSpace=True, orientation="vertical")
 
-        gui.comboBox(box_diffraction, self, "set_number_of_peaks", label="set Last Diffraction Peak?", labelWidth=370, callback=self.setNumberOfPeaks, items=["No", "Yes"], sendSelectedValue=False, orientation="horizontal")
-        self.le_number_of_peaks = ShadowGui.lineEdit(box_diffraction, self, "number_of_peaks", "Last Diffraction Peak Number", labelWidth=358, valueType=int, orientation="horizontal")
+        gui.comboBox(box_diffraction, self, "set_number_of_peaks", label="set Number of Peaks", labelWidth=370, callback=self.setNumberOfPeaks, items=["No", "Yes"], sendSelectedValue=False, orientation="horizontal")
+        self.le_number_of_peaks = ShadowGui.lineEdit(box_diffraction, self, "number_of_peaks", "Number of Peaks", labelWidth=358, valueType=int, orientation="horizontal")
         gui.separator(box_diffraction)
 
         self.setNumberOfPeaks()
@@ -642,8 +638,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
             self.checkFields()
 
-            if (self.debug_mode): self.debug_file_1 = open(os.getcwd() + '/Output/generated_rays.dat', 'w')
-
             self.backupOutFile()
 
             self.run_simulation = True
@@ -656,13 +650,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
             ################################
             # VALUE CALCULATED ONCE
-
-            lattice_parameter = self.getLatticeParameter(self.sample_material)
-
-            if self.set_number_of_peaks == 1:
-                reflections = self.getReflections(self.sample_material, self.number_of_peaks)
-            else:
-                reflections = self.getReflections(self.sample_material, 0)
 
             # distances in CM
 
@@ -690,6 +677,13 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
             avg_k_modulus = numpy.average(go_input_beam.beam.rays[:,10])
             avg_wavelength = (2*math.pi/avg_k_modulus)*1e+8 # in Angstrom
+
+            lattice_parameter = self.getLatticeParameter(self.sample_material)
+
+            if self.set_number_of_peaks == 1:
+                reflections = self.getReflections(self.sample_material, self.number_of_peaks, avg_k_modulus)
+            else:
+                reflections = self.getReflections(self.sample_material, 0, avg_k_modulus)
 
             if self.calculate_absorption == 1:
                 self.absorption_normalization_factor = 1/self.getTransmittance(capillary_radius*2, avg_wavelength)
@@ -737,8 +731,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                     self.setStatusMessage("Running XRD Capillary Simulation on " + str(len(diffracted_rays))+ " diffracted rays")
 
                 self.generateXRDPattern(bar_value, diffracted_rays, avg_k_modulus, avg_wavelength, lattice_parameter, reflections)
-
-            if (self.debug_mode): self.debug_file_1.close()
 
             self.writeOutFile()
 
@@ -853,11 +845,9 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
                             # calcolo rotazione del vettore d'onda pari all'angolo di bragg
 
-                            twotheta_reflection = 2 * self.calculateBraggAngle(k_mod, reflection.h, reflection.k,
-                                                                               reflection.l, lattice_parameter)
+                            twotheta_reflection = 2 * self.calculateBraggAngle(k_mod, reflection.h, reflection.k, reflection.l, lattice_parameter)
 
-                            if math.degrees(twotheta_reflection) > self.start_angle and math.degrees(
-                                    twotheta_reflection) < self.stop_angle:
+                            if math.degrees(twotheta_reflection) > self.start_angle and math.degrees(twotheta_reflection) < self.stop_angle:
                                 #
                                 # calcolo del vettore ruotato di 2theta bragg, con la formula di Rodrigues:
                                 #
@@ -934,6 +924,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                                                                                            displacement_v)
 
                                         reduction_factor = math.sqrt(reduction_factor)
+                                        #reduction_factor = 1
 
                                         diffracted_ray_circle = numpy.zeros(18)
 
@@ -1279,13 +1270,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
         polarization_factor = polarization_factor_num/polarization_factor_den
 
-        #TODO TEMPORARY - JUST FOR 11-BM - UNDERSTAND THE ROLE OF THE CRYSTAL.
-        if self.diffracted_arm_type == 1:
-            if (twotheta_deg < 6):
-                normalization = 2.05*normalization
-            elif (twotheta_deg < 9):
-                normalization = 1.35*normalization
-
         return lorentz_factor*polarization_factor/normalization
 
     ############################################################
@@ -1317,6 +1301,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     ############################################################
 
     def traceFromAnalyzer(self, diffracted_beam, angle_index):
+
+        input_beam = diffracted_beam.duplicate(history=False)
 
         acceptance_slits = ShadowOpticalElement.create_screen_slit()
         acceptance_slits.oe.setFrameOfReference(self.acceptance_slit_distance, (self.analyzer_distance-self.acceptance_slit_distance)/2,
@@ -1378,7 +1364,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         acceptance_slits.oe.FWRITE = 3
         acceptance_slits.oe.F_ANGLE = 0
 
-        out_beam = ShadowBeam.traceFromOENoHistory(diffracted_beam, acceptance_slits)
+        out_beam = ShadowBeam.traceFromOENoHistory(input_beam, acceptance_slits)
 
         crystal = ShadowOpticalElement.create_plane_crystal()
 
@@ -1403,6 +1389,9 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     ############################################################
 
     def traceFromSlits(self, diffracted_beam, angle_index):
+
+        input_beam = diffracted_beam.duplicate(history=False)
+
         acceptance_slits = ShadowOpticalElement.create_screen_slit()
         acceptance_slits.oe.setFrameOfReference(self.detector_distance, 1,
                                                  0,
@@ -1468,7 +1457,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         acceptance_slits.oe.FWRITE = 3
         acceptance_slits.oe.F_ANGLE = 0
 
-        return ShadowBeam.traceFromOENoHistory(diffracted_beam, acceptance_slits)
+        return ShadowBeam.traceFromOENoHistory(input_beam, acceptance_slits)
 
     ############################################################
 
@@ -1594,7 +1583,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     ############################################################
 
-    def getReflections(self, material, number_of_peaks):
+    def getReflections(self, material, number_of_peaks, avg_k_modulus):
         reflections = []
 
         if material < len(self.materials):
@@ -1603,12 +1592,23 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             else:
                 max_index = min(len(self.materials[material].reflections), number_of_peaks)
 
+            added_peak = 0
             for index in range(0, max_index):
-                reflections.append(self.materials[material].reflections[index])
 
-            return reflections
-        else:
-            return None
+                if number_of_peaks > 0 and added_peak == number_of_peaks: break
+
+                reflection = self.materials[material].reflections[index]
+
+                try:
+                    twotheta_bragg = 2*math.degrees(self.calculateBraggAngle(avg_k_modulus, reflection.h, reflection.k, reflection.l, self.materials[material].lattice_parameter))
+
+                    if twotheta_bragg >= self.start_angle and twotheta_bragg <= self.stop_angle:
+                        reflections.append(reflection)
+                        added_peak += 1
+                except Exception:
+                    break
+
+        return reflections
 
     ############################################################
 
