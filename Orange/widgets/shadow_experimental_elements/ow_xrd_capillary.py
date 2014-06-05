@@ -14,6 +14,7 @@ from Orange.shadow.shadow_objects import ShadowTriggerIn
 from Orange.widgets.shadow_gui import ow_automatic_element
 from Orange.shadow.shadow_util import ShadowGui, ShadowMath, ShadowPhysics, ConfirmDialog
 from Orange.shadow.shadow_objects import ShadowBeam, ShadowOpticalElement
+from Orange.widgets.shadow_experimental_elements.random_generator import RandomGenerator
 
 from PyMca.widgets.PlotWindow import PlotWindow
 
@@ -154,10 +155,12 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     materials = []
     rocking_data = []
 
-    random_generator = random.Random()
+    random_generator_flat = random.Random()
 
     def __init__(self):
         super().__init__()
+
+        self.random_generator_flat.seed()
 
         self.readMaterialConfigurationFiles()
 
@@ -777,7 +780,11 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     def generateDiffractedRays(self, bar_value, capillary_radius, displacement_h, displacement_v, go_input_beam, input_rays,
                     lattice_parameter, percentage_fraction, reflections):
+
+        out_file = open("diff.dat", "w")
+
         diffracted_rays = []
+
         for ray_index in input_rays:
             if not self.run_simulation: break
             # costruzione intersezione con capillare + displacement del capillare
@@ -826,13 +833,19 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                     asse_rot = ShadowMath.vector_normalize(ShadowMath.vectorial_product(v_in, z_axis))
 
                     for origin_point_index in range(0, int(self.number_of_origin_points)):
-                        random_value = self.random_generator.random()
+
+                        wavelength = (2*math.pi/k_mod)*1e+8 # in Angstrom
+                        path = math.sqrt((x_2-x_1)**2+(y_2-y_1)**2+(z_2-z_1)**2)
+
+                        random_generator_photons = RandomGenerator(self.getLinearAbsorptionCoefficient(wavelength), path)
+
+                        random_path = random_generator_photons.random()
 
                         # calcolo di un punto casuale sul segmento congiungente.
 
-                        x_point = x_1 + (x_2 - x_1) * random_value
-                        y_point = y_1 + (y_2 - y_1) * random_value
-                        z_point = z_1 + (z_2 - z_1) * random_value
+                        x_point = x_1 + random_path*v_0_x
+                        y_point = y_1 + random_path*v_0_y
+                        z_point = z_1 + random_path*v_0_z
 
                         reflection_index = -1
 
@@ -931,6 +944,9 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                         diffracted_ray_circle[3] = v_out[0]  # director cos x
                                         diffracted_ray_circle[4] = v_out[1]  # director cos y
                                         diffracted_ray_circle[5] = v_out[2]  # director cos z
+
+                                        out_file.write(str(v_out[0]) + " " + str(v_out[1]) + " " + str(v_out[2]) + "\n")
+
                                         diffracted_ray_circle[6] = go_input_beam.beam.rays[ray_index, 6]*reduction_factor  # Es_x
                                         diffracted_ray_circle[7] = go_input_beam.beam.rays[ray_index, 7]*reduction_factor   # Es_y
                                         diffracted_ray_circle[8] = go_input_beam.beam.rays[ray_index, 8]*reduction_factor   # Es_z
@@ -948,6 +964,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
             bar_value += percentage_fraction
             self.progressBarSet(bar_value)
+
+        out_file.close()
 
         return bar_value, diffracted_rays
 
@@ -1073,7 +1091,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         delta_angles = []
 
         for index in range(0, int(self.number_of_rotated_rays)):
-            delta_temp = 2 * self.random_generator.random() * delta
+            delta_temp = 2 * self.random_generator_flat.random() * delta
 
             if delta_temp <= delta:
                 delta_angles.append(delta_temp)
@@ -1100,7 +1118,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                 background += ShadowPhysics.ChebyshevBackgroundNoised(coefficients=coefficients, 
                                                                       twotheta=self.twotheta_angles[angle_index],
                                                                       n_sigma=self.n_sigma,
-                                                                      random_generator=self.random_generator)
+                                                                      random_generator=self.random_generator_flat)
                 
             if (self.add_expdecay==1):
                 coefficients = [self.expd_coeff_0, self.expd_coeff_1, self.expd_coeff_2, self.expd_coeff_3, self.expd_coeff_4, self.expd_coeff_5]
@@ -1110,7 +1128,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                                                      decayparams=decayparams,
                                                                      twotheta=self.twotheta_angles[angle_index],
                                                                      n_sigma=self.n_sigma,
-                                                                     random_generator=self.random_generator)
+                                                                     random_generator=self.random_generator_flat)
             self.noise[angle_index] += background
 
         bar_value += percentage_fraction
@@ -1248,11 +1266,14 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     ############################################################
 
-    def getTransmittance(self, path, wavelength):
+    def getLinearAbsorptionCoefficient(self, wavelength):
         mu = xraylib.CS_Total_CP(self.getChemicalFormula(self.sample_material), 12.397639/wavelength)
         rho = self.getDensity(self.sample_material)*self.packing_factor
 
-        return math.exp(-mu*rho*path)
+        return mu*rho
+
+    def getTransmittance(self, path, wavelength):
+        return math.exp(-self.getLinearAbsorptionCoefficient(wavelength)*path)
 
     ############################################################
     # PM2K
