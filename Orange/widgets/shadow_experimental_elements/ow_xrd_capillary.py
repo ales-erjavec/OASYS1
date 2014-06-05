@@ -649,6 +649,11 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                 executions = range(0, self.number_of_executions)
 
             ################################
+            # ARRAYS FOR OUTPUT AND PLOTS
+
+            steps = self.initialize()
+
+            ################################
             # VALUE CALCULATED ONCE
 
             # distances in CM
@@ -662,7 +667,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
             self.horizontal_acceptance_slit_1 = self.slit_1_horizontal_aperture*1e-4
             self.vertical_acceptance_slit_1 = self.slit_1_vertical_aperture*1e-4
-
             self.horizontal_acceptance_slit_2 = self.slit_2_horizontal_aperture*1e-4
             self.vertical_acceptance_slit_2 = self.slit_2_vertical_aperture*1e-4
 
@@ -670,7 +674,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             self.slit_2_vertical_displacement_cm = self.slit_2_vertical_displacement*1e-4
             self.slit_1_horizontal_displacement_cm = self.slit_1_horizontal_displacement*1e-4
             self.slit_2_horizontal_displacement_cm = self.slit_2_horizontal_displacement*1e-4
-
 
             self.horizontal_acceptance_analyzer = self.acceptance_slit_horizontal_aperture*1e-4
             self.vertical_acceptance_analyzer = self.acceptance_slit_vertical_aperture*1e-4
@@ -681,17 +684,12 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             lattice_parameter = self.getLatticeParameter(self.sample_material)
 
             if self.set_number_of_peaks == 1:
-                reflections = self.getReflections(self.sample_material, self.number_of_peaks, avg_k_modulus)
+                reflections = self.getReflections(self.sample_material, self.number_of_peaks, avg_k_modulus=avg_k_modulus)
             else:
-                reflections = self.getReflections(self.sample_material, 0, avg_k_modulus)
+                reflections = self.getReflections(self.sample_material, avg_k_modulus=avg_k_modulus)
 
             if self.calculate_absorption == 1:
                 self.absorption_normalization_factor = 1/self.getTransmittance(capillary_radius*2, avg_wavelength)
-
-            ################################
-            # ARRAYS FOR OUTPUT AND PLOTS
-
-            steps = self.initialize()
 
             ################################
             # EXECUTION CYCLES
@@ -892,8 +890,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                     # genesi del nuovo raggio diffratto attenuato dell'intensità relativa e dell'assorbimento
                                     #
 
-                                    reduction_factor = reflection.relative_intensity
-
                                     delta_angles = self.calculateDeltaAngles(twotheta_reflection)
 
                                     for delta_index in range(0, len(delta_angles)):
@@ -914,6 +910,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
                                         v_out = ShadowMath.vector_sum(v_out_1, ShadowMath.vector_sum(v_out_2, v_out_3))
 
+                                        reduction_factor = reflection.relative_intensity
+
                                         if (self.calculate_absorption == 1):
                                             reduction_factor = reduction_factor * self.calculateAbsorption(k_mod,
                                                                                                            entry_point,
@@ -924,7 +922,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                                                                                            displacement_v)
 
                                         reduction_factor = math.sqrt(reduction_factor)
-                                        #reduction_factor = 1
 
                                         diffracted_ray_circle = numpy.zeros(18)
 
@@ -1152,9 +1149,18 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         #
         # sen(th) = (sqrt(h^2 + k^2 + l^2) * lambda)/(2 a)
 
-        wl = (2*math.pi/k_modulus)*1e+8
+        theta_bragg = -1
 
-        return math.asin((wl*math.sqrt(h**2+k**2+l**2))/(2*a))
+        wl = (2*math.pi/k_modulus)*1e+8
+        argument = (wl*math.sqrt(h**2+k**2+l**2))/(2*a)
+
+        if argument <=1:
+            result = math.asin(argument)
+
+            if result > 0:
+                theta_bragg = result
+
+        return theta_bragg
 
     ############################################################
 
@@ -1289,7 +1295,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     def calculateDebyeWallerFactor(self, twotheta_deg, wavelength, B):
 
-        theta = math.radians(twotheta_deg)/2
+        theta = 0.5*math.radians(twotheta_deg)
         M = B*(math.sin(theta)/wavelength)**2
 
         return math.exp(-2*M)
@@ -1583,30 +1589,21 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     ############################################################
 
-    def getReflections(self, material, number_of_peaks, avg_k_modulus):
+    def getReflections(self, material, number_of_peaks=-1, avg_k_modulus=0.0):
         reflections = []
 
         if material < len(self.materials):
-            if number_of_peaks == 0:
-                max_index = len(self.materials[material].reflections)
-            else:
-                max_index = min(len(self.materials[material].reflections), number_of_peaks)
-
+            total_reflections = self.materials[material].reflections
             added_peak = 0
-            for index in range(0, max_index):
 
+            for reflection in total_reflections:
                 if number_of_peaks > 0 and added_peak == number_of_peaks: break
 
-                reflection = self.materials[material].reflections[index]
+                twotheta_bragg = 2*math.degrees(self.calculateBraggAngle(avg_k_modulus, reflection.h, reflection.k, reflection.l, self.materials[material].lattice_parameter))
 
-                try:
-                    twotheta_bragg = 2*math.degrees(self.calculateBraggAngle(avg_k_modulus, reflection.h, reflection.k, reflection.l, self.materials[material].lattice_parameter))
-
-                    if twotheta_bragg >= self.start_angle and twotheta_bragg <= self.stop_angle:
-                        reflections.append(reflection)
-                        added_peak += 1
-                except Exception:
-                    break
+                if twotheta_bragg >= self.start_angle and twotheta_bragg <= self.stop_angle:
+                    reflections.append(reflection)
+                    added_peak += 1
 
         return reflections
 
