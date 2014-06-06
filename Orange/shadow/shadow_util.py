@@ -267,6 +267,18 @@ class ShadowMath:
 class ShadowPhysics:
 
     @classmethod
+    def getWavelengthfromShadowK(cls, k_mod): # in cm
+        return (2*math.pi/k_mod)*1e+8 # in Angstrom
+
+    @classmethod
+    def getWavelengthFromEnergy(cls, energy): #in eV
+        return 12397.639/energy # in Angstrom
+
+    @classmethod
+    def getEnergyFromWavelength(cls, wavelength): # in Angstrom
+        return 12397.639/wavelength # in eV
+
+    @classmethod
     def Chebyshev(cls, n, x):
         if n==0: return 1
         elif n==1: return x

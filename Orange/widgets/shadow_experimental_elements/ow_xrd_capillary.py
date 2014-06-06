@@ -681,8 +681,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             self.horizontal_acceptance_analyzer = self.acceptance_slit_horizontal_aperture*1e-4
             self.vertical_acceptance_analyzer = self.acceptance_slit_vertical_aperture*1e-4
 
-            avg_k_modulus = numpy.average(go_input_beam.beam.rays[:,10])
-            avg_wavelength = (2*math.pi/avg_k_modulus)*1e+8 # in Angstrom
+            avg_k_modulus = numpy.average(go_input_beam.beam.rays[:, 10])
+            avg_wavelength = ShadowPhysics.getWavelengthfromShadowK(avg_k_modulus) # in Angstrom
 
             lattice_parameter = self.getLatticeParameter(self.sample_material)
 
@@ -781,7 +781,11 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     def generateDiffractedRays(self, bar_value, capillary_radius, displacement_h, displacement_v, go_input_beam, input_rays,
                     lattice_parameter, percentage_fraction, reflections):
 
-        out_file = open("diff.dat", "w")
+        # self.out_file = open("diff.dat", "w")
+        # self.out_file_2 = open("exit.dat", "w")
+        # self.out_file_3 = open("entry.dat", "w")
+        # self.out_file_4 = open("exit_cap.dat", "w")
+        # self.out_file_5 = open("origin.dat", "w")
 
         diffracted_rays = []
 
@@ -793,13 +797,13 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             y_0 = go_input_beam.beam.rays[ray_index, 1]
             z_0 = go_input_beam.beam.rays[ray_index, 2]
 
-            if (y_0 ** 2 + z_0 ** 2 < capillary_radius ** 2):
+            if (y_0**2 + z_0**2 < capillary_radius**2):
                 v_0_x = go_input_beam.beam.rays[ray_index, 3]
                 v_0_y = go_input_beam.beam.rays[ray_index, 4]
                 v_0_z = go_input_beam.beam.rays[ray_index, 5]
 
-                k_1 = v_0_y / v_0_x
-                k_2 = v_0_z / v_0_x
+                k_1 = v_0_y/v_0_x
+                k_2 = v_0_z/v_0_x
 
                 a = (k_1**2 + k_2**2)
                 b = 2*(k_1*(y_0+displacement_h) + k_2*(z_0+displacement_v))
@@ -820,12 +824,22 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
                     if (y_1 < y_2):
                         entry_point = [x_1, y_1, z_1]
+                        exit_point = [x_2, y_2, z_2]
                     else:
                         entry_point = [x_2, y_2, z_2]
+                        exit_point = [x_1, y_1, z_1]
 
-                    k_mod = go_input_beam.beam.rays[ray_index, 10]
+                    path = ShadowMath.vector_modulus(ShadowMath.vector_difference(exit_point, entry_point))
+
+                    # self.out_file_3.write(str(entry_point[0]) + " " + str(entry_point[1]) + " " + str(entry_point[2]) + "\n")
+                    # self.out_file_4.write(str(exit_point[0]) + " " + str(exit_point[1]) + " " + str(exit_point[2]) + "\n")
+
                     v_in = [v_0_x, v_0_y, v_0_z]
                     z_axis = [0, 0, 1]
+                    k_mod = go_input_beam.beam.rays[ray_index, 10]
+                    wavelength = ShadowPhysics.getWavelengthfromShadowK(k_mod)
+
+                    random_generator_photons = RandomGenerator(self.getLinearAbsorptionCoefficient(wavelength), path)
 
                     #
                     # calcolo dell'asse di rotazione: k x z/|k x z|
@@ -834,18 +848,17 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
                     for origin_point_index in range(0, int(self.number_of_origin_points)):
 
-                        wavelength = (2*math.pi/k_mod)*1e+8 # in Angstrom
-                        path = math.sqrt((x_2-x_1)**2+(y_2-y_1)**2+(z_2-z_1)**2)
-
-                        random_generator_photons = RandomGenerator(self.getLinearAbsorptionCoefficient(wavelength), path)
-
                         random_path = random_generator_photons.random()
 
                         # calcolo di un punto casuale sul segmento congiungente.
 
-                        x_point = x_1 + random_path*v_0_x
-                        y_point = y_1 + random_path*v_0_y
-                        z_point = z_1 + random_path*v_0_z
+                        x_point = entry_point[0] + random_path*v_in[0]
+                        y_point = entry_point[1] + random_path*v_in[1]
+                        z_point = entry_point[2] + random_path*v_in[2]
+
+                        origin_point = [x_point, y_point, z_point]
+
+                        # self.out_file_5.write(str(origin_point[0]) + " " + str(origin_point[1]) + " " + str(origin_point[2]) + "\n")
 
                         reflection_index = -1
 
@@ -869,14 +882,9 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
                                 v_out_1 = ShadowMath.vector_sum(
                                     ShadowMath.vector_multiply(v_in, math.cos(twotheta_reflection)),
-                                    ShadowMath.vector_multiply(ShadowMath.vectorial_product(asse_rot, v_in),
-                                                               math.sin(twotheta_reflection)))
+                                    ShadowMath.vector_multiply(ShadowMath.vectorial_product(asse_rot, v_in), math.sin(twotheta_reflection)))
 
                                 # intersezione raggi con sfera di raggio distanza con il detector. le intersezioni con Z < 0 vengono rigettate
-
-                                R_sp = self.detector_distance
-                                origin_point = [x_point, y_point, z_point]
-
                                 #
                                 # retta P = origin_point + v t
                                 #
@@ -890,7 +898,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                 P_0 = ShadowMath.vector_sum(origin_point, ShadowMath.vector_multiply(v_out_1, t_0))
 
                                 b = ShadowMath.vector_modulus(P_0)
-                                a = math.sqrt(R_sp**2 - b**2)
+                                a = math.sqrt(self.detector_distance**2 - b**2)
 
                                 # N.B. punti di uscita hanno solo direzione in avanti.
                                 #P_1 = ShadowMath.vector_sum(origin_point, ShadowMath.vector_multiply(v_out, t_0-a))
@@ -926,7 +934,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                         reduction_factor = reflection.relative_intensity
 
                                         if (self.calculate_absorption == 1):
-                                            reduction_factor = reduction_factor * self.calculateAbsorption(k_mod,
+                                            reduction_factor = reduction_factor * self.calculateAbsorption(wavelength,
                                                                                                            entry_point,
                                                                                                            origin_point,
                                                                                                            v_out,
@@ -944,9 +952,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                         diffracted_ray_circle[3] = v_out[0]  # director cos x
                                         diffracted_ray_circle[4] = v_out[1]  # director cos y
                                         diffracted_ray_circle[5] = v_out[2]  # director cos z
-
-                                        out_file.write(str(v_out[0]) + " " + str(v_out[1]) + " " + str(v_out[2]) + "\n")
-
                                         diffracted_ray_circle[6] = go_input_beam.beam.rays[ray_index, 6]*reduction_factor  # Es_x
                                         diffracted_ray_circle[7] = go_input_beam.beam.rays[ray_index, 7]*reduction_factor   # Es_y
                                         diffracted_ray_circle[8] = go_input_beam.beam.rays[ray_index, 8]*reduction_factor   # Es_z
@@ -960,12 +965,18 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                                         diffracted_ray_circle[16] = go_input_beam.beam.rays[ray_index, 15]*reduction_factor   # Ep_y
                                         diffracted_ray_circle[17] = go_input_beam.beam.rays[ray_index, 16]*reduction_factor   # Ep_z
 
+                                        # self.out_file.write(str(v_out[0]) + " " + str(v_out[1]) + " " + str(v_out[2]) + "\n")
+
                                         diffracted_rays.append(diffracted_ray_circle)
 
             bar_value += percentage_fraction
             self.progressBarSet(bar_value)
 
-        out_file.close()
+        # self.out_file.close()
+        # self.out_file_2.close()
+        # self.out_file_3.close()
+        # self.out_file_4.close()
+        # self.out_file_5.close()
 
         return bar_value, diffracted_rays
 
@@ -1182,7 +1193,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     ############################################################
 
-    def calculateAbsorption(self, k_mod, entry_point, origin_point, direction_versor, capillary_radius, displacement_h, displacement_v):
+    def calculateAbsorption(self, wavelength, entry_point, origin_point, direction_versor, capillary_radius, displacement_h, displacement_v):
 
         absorption = 0
 
@@ -1223,7 +1234,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             y_sol = 0
             z_sol = 0
 
-
             # solutions only with z > 0 and
             # se y-y0 > 0 allora il versore deve avere y' > 0
             # se y-y0 < 0 allora il versore deve avere y' < 0
@@ -1252,9 +1262,9 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                         find_solution = True
 
             if find_solution:
-                wavelength = (2*math.pi/k_mod)*1e+8 # in Angstrom
-
                 exit_point = [x_sol, y_sol, z_sol]
+
+                # self.out_file_2.write(str(exit_point[0]) + " " + str(exit_point[1]) + " " + str(exit_point[2]) + "\n")
 
                 distance = min((ShadowMath.point_distance(entry_point, origin_point) + ShadowMath.point_distance(origin_point, exit_point)), capillary_radius*2)
 
@@ -1267,7 +1277,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     ############################################################
 
     def getLinearAbsorptionCoefficient(self, wavelength):
-        mu = xraylib.CS_Total_CP(self.getChemicalFormula(self.sample_material), 12.397639/wavelength)
+        mu = xraylib.CS_Total_CP(self.getChemicalFormula(self.sample_material), ShadowPhysics.getEnergyFromWavelength(wavelength)/1000) # energy in KeV
         rho = self.getDensity(self.sample_material)*self.packing_factor
 
         return mu*rho
