@@ -4,14 +4,14 @@ from PyQt4 import QtCore
 import Shadow
 
 class TTYGrabber:
-    def __init__(self,  tmpFile = 'out.tmp.dat'):
-        self.tmpFile = tmpFile
+    def __init__(self,  tmpFileName = 'out.tmp.dat'):
+        self.tmpFileName = tmpFileName
         self.ttyData = []
         self.outfile = False
         self.save = False
 
     def start(self):
-        self.outfile = os.open(self.tmpFile, os.O_RDWR|os.O_CREAT)
+        self.outfile = os.open(self.tmpFileName, os.O_RDWR|os.O_CREAT)
         self.save = os.dup(1)
         os.dup2(self.outfile, 1)
         return
@@ -20,9 +20,11 @@ class TTYGrabber:
         if not self.save:
             return
         os.dup2(self.save, 1)
-        self.ttyData = open(self.tmpFile, ).readlines()
+        tmpFile = open(self.tmpFileName, "r")
+        self.ttyData = tmpFile.readlines()
+        tmpFile.close()
         os.close(self.outfile)
-        os.remove(self.tmpFile)
+        os.remove(self.tmpFileName)
 
 class EmittingStream(QtCore.QObject):
     textWritten = QtCore.pyqtSignal(str)
