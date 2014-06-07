@@ -270,6 +270,9 @@ class ShadowPhysics:
     def getWavelengthfromShadowK(cls, k_mod): # in cm
         return (2*math.pi/k_mod)*1e+8 # in Angstrom
 
+    def getShadowKFromWavelength(cls, wavelength): # in A
+        return (2*math.pi/wavelength)*1e+8 # in cm
+
     @classmethod
     def getWavelengthFromEnergy(cls, energy): #in eV
         return 12397.639/energy # in Angstrom
