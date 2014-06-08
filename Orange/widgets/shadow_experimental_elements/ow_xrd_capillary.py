@@ -779,7 +779,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     def generateDiffractedRays(self, bar_value, capillary_radius, displacement_h, displacement_v, go_input_beam, input_rays, percentage_fraction, reflections):
 
-        # self.out_file = open("diff.dat", "w")
+        self.out_file = open("diff.dat", "w")
         # self.out_file_2 = open("exit.dat", "w")
         # self.out_file_3 = open("entry.dat", "w")
         # self.out_file_4 = open("exit_cap.dat", "w")
@@ -863,7 +863,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                         for reflection in reflections:
                             if not self.run_simulation: break
 
-                            twotheta_reflection = reflection.twotheta_bragg + ray_divergence
+                            twotheta_reflection = reflection.twotheta_bragg + 2*ray_divergence
 
                             # rotazione del vettore d'onda pari all'angolo di bragg
                             #
@@ -878,9 +878,9 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
                             v_out_temp = ShadowMath.vector_sum(v_out_temp_1, ShadowMath.vector_sum(v_out_temp_2, v_out_temp_3))
 
-                            # self.out_file.write(str(origin_point[0] + v_out_temp[0]*self.detector_distance) + " " + \
-                            #                     str(origin_point[1] + v_out_temp[1]*self.detector_distance) + " " + \
-                            #                     str(origin_point[2] + v_out_temp[2]*self.detector_distance) + "\n")
+                            self.out_file.write(str(origin_point[0] + v_out_temp[0]*self.detector_distance) + " " + \
+                                                str(origin_point[1] + v_out_temp[1]*self.detector_distance) + " " + \
+                                                str(origin_point[2] + v_out_temp[2]*self.detector_distance) + "\n")
 
                             # intersezione raggi con sfera di raggio distanza con il detector. le intersezioni con Z < 0 vengono rigettate
                             #
@@ -968,7 +968,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             bar_value += percentage_fraction
             self.progressBarSet(bar_value)
 
-        # self.out_file.close()
+        self.out_file.close()
         # self.out_file_2.close()
         # self.out_file_3.close()
         # self.out_file_4.close()
