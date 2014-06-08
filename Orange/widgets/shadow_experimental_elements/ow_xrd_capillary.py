@@ -100,6 +100,10 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     normalize = Setting(1)
     degrees_around_peak = Setting(0.01)
 
+    beam_energy = Setting(0.0)
+    beam_wavelength = Setting(0.0)
+    beam_units_in_use = Setting(0)
+
     output_file_name = Setting('XRD_Profile.xy')
 
     add_lorentz_polarization_factor = Setting(1)
@@ -161,8 +165,6 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     def __init__(self):
         super().__init__()
 
-        self.random_generator_flat.seed()
-
         self.readMaterialConfigurationFiles()
 
         self.controlArea.setFixedWidth(self.CONTROL_AREA_WIDTH)
@@ -211,6 +213,22 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         box_ray_tracing = ShadowGui.widgetBox(self.tab_simulation, "Ray Tracing Management", addSpace=True, orientation="vertical")
 
         ShadowGui.lineEdit(box_ray_tracing, self, "degrees_around_peak", "Degrees around Peak", labelWidth=355, valueType=float, orientation="horizontal")
+
+        gui.separator(box_ray_tracing)
+
+        gui.comboBox(box_ray_tracing, self, "beam_units_in_use", label="Units in use", labelWidth=350,
+                     items=["eV", "Angstroms"],
+                     callback=self.setBeamUnitsInUse, sendSelectedValue=False, orientation="horizontal")
+
+        self.box_ray_tracing_1 = ShadowGui.widgetBox(box_ray_tracing, "", addSpace=False, orientation="vertical")
+
+        ShadowGui.lineEdit(self.box_ray_tracing_1, self, "beam_energy", "Set Beam energy [eV]", labelWidth=300, valueType=float, orientation="horizontal")
+
+        self.box_ray_tracing_2 = ShadowGui.widgetBox(box_ray_tracing, "", addSpace=False, orientation="vertical")
+
+        ShadowGui.lineEdit(self.box_ray_tracing_2, self, "beam_wavelength", "Beam wavelength [Å]", labelWidth=300, valueType=float, orientation="horizontal")
+
+        self.setBeamUnitsInUse()
 
         #####################
 
@@ -496,6 +514,10 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     def setIncremental(self):
         self.le_number_of_executions.setEnabled(self.incremental == 1)
 
+    def setBeamUnitsInUse(self):
+        self.box_ray_tracing_1.setVisible(self.beam_units_in_use == 0)
+        self.box_ray_tracing_2.setVisible(self.beam_units_in_use == 1)
+
     def setDiffractedArmType(self):
         self.box_2theta_arm_1.setVisible(self.diffracted_arm_type == 0)
         self.box_2theta_arm_2.setVisible(self.diffracted_arm_type == 1)
@@ -638,6 +660,8 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
             if number_of_input_rays == 0: raise Exception("No good rays, modify the beamline simulation")
 
+            self.random_generator_flat.seed()
+
             input_rays = range(0, number_of_input_rays)
 
             self.checkFields()
@@ -682,7 +706,10 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             self.horizontal_acceptance_analyzer = self.acceptance_slit_horizontal_aperture*1e-4
             self.vertical_acceptance_analyzer = self.acceptance_slit_vertical_aperture*1e-4
 
-            avg_wavelength = ShadowPhysics.getWavelengthfromShadowK(numpy.average(go_input_beam.beam.rays[:, 10])) # in Angstrom
+            if self.beam_units_in_use == 0 : #eV
+                avg_wavelength = ShadowPhysics.getWavelengthFromEnergy(self.beam_energy)
+            else:
+                avg_wavelength = self.beam_wavelength # in Angstrom
 
             lattice_parameter = self.getLatticeParameter(self.sample_material)
 
@@ -717,13 +744,13 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
                 self.progressBarSet(0)
 
                 bar_value, diffracted_rays = self.generateDiffractedRays(0,
-                                                                                 capillary_radius,
-                                                                                 displacement_h,
-                                                                                 displacement_v,
-                                                                                 go_input_beam,
-                                                                                 input_rays,
-                                                                                 (50/number_of_input_rays),
-                                                                                 reflections)
+                                                                         capillary_radius,
+                                                                         displacement_h,
+                                                                         displacement_v,
+                                                                         go_input_beam,
+                                                                         input_rays,
+                                                                         (50/number_of_input_rays),
+                                                                         reflections)
 
                 if (self.incremental == 1 and self.number_of_executions > 1):
                     self.setStatusMessage("Running XRD Capillary Simulation on " + str(len(diffracted_rays))+ " diffracted rays: " + str(execution+1) + " of " + str(self.number_of_executions))
@@ -779,7 +806,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
     def generateDiffractedRays(self, bar_value, capillary_radius, displacement_h, displacement_v, go_input_beam, input_rays, percentage_fraction, reflections):
 
-        self.out_file = open("diff.dat", "w")
+        # self.out_file = open("diff.dat", "w")
         # self.out_file_2 = open("exit.dat", "w")
         # self.out_file_3 = open("entry.dat", "w")
         # self.out_file_4 = open("exit_cap.dat", "w")
@@ -858,12 +885,20 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
                         origin_point = [x_point, y_point, z_point]
 
-#                        self.out_file_5.write(str(origin_point[0]) + " " + str(origin_point[1]) + " " + str(origin_point[2]) + "\n")
+                        # self.out_file_5.write(str(origin_point[0]) + " " + str(origin_point[1]) + " " + str(origin_point[2]) + "\n")
 
                         for reflection in reflections:
                             if not self.run_simulation: break
 
-                            twotheta_reflection = reflection.twotheta_bragg + 2*ray_divergence
+                            theta_bragg_nominal = reflection.twotheta_bragg/2
+                            theta_bragg_ray = self.calculateBraggAngle(wavelength, reflection.h, reflection.k, reflection.l, self.materials[self.sample_material].lattice_parameter)
+
+                            delta = (theta_bragg_ray - theta_bragg_nominal) + 2*ray_divergence # energia contribuisce in modo dispersivo mentre la diffrazione si comporta da specchio
+
+                            twotheta_reflection = 2*theta_bragg_nominal + delta
+
+
+                            #twotheta_reflection = 2*(theta_bragg_ray - ray_divergence)
 
                             # rotazione del vettore d'onda pari all'angolo di bragg
                             #
@@ -878,9 +913,9 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
 
                             v_out_temp = ShadowMath.vector_sum(v_out_temp_1, ShadowMath.vector_sum(v_out_temp_2, v_out_temp_3))
 
-                            self.out_file.write(str(origin_point[0] + v_out_temp[0]*self.detector_distance) + " " + \
-                                                str(origin_point[1] + v_out_temp[1]*self.detector_distance) + " " + \
-                                                str(origin_point[2] + v_out_temp[2]*self.detector_distance) + "\n")
+                            # self.out_file.write(str(origin_point[0] + v_out_temp[0]*self.detector_distance) + " " + \
+                            #                     str(origin_point[1] + v_out_temp[1]*self.detector_distance) + " " + \
+                            #                     str(origin_point[2] + v_out_temp[2]*self.detector_distance) + "\n")
 
                             # intersezione raggi con sfera di raggio distanza con il detector. le intersezioni con Z < 0 vengono rigettate
                             #
@@ -968,7 +1003,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
             bar_value += percentage_fraction
             self.progressBarSet(bar_value)
 
-        self.out_file.close()
+        # self.out_file.close()
         # self.out_file_2.close()
         # self.out_file_3.close()
         # self.out_file_4.close()
