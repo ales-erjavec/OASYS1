@@ -5,11 +5,9 @@ from Orange.widgets import widget
 from Orange.widgets import gui
 from Orange.widgets.settings import Setting
 from PyQt4 import QtGui
-from PyQt4.QtCore import Qt
 from PyQt4.QtGui import qApp, QColor
 
-from Orange.widgets.shadow_gui import ow_generic_element
-from Orange.shadow.shadow_objects import EmittingStream, TTYGrabber, ShadowBeam
+from Orange.shadow.shadow_objects import ShadowBeam
 from Orange.shadow.shadow_util import ShadowGui
 
 class ImageToBeamConverter(widget.OWWidget):

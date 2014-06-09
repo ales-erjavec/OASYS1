@@ -153,8 +153,9 @@ class Histogram(ow_automatic_element.AutomaticElement):
     def plot_results(self):
 
         sys.stdout = EmittingStream(textWritten=self.writeStdOut)
-        grabber = TTYGrabber()
-        grabber.start()
+        if self.trace_shadow:
+            grabber = TTYGrabber()
+            grabber.start()
 
 
         if not self.input_beam == None:
@@ -169,10 +170,11 @@ class Histogram(ow_automatic_element.AutomaticElement):
 
             self.plot_histo(x, title=self.title, xtitle=auto_title, ytitle="Rays")
 
-        grabber.stop()
+        if self.trace_shadow:
+            grabber.stop()
 
-        for row in grabber.ttyData:
-           self.writeStdOut(row)
+            for row in grabber.ttyData:
+               self.writeStdOut(row)
 
         qApp.processEvents()
 

@@ -178,17 +178,19 @@ class BendingMagnet(ow_generic_element.GenericElement):
             qApp.processEvents()
 
             sys.stdout = EmittingStream(textWritten=self.writeStdOut)
-            grabber = TTYGrabber()
-            grabber.start()
+            if self.trace_shadow:
+                grabber = TTYGrabber()
+                grabber.start()
 
             self.progressBarSet(50)
 
             beam_out = Orange.shadow.ShadowBeam.traceFromSource(shadow_src)
 
-            grabber.stop()
+            if self.trace_shadow:
+                grabber.stop()
 
-            for row in grabber.ttyData:
-               self.writeStdOut(row)
+                for row in grabber.ttyData:
+                   self.writeStdOut(row)
 
             self.information(0, "Plotting Results")
             qApp.processEvents()

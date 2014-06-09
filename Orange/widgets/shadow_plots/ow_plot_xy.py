@@ -314,8 +314,9 @@ class PlotXY(AutomaticElement):
         self.error()
 
         sys.stdout = EmittingStream(textWritten=self.writeStdOut)
-        grabber = TTYGrabber()
-        grabber.start()
+        if self.trace_shadow:
+            grabber = TTYGrabber()
+            grabber.start()
 
         if not self.input_beam == None:
 
@@ -333,10 +334,11 @@ class PlotXY(AutomaticElement):
 
             self.plot_xy(x, y, title=self.title, xtitle=auto_x_title, ytitle=auto_y_title)
 
-        grabber.stop()
+        if self.trace_shadow:
+            grabber.stop()
 
-        for row in grabber.ttyData:
-           self.writeStdOut(row)
+            for row in grabber.ttyData:
+               self.writeStdOut(row)
 
         qApp.processEvents()
 
