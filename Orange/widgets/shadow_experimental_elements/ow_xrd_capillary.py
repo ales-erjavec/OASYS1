@@ -80,6 +80,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     analyzer_distance = Setting(0.0)
     analyzer_bragg_angle = Setting(0.0)
     rocking_curve_file = Setting("NONE SPECIFIED")
+    mosaic_angle_spread_fwhm = Setting(0.000)
 
     start_angle_na = Setting(10.0)
     stop_angle_na = Setting(120.0)
@@ -277,6 +278,7 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         ShadowGui.lineEdit(self.box_2theta_arm_2, self, "analyzer_distance", "Crystal Distance from Goniometer Center (cm)", labelWidth=300, valueType=float, orientation="horizontal")
         ShadowGui.lineEdit(self.box_2theta_arm_2, self, "analyzer_bragg_angle", "Analyzer Incidence Angle (deg)", labelWidth=300, valueType=float, orientation="horizontal")
         ShadowGui.lineEdit(self.box_2theta_arm_2, self, "rocking_curve_file", "File with Crystal parameter",  labelWidth=180, valueType=str, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_2theta_arm_2, self, "mosaic_angle_spread_fwhm", "Mosaic Angle Spread FWHM (deg)", labelWidth=300, valueType=float, orientation="horizontal")
 
         self.setDiffractedArmType()
 
@@ -1443,9 +1445,16 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         crystal.oe.unsetReflectivity()
         crystal.oe.setCrystal(file_refl=bytes(self.rocking_curve_file, 'utf-8'))
 
+        if (self.mosaic_angle_spread_fwhm > 0):
+            crystal.oe.F_MOSAIC = 1
+            crystal.oe.MOSAIC_SEED = 4000000 + 1000000*self.random_generator_flat.random()
+            crystal.oe.SPREAD_MOS = self.mosaic_angle_spread_fwhm
+            crystal.oe.THICKNESS = 1.0
+
         crystal.oe.F_CENTRAL=0
         crystal.oe.setDimensions(fshape=1,
                                  params=numpy.array([2.5, 2.5, 2.5, 2.5]))
+
 
         crystal.oe.FWRITE = 3
         crystal.oe.F_ANGLE = 0
