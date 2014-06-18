@@ -7,7 +7,7 @@ from Orange.widgets.settings import Setting
 from PyQt4 import QtGui
 from PyQt4.QtGui import QApplication, qApp, QPalette, QColor, QFont
 from Orange.widgets.shadow_gui import ow_generic_element
-from Orange.shadow.shadow_objects import EmittingStream, TTYGrabber, ShadowTriggerIn
+from Orange.shadow.shadow_objects import EmittingStream, TTYGrabber, ShadowTriggerIn, ShadowPreProcessorData
 from Orange.shadow.shadow_util import ShadowGui, ConfirmDialog
 
 class GraphicalOptions:
@@ -54,7 +54,8 @@ class GraphicalOptions:
 
 class OpticalElement(ow_generic_element.GenericElement):
 
-    inputs = [("Input Beam", Orange.shadow.ShadowBeam, "setBeam")]
+    inputs = [("Input Beam", Orange.shadow.ShadowBeam, "setBeam"),
+              ("PreProcessor Data", Orange.shadow.ShadowPreProcessorData, "setPreProcessorData")]
 
     outputs = [{"name":"Beam",
                 "type":Orange.shadow.ShadowBeam,
@@ -1412,6 +1413,17 @@ class OpticalElement(ow_generic_element.GenericElement):
 
         if self.is_automatic_run:
            self.traceOpticalElement()
+
+    def setPreProcessorData(self, data):
+        if data.bragg_data_file != ShadowPreProcessorData.NONE:
+            self.file_crystal_parameters=data.bragg_data_file
+
+        if data.prerefl_data_file != ShadowPreProcessorData.NONE:
+            self.file_prerefl=data.prerefl_data_file
+
+        if data.m_layer_data_file != ShadowPreProcessorData.NONE:
+            self.file_prerefl_m=data.m_layer_data_file
+
 
 if __name__ == "__main__":
     a = QApplication(sys.argv)

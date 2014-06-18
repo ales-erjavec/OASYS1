@@ -434,6 +434,34 @@ class OWWidget(QDialog, metaclass=WidgetMetaClass):
         if self.settingsHandler:
             self.settingsHandler.fast_save(self, name, value)
 
+        for shower in getattr(self, "showers", []):
+            if name in shower.expression:
+                shower()
+
+    def show_at(self, expression, what):
+        class ShowerClass:
+            def __init__(shower):
+                shower.what = what
+                shower.expression = expression
+
+            def __call__(shower):
+                x = self # to force self into the closure, because we need it in the expression
+                to_show = eval(expression)
+                if shower.what.isHidden() == to_show:
+                    if to_show:
+                        shower.what.show()
+                    else:
+                        shower.what.hide()
+
+        shower = ShowerClass()
+        if not hasattr(self, "showers"):
+            self.showers = []
+        self.showers.append(shower)
+
+    def process_showers(self):
+        for shower in getattr(self, "showers", []):
+            shower()
+
     def openContext(self, *a):
         self.settingsHandler.open_context(self, *a)
 

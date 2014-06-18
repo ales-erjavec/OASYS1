@@ -1,23 +1,25 @@
 import sys
-from PyQt4.QtGui import QIntValidator, QDoubleValidator, QApplication, QSizePolicy
+from PyQt4.QtGui import QIntValidator, QDoubleValidator, QApplication
 from Orange.widgets import widget, gui
 from Orange.widgets.settings import Setting
-from Orange.data import Table, Domain, ContinuousVariable
-import numpy as np
 from Shadow.ShadowPreprocessorsXraylib import pre_mlayer
 
 try:
     from ..tools.xoppy_calc import xoppy_doc
 except ImportError:
-    print("Error importing: xoppy_doc")
-    raise
+    #print("Error importing: xoppy_doc")
+    #raise
+    pass
 
 try:
     from ..tools.xoppy_calc import xoppy_calc_xsh_pre_mlayer
 except ImportError:
-    print("compute pressed.")
-    print("Error importing: xoppy_calc_xsh_pre_mlayer")
-    raise
+    #print("compute pressed.")
+    #print("Error importing: xoppy_calc_xsh_pre_mlayer")
+    #raise
+    pass
+
+from Orange.shadow.shadow_objects import ShadowPreProcessorData
 
 class OWxsh_pre_mlayer(widget.OWWidget):
     name = "xsh_pre_mlayer"
@@ -29,20 +31,11 @@ class OWxsh_pre_mlayer(widget.OWWidget):
     priority = 10
     category = ""
     keywords = ["xoppy", "xsh_pre_mlayer"]
-    #outputs = [#{"name": "xoppy_data",
-    #           # "type": np.ndarray,
-    #           # "doc": ""},
-    #           {"name": "xoppy_table",
-    #            "type": Table,
-    #            "doc": ""},
-    #           {"name": "xoppy_specfile",
-    #            "type": str,
-    #            "doc": ""}]
 
-    #inputs = [{"name": "Name",
-    #           "type": type,
-    #           "handler": None,
-    #           "doc": ""}]
+    outputs = [{"name":"PreProcessor_Data",
+                "type":ShadowPreProcessorData,
+                "doc":"PreProcessor Data",
+                "id":"PreProcessor_Data"}]
 
     want_main_area = False
 
@@ -269,13 +262,10 @@ class OWxsh_pre_mlayer(widget.OWWidget):
     def unitFlags(self):
          return ['True','True','True','True','True','True','True','True','True','True','self.GRADE_DEPTH  ==  0','self.GRADE_DEPTH  ==  0','self.GRADE_DEPTH  ==  0','self.GRADE_DEPTH  ==  0','self.GRADE_DEPTH  ==  0','self.GRADE_DEPTH  ==  1','True','self.GRADE_SURFACE  ==  1','self.GRADE_SURFACE  ==  1','self.GRADE_SURFACE  ==  1','self.GRADE_SURFACE  ==  2','self.GRADE_SURFACE  ==  2','self.GRADE_SURFACE  ==  2']
 
-
-    #def unitNames(self):
-    #     return ['FILE','E_MIN','E_MAX','S_DENSITY','S_MATERIAL','E_DENSITY','E_MATERIAL','O_DENSITY','O_MATERIAL','GRADE_DEPTH','N_PAIRS','THICKNESS','GAMMA','ROUGHNESS_EVEN','ROUGHNESS_ODD','FILE_DEPTH','GRADE_SURFACE','FILE_SHADOW','FILE_THICKNESS','FILE_GAMMA','AA0','AA1','AA2']
-
-
     def compute(self):
         tmp = pre_mlayer(interactive=False,FILE=self.FILE,E_MIN=self.E_MIN,E_MAX=self.E_MAX,S_DENSITY=self.S_DENSITY,S_MATERIAL=self.S_MATERIAL,E_DENSITY=self.E_DENSITY,E_MATERIAL=self.E_MATERIAL,O_DENSITY=self.O_DENSITY,O_MATERIAL=self.O_MATERIAL,GRADE_DEPTH=self.GRADE_DEPTH,N_PAIRS=self.N_PAIRS,THICKNESS=self.THICKNESS,GAMMA=self.GAMMA,ROUGHNESS_EVEN=self.ROUGHNESS_EVEN,ROUGHNESS_ODD=self.ROUGHNESS_ODD,FILE_DEPTH=self.FILE_DEPTH,GRADE_SURFACE=self.GRADE_SURFACE,FILE_SHADOW=self.FILE_SHADOW,FILE_THICKNESS=self.FILE_THICKNESS,FILE_GAMMA=self.FILE_GAMMA,AA0=self.AA0,AA1=self.AA1,AA2=self.AA2)
+
+        self.send("PreProcessor_Data", ShadowPreProcessorData(m_layer_data_file=self.FILE_SHADOW))
 
     def defaults(self):
          self.resetSettings()
@@ -285,9 +275,6 @@ class OWxsh_pre_mlayer(widget.OWWidget):
     def help1(self):
         print("help pressed.")
         xoppy_doc('xsh_pre_mlayer')
-
-
-
 
 
 if __name__ == "__main__":

@@ -9,15 +9,19 @@ from Shadow.ShadowPreprocessorsXraylib import prerefl
 try:
     from ..tools.xoppy_calc import xoppy_doc
 except ImportError:
-    print("Error importing: xoppy_doc")
-    raise
+    #print("Error importing: xoppy_doc")
+    #raise
+    pass
 
 try:
     from ..tools.xoppy_calc import xoppy_calc_xsh_prerefl
 except ImportError:
-    print("compute pressed.")
-    print("Error importing: xoppy_calc_xsh_prerefl")
-    raise
+    #print("compute pressed.")
+    #print("Error importing: xoppy_calc_xsh_prerefl")
+    #raise
+    pass
+
+from Orange.shadow.shadow_objects import ShadowPreProcessorData
 
 class OWxsh_prerefl(widget.OWWidget):
     name = "xsh_prerefl"
@@ -29,20 +33,11 @@ class OWxsh_prerefl(widget.OWWidget):
     priority = 10
     category = ""
     keywords = ["xoppy", "xsh_prerefl"]
-    #outputs = [#{"name": "xoppy_data",
-    #           # "type": np.ndarray,
-    #           # "doc": ""},
-    #           {"name": "xoppy_table",
-    #            "type": Table,
-    #            "doc": ""},
-    #           {"name": "xoppy_specfile",
-    #            "type": str,
-    #            "doc": ""}]
 
-    #inputs = [{"name": "Name",
-    #           "type": type,
-    #           "handler": None,
-    #           "doc": ""}]
+    outputs = [{"name":"PreProcessor_Data",
+                "type":ShadowPreProcessorData,
+                "doc":"PreProcessor Data",
+                "id":"PreProcessor_Data"}]
 
     want_main_area = False
 
@@ -129,6 +124,8 @@ class OWxsh_prerefl(widget.OWWidget):
 
     def compute(self):
         tmp = prerefl(interactive=False,SYMBOL=self.SYMBOL,DENSITY=self.DENSITY,FILE=self.FILE,E_MIN=self.E_MIN,E_MAX=self.E_MAX,E_STEP=self.E_STEP)
+
+        self.send("PreProcessor_Data", ShadowPreProcessorData(prerefl_data_file=self.FILE))
 
     def defaults(self):
          self.resetSettings()
