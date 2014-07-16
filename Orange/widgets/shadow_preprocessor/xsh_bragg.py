@@ -18,7 +18,7 @@ class OWxsh_bragg(widget.OWWidget):
     name = "xsh_bragg"
     id = "orange.widgets.dataxsh_bragg"
     description = "xoppy application to compute..."
-    icon = "icons/xoppy_xsh_bragg.png"
+    icon = "icons/bragg.png"
     author = "create_widget.py"
     maintainer_email = "srio@esrf.eu"
     priority = 10

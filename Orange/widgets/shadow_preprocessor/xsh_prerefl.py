@@ -27,7 +27,7 @@ class OWxsh_prerefl(widget.OWWidget):
     name = "xsh_prerefl"
     id = "orange.widgets.dataxsh_prerefl"
     description = "xoppy application to compute..."
-    icon = "icons/xoppy_xsh_prerefl.png"
+    icon = "icons/prerefl.png"
     author = "create_widget.py"
     maintainer_email = "srio@esrf.eu"
     priority = 10

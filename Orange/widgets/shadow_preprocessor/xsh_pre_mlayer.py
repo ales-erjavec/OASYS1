@@ -25,7 +25,7 @@ class OWxsh_pre_mlayer(widget.OWWidget):
     name = "xsh_pre_mlayer"
     id = "orange.widgets.dataxsh_pre_mlayer"
     description = "xoppy application to compute..."
-    icon = "icons/xoppy_xsh_pre_mlayer.png"
+    icon = "icons/premlayer.png"
     author = "create_widget.py"
     maintainer_email = "srio@esrf.eu"
     priority = 10
