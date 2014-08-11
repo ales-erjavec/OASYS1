@@ -45,9 +45,6 @@ class OWxsh_bragg(widget.OWWidget):
     def __init__(self):
         super().__init__()
 
-        #self.controlArea.setFixedWidth(350)
-        #self.controlArea.setFixedHeight(350)
-
         self.process_showers()
 
         idx = -1 
@@ -136,10 +133,6 @@ class OWxsh_bragg(widget.OWWidget):
          return ['True','True','True','True','True','True','True','True','True']
 
 
-    #def unitNames(self):
-    #     return ['DESCRIPTOR','H_MILLER_INDEX','K_MILLER_INDEX','L_MILLER_INDEX','TEMPERATURE_FACTOR','E_MIN','E_MAX','E_STEP','SHADOW_FILE']
-
-
     def compute(self):
         tmp = bragg(interactive=False,DESCRIPTOR=self.DESCRIPTOR,H_MILLER_INDEX=self.H_MILLER_INDEX,K_MILLER_INDEX=self.K_MILLER_INDEX,L_MILLER_INDEX=self.L_MILLER_INDEX,TEMPERATURE_FACTOR=self.TEMPERATURE_FACTOR,E_MIN=self.E_MIN,E_MAX=self.E_MAX,E_STEP=self.E_STEP,SHADOW_FILE=self.SHADOW_FILE)
 
@@ -153,9 +146,6 @@ class OWxsh_bragg(widget.OWWidget):
     def help1(self):
         print("help pressed.")
         xoppy_doc('xsh_bragg')
-
-
-
 
 
 if __name__ == "__main__":

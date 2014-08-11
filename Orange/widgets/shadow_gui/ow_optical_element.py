@@ -1422,7 +1422,9 @@ class OpticalElement(ow_generic_element.GenericElement):
             self.file_prerefl=data.prerefl_data_file
 
         if data.m_layer_data_file != ShadowPreProcessorData.NONE:
-            self.file_prerefl_m=data.m_layer_data_file
+            self.file_prerefl_m=data.m_layer_data_file_dat
+            # TODO: file .sha!
+
 
 
 if __name__ == "__main__":

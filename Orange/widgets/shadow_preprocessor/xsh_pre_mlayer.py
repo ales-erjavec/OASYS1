@@ -20,6 +20,7 @@ except ImportError:
     pass
 
 from Orange.shadow.shadow_objects import ShadowPreProcessorData
+from Orange.shadow.shadow_util import ShadowGui
 
 class OWxsh_pre_mlayer(widget.OWWidget):
     name = "xsh_pre_mlayer"
@@ -67,191 +68,179 @@ class OWxsh_pre_mlayer(widget.OWWidget):
     def __init__(self):
         super().__init__()
 
-        box0 = gui.widgetBox(self.controlArea, " ",orientation="horizontal") 
-        #widget buttons: compute, set defaults, help
-        gui.button(box0, self, "Compute", callback=self.compute)
-        gui.button(box0, self, "Defaults", callback=self.defaults)
-        gui.button(box0, self, "Help", callback=self.help1)
         self.process_showers()
-        box = gui.widgetBox(self.controlArea, " ",orientation="vertical") 
+
+        self.setFixedWidth(800)
+        self.setFixedHeight(900)
+
+
+        box = gui.widgetBox(self.controlArea, "Multilayer Parameters",orientation="vertical")
         
         
         idx = -1 
         
         #widget index 0 
         idx += 1 
-        box1 = gui.widgetBox(box) 
-        gui.lineEdit(box1, self, "FILE",
-                     label=self.unitLabels()[idx], addSpace=True)
-        self.show_at(self.unitFlags()[idx], box1) 
-        
-        #widget index 1 
-        idx += 1 
-        box1 = gui.widgetBox(box) 
-        gui.lineEdit(box1, self, "E_MIN",
+        ShadowGui.lineEdit(box, self, "FILE",
+                     label=self.unitLabels()[idx], addSpace=True, labelWidth=350, orientation="horizontal")
+        self.show_at(self.unitFlags()[idx], box)
+
+        #widget index 1
+        idx += 1
+        ShadowGui.lineEdit(box, self, "E_MIN",
                      label=self.unitLabels()[idx], addSpace=True,
-                    valueType=float, validator=QDoubleValidator())
-        self.show_at(self.unitFlags()[idx], box1) 
-        
-        #widget index 2 
-        idx += 1 
-        box1 = gui.widgetBox(box) 
-        gui.lineEdit(box1, self, "E_MAX",
+                    valueType=float, validator=QDoubleValidator(), labelWidth=350, orientation="horizontal")
+        self.show_at(self.unitFlags()[idx], box)
+
+        #widget index 2
+        idx += 1
+        ShadowGui.lineEdit(box, self, "E_MAX",
                      label=self.unitLabels()[idx], addSpace=True,
-                    valueType=float, validator=QDoubleValidator())
-        self.show_at(self.unitFlags()[idx], box1) 
-        
-        #widget index 3 
-        idx += 1 
-        box1 = gui.widgetBox(box) 
-        gui.lineEdit(box1, self, "S_DENSITY",
-                     label=self.unitLabels()[idx], addSpace=True)
-        self.show_at(self.unitFlags()[idx], box1) 
-        
-        #widget index 4 
-        idx += 1 
-        box1 = gui.widgetBox(box) 
-        gui.lineEdit(box1, self, "S_MATERIAL",
-                     label=self.unitLabels()[idx], addSpace=True)
-        self.show_at(self.unitFlags()[idx], box1) 
-        
-        #widget index 5 
-        idx += 1 
-        box1 = gui.widgetBox(box) 
-        gui.lineEdit(box1, self, "E_DENSITY",
-                     label=self.unitLabels()[idx], addSpace=True)
-        self.show_at(self.unitFlags()[idx], box1) 
-        
-        #widget index 6 
-        idx += 1 
-        box1 = gui.widgetBox(box) 
-        gui.lineEdit(box1, self, "E_MATERIAL",
-                     label=self.unitLabels()[idx], addSpace=True)
-        self.show_at(self.unitFlags()[idx], box1) 
-        
-        #widget index 7 
-        idx += 1 
-        box1 = gui.widgetBox(box) 
-        gui.lineEdit(box1, self, "O_DENSITY",
-                     label=self.unitLabels()[idx], addSpace=True)
-        self.show_at(self.unitFlags()[idx], box1) 
-        
-        #widget index 8 
-        idx += 1 
-        box1 = gui.widgetBox(box) 
-        gui.lineEdit(box1, self, "O_MATERIAL",
-                     label=self.unitLabels()[idx], addSpace=True)
-        self.show_at(self.unitFlags()[idx], box1) 
-        
-        #widget index 9 
-        idx += 1 
-        box1 = gui.widgetBox(box) 
-        gui.comboBox(box1, self, "GRADE_DEPTH",
+                    valueType=float, validator=QDoubleValidator(), labelWidth=350, orientation="horizontal")
+        self.show_at(self.unitFlags()[idx], box)
+
+        #widget index 3
+        idx += 1
+        ShadowGui.lineEdit(box, self, "S_DENSITY",
+                     label=self.unitLabels()[idx], addSpace=True, labelWidth=350, orientation="horizontal")
+        self.show_at(self.unitFlags()[idx], box)
+
+        #widget index 4
+        idx += 1
+        ShadowGui.lineEdit(box, self, "S_MATERIAL",
+                     label=self.unitLabels()[idx], addSpace=True, labelWidth=350, orientation="horizontal")
+        self.show_at(self.unitFlags()[idx], box)
+
+        #widget index 5
+        idx += 1
+        ShadowGui.lineEdit(box, self, "E_DENSITY",
+                     label=self.unitLabels()[idx], addSpace=True, labelWidth=350, orientation="horizontal")
+        self.show_at(self.unitFlags()[idx], box)
+
+        #widget index 6
+        idx += 1
+        ShadowGui.lineEdit(box, self, "E_MATERIAL",
+                     label=self.unitLabels()[idx], addSpace=True, labelWidth=350, orientation="horizontal")
+        self.show_at(self.unitFlags()[idx], box)
+
+        #widget index 7
+        idx += 1
+        ShadowGui.lineEdit(box, self, "O_DENSITY",
+                     label=self.unitLabels()[idx], addSpace=True, labelWidth=350, orientation="horizontal")
+        self.show_at(self.unitFlags()[idx], box)
+
+        #widget index 8
+        idx += 1
+        ShadowGui.lineEdit(box, self, "O_MATERIAL",
+                     label=self.unitLabels()[idx], addSpace=True, labelWidth=350, orientation="horizontal")
+        self.show_at(self.unitFlags()[idx], box)
+
+        #widget index 9
+        idx += 1
+        gui.comboBox(box, self, "GRADE_DEPTH",
                      label=self.unitLabels()[idx], addSpace=True,
                     items=['No (Constant)', 'thicknesses,gamma,rough_even and rough_off from file '],
                     valueType=int, orientation="horizontal")
-        self.show_at(self.unitFlags()[idx], box1) 
-        
-        #widget index 10 
-        idx += 1 
-        box1 = gui.widgetBox(box) 
-        gui.lineEdit(box1, self, "N_PAIRS",
+        self.show_at(self.unitFlags()[idx], box)
+
+        #widget index 10
+        idx += 1
+        ShadowGui.lineEdit(box, self, "N_PAIRS",
                      label=self.unitLabels()[idx], addSpace=True,
-                    valueType=int, validator=QIntValidator())
-        self.show_at(self.unitFlags()[idx], box1) 
-        
-        #widget index 11 
-        idx += 1 
-        box1 = gui.widgetBox(box) 
-        gui.lineEdit(box1, self, "THICKNESS",
+                    valueType=int, validator=QIntValidator(), labelWidth=350, orientation="horizontal")
+        self.show_at(self.unitFlags()[idx], box)
+
+        #widget index 11
+        idx += 1
+        ShadowGui.lineEdit(box, self, "THICKNESS",
                      label=self.unitLabels()[idx], addSpace=True,
-                    valueType=float, validator=QDoubleValidator())
-        self.show_at(self.unitFlags()[idx], box1) 
-        
-        #widget index 12 
-        idx += 1 
-        box1 = gui.widgetBox(box) 
-        gui.lineEdit(box1, self, "GAMMA",
+                    valueType=float, validator=QDoubleValidator(), labelWidth=350, orientation="horizontal")
+        self.show_at(self.unitFlags()[idx], box)
+
+        #widget index 12
+        idx += 1
+        ShadowGui.lineEdit(box, self, "GAMMA",
                      label=self.unitLabels()[idx], addSpace=True,
-                    valueType=float, validator=QDoubleValidator())
-        self.show_at(self.unitFlags()[idx], box1) 
-        
-        #widget index 13 
-        idx += 1 
-        box1 = gui.widgetBox(box) 
-        gui.lineEdit(box1, self, "ROUGHNESS_EVEN",
+                    valueType=float, validator=QDoubleValidator(), labelWidth=350, orientation="horizontal")
+        self.show_at(self.unitFlags()[idx], box)
+
+        #widget index 13
+        idx += 1
+        ShadowGui.lineEdit(box, self, "ROUGHNESS_EVEN",
                      label=self.unitLabels()[idx], addSpace=True,
-                    valueType=float, validator=QDoubleValidator())
-        self.show_at(self.unitFlags()[idx], box1) 
-        
-        #widget index 14 
-        idx += 1 
-        box1 = gui.widgetBox(box) 
-        gui.lineEdit(box1, self, "ROUGHNESS_ODD",
+                    valueType=float, validator=QDoubleValidator(), labelWidth=350, orientation="horizontal")
+        self.show_at(self.unitFlags()[idx], box)
+
+        #widget index 14
+        idx += 1
+        ShadowGui.lineEdit(box, self, "ROUGHNESS_ODD",
                      label=self.unitLabels()[idx], addSpace=True,
-                    valueType=float, validator=QDoubleValidator())
-        self.show_at(self.unitFlags()[idx], box1) 
-        
-        #widget index 15 
-        idx += 1 
-        box1 = gui.widgetBox(box) 
-        gui.lineEdit(box1, self, "FILE_DEPTH",
-                     label=self.unitLabels()[idx], addSpace=True)
-        self.show_at(self.unitFlags()[idx], box1) 
-        
-        #widget index 16 
-        idx += 1 
-        box1 = gui.widgetBox(box) 
-        gui.comboBox(box1, self, "GRADE_SURFACE",
+                    valueType=float, validator=QDoubleValidator(), labelWidth=350, orientation="horizontal")
+        self.show_at(self.unitFlags()[idx], box)
+
+        #widget index 15
+        idx += 1
+        ShadowGui.lineEdit(box, self, "FILE_DEPTH",
+                     label=self.unitLabels()[idx], addSpace=True, labelWidth=450, orientation="horizontal")
+        self.show_at(self.unitFlags()[idx], box)
+
+        #widget index 16
+        idx += 1
+        gui.comboBox(box, self, "GRADE_SURFACE",
                      label=self.unitLabels()[idx], addSpace=True,
                     items=['No (Constant)', 'thick and gamma graded (from spline files)', 'thickness graded (from quadratic fit)'],
                     valueType=int, orientation="horizontal")
-        self.show_at(self.unitFlags()[idx], box1) 
-        
-        #widget index 17 
-        idx += 1 
-        box1 = gui.widgetBox(box) 
-        gui.lineEdit(box1, self, "FILE_SHADOW",
-                     label=self.unitLabels()[idx], addSpace=True)
-        self.show_at(self.unitFlags()[idx], box1) 
-        
-        #widget index 18 
-        idx += 1 
-        box1 = gui.widgetBox(box) 
-        gui.lineEdit(box1, self, "FILE_THICKNESS",
-                     label=self.unitLabels()[idx], addSpace=True)
-        self.show_at(self.unitFlags()[idx], box1) 
-        
-        #widget index 19 
-        idx += 1 
-        box1 = gui.widgetBox(box) 
-        gui.lineEdit(box1, self, "FILE_GAMMA",
-                     label=self.unitLabels()[idx], addSpace=True)
-        self.show_at(self.unitFlags()[idx], box1) 
-        
-        #widget index 20 
-        idx += 1 
-        box1 = gui.widgetBox(box) 
-        gui.lineEdit(box1, self, "AA0",
+        self.show_at(self.unitFlags()[idx], box)
+
+        #widget index 17
+        idx += 1
+        ShadowGui.lineEdit(box, self, "FILE_SHADOW",
+                     label=self.unitLabels()[idx], addSpace=True, labelWidth=350, orientation="horizontal")
+        self.show_at(self.unitFlags()[idx], box)
+
+        #widget index 18
+        idx += 1
+        ShadowGui.lineEdit(box, self, "FILE_THICKNESS",
+                     label=self.unitLabels()[idx], addSpace=True, labelWidth=350, orientation="horizontal")
+        self.show_at(self.unitFlags()[idx], box)
+
+        #widget index 19
+        idx += 1
+        ShadowGui.lineEdit(box, self, "FILE_GAMMA",
+                     label=self.unitLabels()[idx], addSpace=True, labelWidth=350, orientation="horizontal")
+        self.show_at(self.unitFlags()[idx], box)
+
+        #widget index 20
+        idx += 1
+        ShadowGui.lineEdit(box, self, "AA0",
                      label=self.unitLabels()[idx], addSpace=True,
-                    valueType=float, validator=QDoubleValidator())
-        self.show_at(self.unitFlags()[idx], box1) 
-        
-        #widget index 21 
-        idx += 1 
-        box1 = gui.widgetBox(box) 
-        gui.lineEdit(box1, self, "AA1",
+                    valueType=float, validator=QDoubleValidator(), labelWidth=350, orientation="horizontal")
+        self.show_at(self.unitFlags()[idx], box)
+
+        #widget index 21
+        idx += 1
+        ShadowGui.lineEdit(box, self, "AA1",
                      label=self.unitLabels()[idx], addSpace=True,
-                    valueType=float, validator=QDoubleValidator())
-        self.show_at(self.unitFlags()[idx], box1) 
-        
-        #widget index 22 
-        idx += 1 
-        box1 = gui.widgetBox(box) 
-        gui.lineEdit(box1, self, "AA2",
+                    valueType=float, validator=QDoubleValidator(), labelWidth=350, orientation="horizontal")
+        self.show_at(self.unitFlags()[idx], box)
+
+        #widget index 22
+        idx += 1
+        ShadowGui.lineEdit(box, self, "AA2",
                      label=self.unitLabels()[idx], addSpace=True,
-                    valueType=float, validator=QDoubleValidator())
-        self.show_at(self.unitFlags()[idx], box1) 
+                    valueType=float, validator=QDoubleValidator(), labelWidth=350, orientation="horizontal")
+        self.show_at(self.unitFlags()[idx], box) 
+
+
+        box0 = gui.widgetBox(self.controlArea, "",orientation="horizontal")
+        #widget buttons: compute, set defaults, help
+        button = gui.button(box0, self, "Compute", callback=self.compute)
+        button.setFixedHeight(45)
+        button = gui.button(box0, self, "Defaults", callback=self.defaults)
+        button.setFixedHeight(45)
+        button = gui.button(box0, self, "Help", callback=self.help1)
+        button.setFixedHeight(45)
+
 
         gui.rubber(self.controlArea)
 
@@ -265,7 +254,7 @@ class OWxsh_pre_mlayer(widget.OWWidget):
     def compute(self):
         tmp = pre_mlayer(interactive=False,FILE=self.FILE,E_MIN=self.E_MIN,E_MAX=self.E_MAX,S_DENSITY=self.S_DENSITY,S_MATERIAL=self.S_MATERIAL,E_DENSITY=self.E_DENSITY,E_MATERIAL=self.E_MATERIAL,O_DENSITY=self.O_DENSITY,O_MATERIAL=self.O_MATERIAL,GRADE_DEPTH=self.GRADE_DEPTH,N_PAIRS=self.N_PAIRS,THICKNESS=self.THICKNESS,GAMMA=self.GAMMA,ROUGHNESS_EVEN=self.ROUGHNESS_EVEN,ROUGHNESS_ODD=self.ROUGHNESS_ODD,FILE_DEPTH=self.FILE_DEPTH,GRADE_SURFACE=self.GRADE_SURFACE,FILE_SHADOW=self.FILE_SHADOW,FILE_THICKNESS=self.FILE_THICKNESS,FILE_GAMMA=self.FILE_GAMMA,AA0=self.AA0,AA1=self.AA1,AA2=self.AA2)
 
-        self.send("PreProcessor_Data", ShadowPreProcessorData(m_layer_data_file=self.FILE_SHADOW))
+        self.send("PreProcessor_Data", ShadowPreProcessorData(m_layer_data_file_dat=self.FILE, m_layer_data_file_sha=self.FILE_SHADOW))
 
     def defaults(self):
          self.resetSettings()

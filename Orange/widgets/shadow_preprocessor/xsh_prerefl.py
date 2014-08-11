@@ -22,6 +22,7 @@ except ImportError:
     pass
 
 from Orange.shadow.shadow_objects import ShadowPreProcessorData
+from Orange.shadow.shadow_util import ShadowGui
 
 class OWxsh_prerefl(widget.OWWidget):
     name = "xsh_prerefl"
@@ -43,7 +44,7 @@ class OWxsh_prerefl(widget.OWWidget):
 
     SYMBOL = Setting("SiC")
     DENSITY = Setting(3.217)
-    FILE = Setting("reflec.dat")
+    SHADOW_FILE = Setting("reflec.dat")
     E_MIN = Setting(100.0)
     E_MAX = Setting(20000.0)
     E_STEP = Setting(100.0)
@@ -52,61 +53,61 @@ class OWxsh_prerefl(widget.OWWidget):
     def __init__(self):
         super().__init__()
 
-        box0 = gui.widgetBox(self.controlArea, " ",orientation="horizontal") 
-        #widget buttons: compute, set defaults, help
-        gui.button(box0, self, "Compute", callback=self.compute)
-        gui.button(box0, self, "Defaults", callback=self.defaults)
-        gui.button(box0, self, "Help", callback=self.help1)
         self.process_showers()
-        box = gui.widgetBox(self.controlArea, " ",orientation="vertical") 
-        
+
+        box = ShadowGui.widgetBox(self.controlArea, "Reflectivity Parameters", orientation="vertical")
         
         idx = -1 
         
         #widget index 0 
         idx += 1 
-        box1 = gui.widgetBox(box) 
-        gui.lineEdit(box1, self, "SYMBOL",
-                     label=self.unitLabels()[idx], addSpace=True)
-        self.show_at(self.unitFlags()[idx], box1) 
+        ShadowGui.lineEdit(box, self, "SYMBOL",
+                     label=self.unitLabels()[idx], addSpace=True, labelWidth=350, orientation="horizontal")
+        self.show_at(self.unitFlags()[idx], box) 
         
         #widget index 1 
         idx += 1 
-        box1 = gui.widgetBox(box) 
-        gui.lineEdit(box1, self, "DENSITY",
-                     label=self.unitLabels()[idx], addSpace=True)
-        self.show_at(self.unitFlags()[idx], box1) 
+        ShadowGui.lineEdit(box, self, "DENSITY",
+                     label=self.unitLabels()[idx], addSpace=True, valueType=float, validator=QDoubleValidator(), labelWidth=350, orientation="horizontal")
+        self.show_at(self.unitFlags()[idx], box) 
         
         #widget index 2 
         idx += 1 
-        box1 = gui.widgetBox(box) 
-        gui.lineEdit(box1, self, "FILE",
-                     label=self.unitLabels()[idx], addSpace=True)
-        self.show_at(self.unitFlags()[idx], box1) 
+        ShadowGui.lineEdit(box, self, "SHADOW_FILE",
+                     label=self.unitLabels()[idx], addSpace=True, labelWidth=200, orientation="horizontal")
+        self.show_at(self.unitFlags()[idx], box) 
         
         #widget index 3 
         idx += 1 
-        box1 = gui.widgetBox(box) 
-        gui.lineEdit(box1, self, "E_MIN",
+        ShadowGui.lineEdit(box, self, "E_MIN",
                      label=self.unitLabels()[idx], addSpace=True,
-                    valueType=float, validator=QDoubleValidator())
-        self.show_at(self.unitFlags()[idx], box1) 
+                    valueType=float, validator=QDoubleValidator(), labelWidth=350, orientation="horizontal")
+        self.show_at(self.unitFlags()[idx], box) 
         
         #widget index 4 
         idx += 1 
-        box1 = gui.widgetBox(box) 
-        gui.lineEdit(box1, self, "E_MAX",
+        ShadowGui.lineEdit(box, self, "E_MAX",
                      label=self.unitLabels()[idx], addSpace=True,
-                    valueType=float, validator=QDoubleValidator())
-        self.show_at(self.unitFlags()[idx], box1) 
+                    valueType=float, validator=QDoubleValidator(), labelWidth=350, orientation="horizontal")
+        self.show_at(self.unitFlags()[idx], box) 
         
         #widget index 5 
         idx += 1 
-        box1 = gui.widgetBox(box) 
-        gui.lineEdit(box1, self, "E_STEP",
+        ShadowGui.lineEdit(box, self, "E_STEP",
                      label=self.unitLabels()[idx], addSpace=True,
-                    valueType=float, validator=QDoubleValidator())
-        self.show_at(self.unitFlags()[idx], box1) 
+                    valueType=float, validator=QDoubleValidator(), labelWidth=350, orientation="horizontal")
+        self.show_at(self.unitFlags()[idx], box) 
+
+
+        box0 = gui.widgetBox(self.controlArea, "",orientation="horizontal") 
+        #widget buttons: compute, set defaults, help
+        button = gui.button(box0, self, "Compute", callback=self.compute)
+        button.setFixedHeight(45)
+        button = gui.button(box0, self, "Defaults", callback=self.defaults)
+        button.setFixedHeight(45)
+        button = gui.button(box0, self, "Help", callback=self.help1)
+        button.setFixedHeight(45)
+
 
         gui.rubber(self.controlArea)
 
@@ -117,15 +118,10 @@ class OWxsh_prerefl(widget.OWWidget):
     def unitFlags(self):
          return ['True','True','True','True','True','True']
 
-
-    #def unitNames(self):
-    #     return ['SYMBOL','DENSITY','FILE','E_MIN','E_MAX','E_STEP']
-
-
     def compute(self):
-        tmp = prerefl(interactive=False,SYMBOL=self.SYMBOL,DENSITY=self.DENSITY,FILE=self.FILE,E_MIN=self.E_MIN,E_MAX=self.E_MAX,E_STEP=self.E_STEP)
+        tmp = prerefl(interactive=False,SYMBOL=self.SYMBOL,DENSITY=self.DENSITY,SHADOW_FILE=self.SHADOW_FILE,E_MIN=self.E_MIN,E_MAX=self.E_MAX,E_STEP=self.E_STEP)
 
-        self.send("PreProcessor_Data", ShadowPreProcessorData(prerefl_data_file=self.FILE))
+        self.send("PreProcessor_Data", ShadowPreProcessorData(prerefl_data_file=self.SHADOW_FILE))
 
     def defaults(self):
          self.resetSettings()
@@ -135,10 +131,6 @@ class OWxsh_prerefl(widget.OWWidget):
     def help1(self):
         print("help pressed.")
         xoppy_doc('xsh_prerefl')
-
-
-
-
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

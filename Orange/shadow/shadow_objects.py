@@ -36,11 +36,12 @@ class ShadowPreProcessorData:
 
        NONE = "None"
 
-       def __new__(cls, bragg_data_file="None", m_layer_data_file="None", prerefl_data_file="None"):
+       def __new__(cls, bragg_data_file="None", m_layer_data_file_dat="None", m_layer_data_file_sha="None", prerefl_data_file="None"):
         self = super().__new__(cls)
 
         self.bragg_data_file=bragg_data_file
-        self.m_layer_data_file=m_layer_data_file
+        self.m_layer_data_file_dat=m_layer_data_file_dat
+        self.m_layer_data_file_sha=m_layer_data_file_sha
         self.prerefl_data_file=prerefl_data_file
 
         return self
