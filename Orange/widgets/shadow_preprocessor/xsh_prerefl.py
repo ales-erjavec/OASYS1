@@ -119,7 +119,7 @@ class OWxsh_prerefl(widget.OWWidget):
          return ['True','True','True','True','True','True']
 
     def compute(self):
-        tmp = prerefl(interactive=False,SYMBOL=self.SYMBOL,DENSITY=self.DENSITY,SHADOW_FILE=self.SHADOW_FILE,E_MIN=self.E_MIN,E_MAX=self.E_MAX,E_STEP=self.E_STEP)
+        tmp = prerefl(interactive=False,SYMBOL=self.SYMBOL,DENSITY=self.DENSITY,FILE=self.SHADOW_FILE,E_MIN=self.E_MIN,E_MAX=self.E_MAX,E_STEP=self.E_STEP)
 
         self.send("PreProcessor_Data", ShadowPreProcessorData(prerefl_data_file=self.SHADOW_FILE))
 
