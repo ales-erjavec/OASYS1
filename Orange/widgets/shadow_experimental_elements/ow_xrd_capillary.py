@@ -309,9 +309,9 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
         gui.comboBox(self.box_polarization, self, "pm2k_fullprof", label="Kind of Calculation", labelWidth=340, items=["PM2K", "FULLPROF"], sendSelectedValue=False, orientation="horizontal", callback=self.setKindOfCalculation)
 
         self.box_degree_of_polarization_pm2k =  ShadowGui.widgetBox(self.box_polarization, "", addSpace=True, orientation="vertical")
-        ShadowGui.lineEdit(self.box_degree_of_polarization_pm2k, self, "degree_of_polarization", "Q Factor [(Ih-Iv)/(Ih+Iv)] = 2K-1", labelWidth=350, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_degree_of_polarization_pm2k, self, "degree_of_polarization", "Q Factor [(Ih-Iv)/(Ih+Iv)]", labelWidth=350, valueType=float, orientation="horizontal")
         self.box_degree_of_polarization_fullprof =  ShadowGui.widgetBox(self.box_polarization, "", addSpace=True, orientation="vertical")
-        ShadowGui.lineEdit(self.box_degree_of_polarization_fullprof, self, "degree_of_polarization", "K Factor [Ih/(Ih+Iv)] = (Q+1)/2", labelWidth=350, valueType=float, orientation="horizontal")
+        ShadowGui.lineEdit(self.box_degree_of_polarization_fullprof, self, "degree_of_polarization", "K Factor", labelWidth=350, valueType=float, orientation="horizontal")
 
         ShadowGui.lineEdit(self.box_polarization, self, "monochromator_angle", "Monochromator Theta Angle (deg)", labelWidth=300, valueType=float, orientation="horizontal")
 
@@ -1323,13 +1323,12 @@ class XRDCapillary(ow_automatic_element.AutomaticElement):
     def calculateLPFactorPM2K(self, twotheta_deg, bragg_angle, normalization=1.0):
         theta = math.radians(0.5*twotheta_deg)
 
-        #lorentz_factor = 1/(math.sin(theta)*math.sin(bragg_angle)*math.cos(theta))
         lorentz_factor = 1/(math.sin(theta)*math.sin(bragg_angle))
 
         if self.diffracted_arm_type == 0:
             theta_mon = math.radians(self.monochromator_angle)
 
-            polarization_factor_num = (1 - self.degree_of_polarization) + ((1 + self.degree_of_polarization)*(math.cos(2*theta)**2)*(math.cos(2*theta_mon)**2))
+            polarization_factor_num = (1 + self.degree_of_polarization) + ((1 - self.degree_of_polarization)*(math.cos(2*theta)**2)*(math.cos(2*theta_mon)**2))
             polarization_factor_den = 1 + math.cos(2*theta_mon)**2
         else:
             theta_mon = math.radians(self.analyzer_bragg_angle)
