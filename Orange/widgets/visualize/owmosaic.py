@@ -1,31 +1,31 @@
-# OWMosaicDisplay.py
-#
-from cmath import sqrt
-from functools import reduce
 import os
-from PyQt4.QtCore import QPoint, Qt, QRectF, SIGNAL
-from datetime import datetime
-import numpy
 import sys
+from collections import defaultdict
+from functools import reduce
+from itertools import product
+from math import sqrt
+
+import numpy
+from PyQt4.QtCore import QPoint, Qt, QRectF
+from PyQt4.QtGui import (QGraphicsRectItem, QGraphicsView, QColor,
+                         QGraphicsScene, QPainter, QIcon, QDialog, QPen,
+                         QVBoxLayout, QListWidget, QSizePolicy, QApplication,
+                         QGraphicsTextItem, QBrush, QGraphicsLineItem,
+                         QGraphicsEllipseItem)
+
+from Orange.canvas.utils import environ
 from Orange.classification import Fitter
-from Orange.data import Table, Variable, filter
+from Orange.data import Table, Variable, filter, DiscreteVariable, ContinuousVariable
 from Orange.data.discretization import DiscretizeTable
 from Orange.data.sql.table import SqlTable
-from Orange.feature.discretization import EqualWidth
-from Orange.statistics.contingency import get_contingency
+from Orange.feature.discretization import EqualFreq
 from Orange.statistics.distribution import get_distribution
+from Orange.widgets import gui
 from Orange.widgets.settings import DomainContextHandler
 from Orange.widgets.utils import getHtmlCompatibleString
+from Orange.widgets.utils.colorpalette import ColorPaletteDlg, DefaultRGBColors
 from Orange.widgets.utils.scaling import get_variable_values_sorted
 from Orange.widgets.widget import OWWidget, Default
-
-from PyQt4.QtGui import QGraphicsRectItem, QGraphicsView, QColor, QGraphicsScene, QPainter, QIcon, QDialog, QPen, \
-    QVBoxLayout, QListWidget, QSizePolicy, QApplication, QGraphicsTextItem, QBrush, QGraphicsLineItem, \
-    QGraphicsEllipseItem
-from Orange.widgets import gui
-from Orange.widgets.utils.colorpalette import ColorPaletteDlg, defaultRGBColors
-from Orange.canvas.utils import environ
-
 
 
 PEARSON = 0
@@ -36,18 +36,12 @@ LEFT = 1
 TOP = 2
 RIGHT = 3
 
-VarTypes = Variable.VarTypes
-
 # using function with same name from owtools.py
 # def get_variable_values_sorted(param):
 #     if hasattr(param, "values"):
 #         return param.values
 #     return []
 
-class ZeroDict(dict):
-    """Just a dict, which return 0 if key not found."""
-    def __getitem__(self, key):
-        return dict.get(self, key, 0)
 
 class SelectionRectangle(QGraphicsRectItem):
     pass
@@ -81,7 +75,8 @@ class MosaicSceneView(QGraphicsView):
         else:
             if not self.tempRect:
                 self.tempRect = SelectionRectangle(None, self.scene())
-            rect = QRectF(min(self.mouseDownPosition.x(), ev.pos().x()), min(self.mouseDownPosition.y(), ev.pos().y()),
+            rect = QRectF(min(self.mouseDownPosition.x(), ev.pos().x()),
+                          min(self.mouseDownPosition.y(), ev.pos().y()),
                           max(abs(self.mouseDownPosition.x() - ev.pos().x()), 1),
                           max(abs(self.mouseDownPosition.y() - ev.pos().y()), 1))
             self.tempRect.setRect(rect)
@@ -108,29 +103,33 @@ class OWMosaicDisplay(OWWidget):
     <priority>4100</priority>
     """
     name = "Mosaic Display"
-    inputs = [("Data", Table, "setData", Default), ("Data Subset", Table, "setSubsetData")]
+    inputs = [("Data", Table, "setData", Default),
+              ("Data Subset", Table, "setSubsetData")]
     outputs = [("Selected Data", Table), ("Learner", Fitter)]
 
-    settingsList = ["horizontalDistribution", "showAprioriDistributionLines", "showAprioriDistributionBoxes",
-                    "horizontalDistribution", "useBoxes", "interiorColoring", "boxSize", "colorSettings",
-                    "selectedSchemaIndex", "cellspace",
-                    "showSubsetDataBoxes", "removeUnusedValues"]
+    settingsList = ["horizontalDistribution", "showAprioriDistributionLines",
+                    "showAprioriDistributionBoxes", "horizontalDistribution",
+                    "useBoxes", "interiorColoring", "boxSize", "colorSettings",
+                    "selectedSchemaIndex", "cellspace", "showSubsetDataBoxes",
+                    "removeUnusedValues"]
 
     settingsHandler = DomainContextHandler()
     # contextHandlers = {
     #     "": DomainContextHandler("", ["attr1", "attr2", "attr3", "attr4", "manualAttributeValuesDict"],
     #                              loadImperfect=0)}
 
-    interiorColoringOpts = ["Standardized (Pearson) residuals", "Class distribution"]
-    subboxesOpts = ["Expected class distribution", "Apriori class distribution"]
+    interiorColoringOpts = ["Standardized (Pearson) residuals",
+                            "Class distribution"]
+    subboxesOpts = ["Expected class distribution",
+                    "Apriori class distribution"]
 
-    def __init__(self, parent=None, signalManager=None):
-        OWWidget.__init__(self, parent, signalManager, "Mosaic display", True, True)
+    def __init__(self, parent=None):
+        super().__init__(self, parent)
 
         #set default settings
         self.data = None
-        self.unprocessedSubsetData = None
-        self.subsetData = None
+        self.unprocessed_subset_data = None
+        self.subset_data = None
         self.names = []  # class values
 
         #load settings
@@ -167,40 +166,46 @@ class OWMosaicDisplay(OWWidget):
         self.selectionConditions = []
 
         # color paletes for visualizing pearsons residuals
-        #self.blueColors = [QColor(255, 255, 255), QColor(117, 149, 255), QColor(38, 43, 232), QColor(1,5,173)]
-        self.blueColors = [QColor(255, 255, 255), QColor(210, 210, 255), QColor(110, 110, 255), QColor(0, 0, 255)]
-        self.redColors = [QColor(255, 255, 255), QColor(255, 200, 200), QColor(255, 100, 100), QColor(255, 0, 0)]
+        #self.blueColors = [QColor(255, 255, 255), QColor(117, 149, 255),
+                           # QColor(38, 43, 232), QColor(1,5,173)]
+        self.blue_colors = [QColor(255, 255, 255), QColor(210, 210, 255),
+                            QColor(110, 110, 255), QColor(0, 0, 255)]
+        self.red_colors = [QColor(255, 255, 255), QColor(255, 200, 200),
+                           QColor(255, 100, 100), QColor(255, 0, 0)]
 
         self.tabs = gui.tabWidget(self.controlArea)
-        self.GeneralTab = gui.createTabPage(self.tabs, "Main")
-        self.SettingsTab = gui.createTabPage(self.tabs, "Settings")
+        self.general_tab = gui.createTabPage(self.tabs, "Main")
+        self.settings_tab = gui.createTabPage(self.tabs, "Settings")
 
         self.canvas = QGraphicsScene()
-        self.canvasView = MosaicSceneView(self, self.canvas, self.mainArea)
-        self.mainArea.layout().addWidget(self.canvasView)
-        self.canvasView.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.canvasView.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.canvasView.setRenderHint(QPainter.Antialiasing)
+        self.canvas_view = MosaicSceneView(self, self.canvas, self.mainArea)
+        self.mainArea.layout().addWidget(self.canvas_view)
+        self.canvas_view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.canvas_view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.canvas_view.setRenderHint(QPainter.Antialiasing)
         #self.canvasView.setAlignment(Qt.AlignLeft | Qt.AlignTop)
 
         #GUI
         #add controls to self.controlArea widget
         #self.controlArea.setMinimumWidth(235)
 
-        texts = ["1st Attribute", "2nd Attribute", "3rd Attribute", "4th Attribute"]
+        texts = ["1st Attribute", "2nd Attribute", "3rd Attribute",
+                 "4th Attribute"]
         for i in range(1, 5):
-            box = gui.widgetBox(self.GeneralTab, texts[i - 1], orientation="horizontal")
-            combo = gui.comboBox(box, self, value="attr" + str(i), box=None, callback=self.updateGraphAndPermList,
-                                 sendSelectedValue=1, valueType=str)
+            box = gui.widgetBox(self.general_tab, texts[i - 1],
+                                orientation="horizontal")
+            combo = gui.comboBox(box, self, value="attr{}".format(i), box=None,
+                                 callback=self.updateGraphAndPermList,
+                                 sendSelectedValue=True, valueType=str)
 
             butt = gui.button(box, self, "", callback=self.orderAttributeValues,
                               tooltip="Change the order of attribute values")
             butt.setFixedSize(26, 24)
             butt.setCheckable(1)
-            butt.setIcon(QIcon(os.path.join(environ.widget_install_dir, "icons/Dlg_sort.png")))
-
-            setattr(self, "sort" + str(i), butt)
-            setattr(self, "attr" + str(i) + "Combo", combo)
+            butt.setIcon(QIcon(os.path.join(environ.widget_install_dir,
+                                            "icons/Dlg_sort.png")))
+            setattr(self, "sort{}".format(i), butt)
+            setattr(self, "attr{}".format(i) + "Combo", combo)
 
         # self.optimizationDlg = OWMosaicOptimization(self, self.signalManager)
 
@@ -213,51 +218,54 @@ class OWMosaicDisplay(OWWidget):
         #                                                 callback=self.permutationListToggle)
         # self.permutationList = gui.listBox(self.collapsableWBox, self, callback=self.setSelectedPermutation)
         #self.permutationList.hide()
-        self.GeneralTab.layout().addStretch(100)
+        self.general_tab.layout().addStretch(100)
 
         # ######################
         # SETTINGS TAB
         # ######################
-        box5 = gui.widgetBox(self.SettingsTab, "Colors in Cells Represent...", addSpace=1)
-        gui.comboBox(box5, self, "interiorColoring", None, items=self.interiorColoringOpts, callback=self.updateGraph)
+        box5 = gui.widgetBox(self.settings_tab, "Colors in Cells Represent...")
+        gui.comboBox(box5, self, "interiorColoring", None,
+                     items=self.interiorColoringOpts, callback=self.updateGraph)
         #box5.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
 
-        box = gui.widgetBox(self.SettingsTab, "Visual Settings", addSpace=1)
+        box = gui.widgetBox(self.settings_tab, "Visual Settings")
 
-        gui.hSlider(box, self, 'cellspace', label="Cell distance: ", minValue=1, maxValue=15, step=1,
+        gui.hSlider(box, self, 'cellspace', label="Cell distance: ",
+                    minValue=1, maxValue=15, step=1,
                     callback=self.updateGraph,
-                    tooltip="What is the minimum distance between two rectangles in the plot?")
-        gui.checkBox(box, self, "removeUnusedValues", "Remove unused attribute values",
-                     tooltip="Do you want to remove unused attribute values?\nThis setting will not be considered until new data is received.")
+                    tooltip="The minimum distance between two rectangles")
+        gui.checkBox(box, self, "removeUnusedValues",
+                     "Remove unused attribute values")
 
-        self.box6 = gui.widgetBox(self.SettingsTab, "Cell Distribution Settings", addSpace=1)
+        self.box6 = gui.widgetBox(self.settings_tab,
+                                  "Cell Distribution Settings")
         gui.comboBox(self.box6, self, 'horizontalDistribution',
-                     items=["Show Distribution Vertically", "Show Distribution Horizontally"],
-                     tooltip="Do you wish to see class distribution drawn horizontally or vertically?",
+                     items=["Show Distribution Vertically",
+                            "Show Distribution Horizontally"],
                      callback=self.updateGraph)
-        gui.checkBox(self.box6, self, 'showAprioriDistributionLines', 'Show apriori distribution with lines',
-                     callback=self.updateGraph,
-                     tooltip="Show the lines that represent the apriori class distribution")
-
-        self.box8 = gui.widgetBox(self.SettingsTab, "Boxes in Cells", addSpace=1)
-        gui.hSlider(self.box8, self, 'boxSize', label="Size: ", minValue=1, maxValue=15, step=1,
-                    callback=self.updateGraph,
-                    tooltip="What is the size of the boxes on the left and right edge of each cell?")
-        gui.checkBox(self.box8, self, 'showSubsetDataBoxes', 'Show class distribution of subset data',
-                     callback=self.updateGraph,
-                     tooltip="Show small boxes at right (or bottom) edge of cells to represent class distribution of examples from example subset input.")
-        cb = gui.checkBox(self.box8, self, 'useBoxes', 'Use boxes on left to show...', callback=self.updateGraph,
-                          tooltip="Show small boxes at left (or top) edge of cells to represent additional information.")
-        indBox = gui.indentedBox(self.box8, sep=gui.checkButtonOffsetHint(cb))
-        gui.comboBox(indBox, self, 'showAprioriDistributionBoxes', items=self.subboxesOpts,
-                     tooltip="Show additional boxes for each mosaic cell representing:\n - expected class distribution (assuming independence between attributes)\n - apriori class distribution (based on all examples).",
+        gui.checkBox(self.box6, self, 'showAprioriDistributionLines',
+                     'Show apriori distribution with lines',
                      callback=self.updateGraph)
 
-        hbox = gui.widgetBox(self.SettingsTab, "Colors", addSpace=1)
-        gui.button(hbox, self, "Set Colors", self.setColors, tooltip="Set the color palette for class values")
+        self.box8 = gui.widgetBox(self.settings_tab, "Boxes in Cells")
+        gui.hSlider(self.box8, self, 'boxSize', label="Size: ",
+                    minValue=1, maxValue=15, step=1, callback=self.updateGraph)
+        self.cb_show_subset = gui.checkBox(
+            self.box8, self, 'showSubsetDataBoxes',
+            'Show subset data distribution', callback=self.updateGraph)
+        self.cb_show_subset.setDisabled(self.subset_data is None)
+        cb = gui.checkBox(self.box8, self, 'useBoxes', 'Display sub-box...',
+                          callback=self.updateGraph)
+        ind_box = gui.indentedBox(self.box8, sep=gui.checkButtonOffsetHint(cb))
+        gui.comboBox(ind_box, self, 'showAprioriDistributionBoxes',
+                     items=self.subboxesOpts, callback=self.updateGraph)
+
+        hbox = gui.widgetBox(self.settings_tab, "Colors", addSpace=1)
+        gui.button(hbox, self, "Set Colors", self.setColors,
+                   tooltip="Set the color palette for class values")
 
         #self.box6.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
-        self.SettingsTab.layout().addStretch(1)
+        self.settings_tab.layout().addStretch(1)
 
         # self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFileCanvas)
         self.icons = gui.attributeIconDict
@@ -271,7 +279,7 @@ class OWMosaicDisplay(OWWidget):
         # self.collapsableWBox.updateControls()
         dlg = self.createColorDialog()
         self.colorPalette = dlg.getDiscretePalette("discPalette")
-        self.selectionColorPalette = [QColor(*col) for col in defaultRGBColors]
+        self.selectionColorPalette = [QColor(*col) for col in DefaultRGBColors]
 
 
     def permutationListToggle(self):
@@ -325,9 +333,9 @@ class OWMosaicDisplay(OWWidget):
         self.attr4Combo.addItem("(None)")
 
         for attr in data.domain:
-            if attr.var_type == VarTypes.Discrete:
+            if isinstance(attr, DiscreteVariable):
                 for combo in [self.attr1Combo, self.attr2Combo, self.attr3Combo, self.attr4Combo]:
-                    combo.addItem(self.icons[VarTypes.Discrete], attr.name)
+                    combo.addItem(self.icons[attr], attr.name)
 
         if self.attr1Combo.count() > 0:
             self.attr1 = str(self.attr1Combo.itemText(0))
@@ -352,7 +360,7 @@ class OWMosaicDisplay(OWWidget):
     # # DATA signal - receive new data and update all fields
     def setData(self, data):
         self.closeContext()
-        self.data = None
+        self.data = data
         self.bestPlacements = None
         self.manualAttributeValuesDict = {}
         self.attributeValuesDict = {}
@@ -361,74 +369,56 @@ class OWMosaicDisplay(OWWidget):
         # self.data = self.optimizationDlg.setData(data, self.removeUnusedValues)
         # zgornja vrstica je diskretizirala tabelo in odstranila unused values
 
+        if not self.data:
+            return
+
+        if not self.data.domain.class_var:
+            self.warning(0, "Data does not have a class variable.")
+            return
+        else:
+            self.warning(0)
+
+        if any(isinstance(attr, ContinuousVariable) for attr in self.data.domain):
+            # previously done in optimizationDlg.setData()
+            self.data = DiscretizeTable(data, method=EqualFreq())
+            self.information(0, "Continuous attributes were discretized.")
 
 
+        """ TODO: check
+        if data.has_missing_class():
+            self.information(1, "Examples with missing classes were removed.")
+        if self.removeUnusedValues and len(data) != len(self.data):
+            self.information(2, "Unused attribute values were removed.")
+        """
 
-        ##TODO: spodnje vrstice so developer-only
-        # "popravi" sql tabelo
-        if data and type(data) == SqlTable and data.name == 'iris':
-            data.domain.class_var = data.domain.attributes[4]
-        if data and type(data) == SqlTable and data.name == 'zoo':
-            data.domain.class_var = data.domain.attributes[16]
-        if data and type(data) == SqlTable and data.name == 'adult':
-            data.domain.class_var = data.domain.attributes[data.domain.index('y')]
-
-
-
-        # diskretiziraj - prej se je to naredilo v optimizationDlg.setData()
-        disc = EqualWidth()
-        self.data = DiscretizeTable(data, method=disc)
-        self.data.name = data.name  # v DiscretizeTable se izgubi name
-
-
-
-
-        ##TODO: spodnje vrstice so developer-only
-        # med DiscretizeTable se izgubijo tele informacije
-        if self.data and type(self.data) == SqlTable and self.data.name == 'iris':
-            self.data.domain.class_var = self.data.domain.attributes[4]
-        if self.data and type(self.data) == SqlTable and self.data.name == 'zoo':
-            self.data.domain.class_var = self.data.domain.attributes[16]
-        if self.data and type(self.data) == SqlTable and self.data.name == 'adult':
-            self.data.domain.class_var = self.data.domain.attributes[self.data.domain.index('y')]
-
-
-
-
-
-        if self.data:
-            if any(attr.var_type == VarTypes.Continuous for attr in self.data.domain):
-                self.information(0, "Continuous attributes were discretized using entropy discretization.")
-            if data.domain.class_var: #and data.hasMissingClasses():
-                self.information(1, "Examples with missing classes were removed.")
-            #            if self.removeUnusedValues and len(data) != len(self.data):
-            #                self.information(2, "Unused attribute values were removed.")
-
-            if self.data.domain.class_var and self.data.domain.class_var.var_type == VarTypes.Discrete:
-                self.interiorColoring = CLASS_DISTRIBUTION
-                self.colorPalette.setNumberOfColors(len(self.data.domain.class_var.values))
-            else:
-                self.interiorColoring = PEARSON
+        if isinstance(self.data.domain.class_var, DiscreteVariable):
+            self.interiorColoring = CLASS_DISTRIBUTION
+            self.colorPalette.set_number_of_colors(len(self.data.domain.class_var.values))
+        else:
+            self.interiorColoring = PEARSON
 
         self.initCombos(self.data)
         self.openContext(self.data)
 
-        if data and self.unprocessedSubsetData:  # if we first received subset data we now have to call setSubsetData to process it
-            self.setSubsetData(self.unprocessedSubsetData)
-            self.unprocessedSubsetData = None
+        # if we first received subset data we now have to call setSubsetData to process it
+        if self.unprocessed_subset_data:
+            self.setSubsetData(self.unprocessed_subset_data)
+            self.unprocessed_subset_data = None
 
     def setSubsetData(self, data):
         if not self.data:
-            self.unprocessedSubsetData = data
+            self.unprocessed_subset_data = data
             self.warning(10)
         else:
             try:
-                self.subsetData = data.select(self.data.domain)
+                self.subset_data = data.from_table(self.data.domain, data)
                 self.warning(10)
             except:
-                self.subsetData = None
+                self.subset_data = None
                 self.warning(10,
-                             data and "'Examples' and 'Example Subset' data do not have compatible domains. Unable to draw 'Example Subset' data." or "")
+                             data and "'Data' and 'Data Subset' do not have compatible domains." or "")
+        self.cb_show_subset.setDisabled(self.subset_data is None)
+
 
 
     # this is called by OWBaseWidget after setData and setSubsetData are called. this way the graph is updated only once
@@ -500,7 +490,7 @@ class OWMosaicDisplay(OWWidget):
             data = self.data
 
         if subsetData == -1:
-            subsetData = self.subsetData
+            subsetData = self.subset_data
 
         if attrList == -1:
             attrList = [self.attr1, self.attr2, self.attr3, self.attr4]
@@ -530,7 +520,7 @@ class OWMosaicDisplay(OWWidget):
 
         if len(data) == 0:
             self.warning(5,
-                         "There are no examples with valid values for currently visualized attributes. Unable to visualize.")
+                         "No data instances with valid values for currently visualized attributes.")
             return
         else:
             self.warning(5)
@@ -556,10 +546,10 @@ class OWMosaicDisplay(OWWidget):
             # get the maximum height of rectangle
             height = 90
             yOff = 40
-            squareSize = min(self.canvasView.width() - width - 20, self.canvasView.height() - height - 20)
+            squareSize = min(self.canvas_view.width() - width - 20, self.canvas_view.height() - height - 20)
 
         if squareSize < 0: return  # canvas is too small to draw rectangles
-        self.canvasView.setSceneRect(0, 0, self.canvasView.width(), self.canvasView.height())
+        self.canvas_view.setSceneRect(0, 0, self.canvas_view.width(), self.canvas_view.height())
 
         self.legend = {}  # dictionary that tells us, for what attributes did we already show the legend
         for attr in attrList:
@@ -595,75 +585,39 @@ class OWMosaicDisplay(OWWidget):
     ## TODO: this function is used both in owmosaic and owsieve --> where to put it?
     def getConditionalDistributions(self, data, attrs):
         if type(data) == SqlTable:
-            dict = ZeroDict() # ZeroDict is like ordinary dict, except it returns 0 if key not found
-
-            # get instances of attributes instead of strings, because of to_sql()
-            var_attrs = []
-            for a in attrs:
-                for va in data.domain.attributes:
-                    if va.name == a:
-                        var_attrs.append(va)
-                        break
-
+            cond_dist = defaultdict(lambda: 0)
+            var_attrs = [data.domain[a] for a in attrs]
             # make all possible pairs of attributes + class_var
             for i in range(0, len(var_attrs) + 1):
-                attr = []
-                for j in range(0, i+1):
-                    if j == len(var_attrs):
-                        attr.append(data.domain.class_var.name) ## TODO: hm, tale self sem dodal tako na hitro
-                    else:
-                        attr.append(var_attrs[j].to_sql())
-
-                sql = []
-                sql.append("SELECT")
-                sql.append(", ".join(attr))
-                sql.append(", COUNT(%s)" % attr[0])
-                sql.append("FROM %s" % data.name)
-                sql.append("GROUP BY")
-                sql.append(", ".join(attr))
-
-                cur = data._execute_sql_query(" ".join(sql))
+                attr = [v.to_sql() for v in var_attrs[:i + 1]]
+                if i == len(var_attrs):
+                    attr.append(data.domain.class_var.to_sql())
+                fields = attr + ["COUNT(*)"]
+                filters = [f.to_sql() for f in data.row_filters]
+                filters = [f for f in filters if f]
+                cur = data._sql_query(fields, filters=filters, group_by=attr)
                 res = cur.fetchall()
                 for r in list(res):
-                    dict['-'.join(r[:-1])] = r[-1]
+                    cond_dist['-'.join(r[:-1])] = r[-1]
         else:
-            dict = {}
-            def counter(s):
-                t = [0 for i in range(0, len(s))]
-                while True:
-                    yield t
-                    for i in range(len(s)):
-                        t[i] = (t[i] + 1) % s[i]
-                        if t[i]:
-                            break
-                    else:
-                        break
-
+            cond_dist = {}
             for i in range(0, len(attrs) + 1):
                 attr = []
-                for j in range(0, i+1):
+                for j in range(0, i + 1):
                     if j == len(attrs):
                         attr.append(data.domain.class_var)
                     else:
-                        if data.domain.class_var.name == attrs[j]:
-                            attr.append(data.domain.class_var)
-                        else:
-                            ind = data.domain.index(attrs[j])
-                            a = data.domain.attributes[ind]
-                            attr.append(a)
-
-                s = [len(a.values) for a in attr]
-                for indices in counter(s):
+                        attr.append(data.domain[attrs[j]])
+                for indices in product(*(range(len(a.values)) for a in attr)):
                     vals = []
                     filt = filter.Values()
-                    filt.domain = data.domain
-                    for k in range(len(indices)):
-                        vals.append(attr[k].values[indices[k]])
-                        fd = filter.FilterDiscrete(column=attr[k], values=[attr[k].values[indices[k]]])
+                    for k, ind in enumerate(indices):
+                        vals.append(attr[k].values[ind])
+                        fd = filter.FilterDiscrete(column=attr[k], values=[attr[k].values[ind]])
                         filt.conditions.append(fd)
                     filtdata = filt(data)
-                    dict['-'.join(vals)] = len(filtdata)
-        return dict
+                    cond_dist['-'.join(vals)] = len(filtdata)
+        return cond_dist
 
 
     # ############################################################################
@@ -838,8 +792,8 @@ class OWMosaicDisplay(OWWidget):
                     r = OWCanvasRectangle(self.canvas, x0 - d, y0 - d, x1 - x0 + 2 * d + 1, y1 - y0 + 2 * d + 1, z=50)
                     r.setPen(QPen(self.colorPalette[counts.index(max(counts))], 2, Qt.DashLine))
 
-        aprioriDist = None;
-        pearson = None;
+        aprioriDist = None
+        pearson = None
         expected = None
         outerRect = OWCanvasRectangle(self.canvas, x0, y0, x1 - x0, y1 - y0, z=30)
 
@@ -856,11 +810,11 @@ class OWMosaicDisplay(OWWidget):
             outerRect.setPen(QPen(Qt.black, 3, Qt.DotLine))
 
         if self.interiorColoring == CLASS_DISTRIBUTION and (
-                    not self.data.domain.class_var or not self.data.domain.class_var.var_type == VarTypes.Discrete):
+                    not self.data.domain.class_var or not isinstance(self.data.domain.class_var, DiscreteVariable)):
             return
 
         # draw pearsons residuals
-        if self.interiorColoring == PEARSON or not self.data.domain.class_var or self.data.domain.class_var.var_type != VarTypes.Discrete:
+        if self.interiorColoring == PEARSON or not self.data.domain.class_var or not isinstance(self.data.domain.class_var, DiscreteVariable):
             s = sum(self.aprioriDistributions[0])
             expected = s * reduce(lambda x, y: x * y,
                                   [self.aprioriDistributions[i][usedVals[i]] / float(s) for i in range(len(usedVals))])
@@ -876,9 +830,9 @@ class OWMosaicDisplay(OWWidget):
                 ind = 3
 
             if pearson > 0:
-                color = self.blueColors[ind]
+                color = self.blue_colors[ind]
             else:
-                color = self.redColors[ind]
+                color = self.red_colors[ind]
             OWCanvasRectangle(self.canvas, x0, y0, x1 - x0, y1 - y0, color, color, z=-20)
 
         # draw class distribution - actual and apriori
@@ -929,7 +883,7 @@ class OWMosaicDisplay(OWWidget):
                         boxCounts.append(tempVal)
                         #boxCounts.append(aprioriDist[val]/float(sum(aprioriDist.values())) * reduce(operator.mul, [contingencies[usedAttrs[i]][usedVals[i]][clsVal]/float(sum(contingencies[usedAttrs[i]][usedVals[i]].values())) for i in range(len(usedAttrs))]))
 
-                total1 = 0;
+                total1 = 0
                 total2 = 0
                 if self.useBoxes:
                     if self.horizontalDistribution:
@@ -1016,7 +970,7 @@ class OWMosaicDisplay(OWWidget):
             actual = [self.conditionalDict[attrVals + "-" + clsValues[i]] for i in range(len(aprioriDist))]
             if sum(actual) > 0:
                 apriori = [aprioriDist[key] for key in clsValues]
-                aprioriText = "";
+                aprioriText = ""
                 actualText = ""
                 text = ""
                 for i in range(len(clsValues)):
@@ -1036,12 +990,12 @@ class OWMosaicDisplay(OWWidget):
         x0, x1 = x0_x1
         y0, y1 = y0_y1
         if self.interiorColoring == CLASS_DISTRIBUTION and (
-                    not data.domain.class_var or data.domain.class_var.var_type == VarTypes.Continuous):
+                    not data.domain.class_var or isinstance(data.domain.class_var, ContinuousVariable)):
             return
 
         if self.interiorColoring == PEARSON:
             names = ["<-8", "-8:-4", "-4:-2", "-2:2", "2:4", "4:8", ">8", "Residuals:"]
-            colors = self.redColors[::-1] + self.blueColors[1:]
+            colors = self.red_colors[::-1] + self.blue_colors[1:]
         else:
             names = (list(self.attributeValuesDict.get(data.domain.class_var.name, [])) or get_variable_values_sorted(
                 data.domain.class_var)) + [data.domain.class_var.name + ":"]
@@ -1081,14 +1035,14 @@ class OWMosaicDisplay(OWWidget):
             self.colorSettings = dlg.getColorSchemas()
             self.selectedSchemaIndex = dlg.selectedSchemaIndex
             self.colorPalette = dlg.getDiscretePalette("discPalette")
-            if self.data and self.data.domain.classVar and self.data.domain.classVar.varType == VarTypes.Discrete:
-                self.colorPalette.setNumberOfColors(len(self.data.domain.classVar.values))
+            if self.data and self.data.domain.classVar and isinstance(self.data.domain.classVar, DiscreteVariable):
+                self.colorPalette.set_number_of_colors(len(self.data.domain.classVar.values))
             self.updateGraph()
 
     def createColorDialog(self):
         c = ColorPaletteDlg(self, "Color Palette")
         c.createDiscretePalette("discPalette", "Discrete Palette",
-                                defaultRGBColors)  #defaultColorBrewerPalette)
+                                DefaultRGBColors)  #defaultColorBrewerPalette)
         c.setColorSchemas(self.colorSettings, self.selectedSchemaIndex)
         return c
 
@@ -1214,8 +1168,8 @@ class OWCanvasText(QGraphicsTextItem):
         if font:
             self.setFont(font)
         if bold:
-            font = self.font();
-            font.setBold(bold);
+            font = self.font()
+            font.setBold(bold)
             self.setFont(font)
         if htmlText:
             self.setHtml(htmlText)

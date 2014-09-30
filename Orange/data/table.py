@@ -8,7 +8,7 @@ from functools import reduce
 from warnings import warn
 
 import numpy as np
-import bottleneck as bn
+import bottlechest as bn
 from scipy import sparse as sp
 from sklearn.utils import validation
 
@@ -16,6 +16,7 @@ from .instance import *
 from Orange.data import (domain as orange_domain,
                          io, DiscreteVariable, ContinuousVariable)
 from Orange.data.storage import Storage
+from . import _contingency
 from . import _valuecount
 
 
@@ -265,7 +266,7 @@ class Table(MutableSequence, Storage):
 
         if isinstance(row_indices, slice):
             start, stop, stride = row_indices.indices(source.X.shape[0])
-            n_rows = (stop - start) / stride
+            n_rows = (stop - start) // stride
             if n_rows < 0:
                 n_rows = 0
         elif row_indices is ...:
@@ -280,6 +281,7 @@ class Table(MutableSequence, Storage):
         self.Y = get_columns(row_indices, conversion.class_vars, n_rows)
         self.metas = get_columns(row_indices, conversion.metas, n_rows)
         self.W = np.array(source.W[row_indices])
+        self.name = getattr(source, 'name', '')
         return self
 
 
@@ -301,6 +303,7 @@ class Table(MutableSequence, Storage):
         self.Y = source.Y[row_indices]
         self.metas = source.metas[row_indices]
         self.W = source.W[row_indices]
+        self.name = getattr(source, 'name', '')
         return self
 
 
@@ -346,17 +349,17 @@ class Table(MutableSequence, Storage):
 
         if X.shape[1] != len(domain.attributes):
             raise ValueError(
-                "Invalid number of variable columns ({} != {}".format(
+                "Invalid number of variable columns ({} != {})".format(
                     X.shape[1], len(domain.attributes))
             )
         if Y.shape[1] != len(domain.class_vars):
             raise ValueError(
-                "Invalid number of class columns ({} != {}".format(
+                "Invalid number of class columns ({} != {})".format(
                     Y.shape[1], len(domain.class_vars))
             )
         if metas.shape[1] != len(domain.metas):
             raise ValueError(
-                "Invalid number of meta attribute columns ({} != {}".format(
+                "Invalid number of meta attribute columns ({} != {})".format(
                     metas.shape[1], len(domain.metas))
             )
         if not X.shape[0] == Y.shape[0] == metas.shape[0] == W.shape[0]:
@@ -379,42 +382,12 @@ class Table(MutableSequence, Storage):
         :param filename: File name
         :type filename: str
         """
-        if not (filename.endswith(".tab")):
-            raise IOError("Unknown destination file name extension.")
+        ext = os.path.splitext(filename)[1]
+        if ext == ".tab":
+            io.save_tab_delimited(filename, self)
+        else:
+            raise IOError("Unknown file name extension.")
 
-        assert(filename.endswith(".tab"))
-
-        f = open(filename, "w")
-        domain_vars = self.domain.metas + self.domain.variables
-        # first line
-        f.write("\t".join([str(j.name) for j in domain_vars]))
-        f.write("\n")
-
-        # second line
-        #TODO Basket column.
-        t = {"Continuous":"c", "Discrete":"d", "String":"string", "Basket":"basket"}
-        f.write("\t".join([t[str(j.var_type)] for j in domain_vars]))
-        f.write("\n")
-
-        # third line
-        m = list(self.domain.metas)
-        c = list(self.domain.class_vars)
-        r = []
-        for i in domain_vars:
-            if i in m:
-                r.append("m")
-            elif i in c:
-                r.append("c")
-            else:
-                r.append("")
-        f.write("\t".join(r))
-        f.write("\n")
-
-        # data
-        for i in self:
-            f.write("\t".join([str(i[j]) for j in domain_vars]))
-            f.write("\n")
-        f.close()
 
     @classmethod
     def from_file(cls, filename):
@@ -430,7 +403,7 @@ class Table(MutableSequence, Storage):
             ext = os.path.splitext(filename)[1]
             absolute_filename = os.path.join(dir, filename)
             if not ext:
-                for ext in [".tab", ".basket"]:
+                for ext in [".tab", ".txt", ".basket"]:
                     if os.path.exists(absolute_filename + ext):
                         absolute_filename += ext
                         break
@@ -443,6 +416,8 @@ class Table(MutableSequence, Storage):
             raise IOError('File "{}" was not found.'.format(filename))
         if ext == ".tab":
             data = io.TabDelimReader().read_file(absolute_filename, cls)
+        elif ext == ".txt":
+            data = io.TxtReader().read_file(absolute_filename, cls)
         elif ext == ".basket":
             data = io.BasketReader().read_file(absolute_filename, cls)
         else:
@@ -1010,7 +985,7 @@ class Table(MutableSequence, Storage):
                     sel += (col != "")
             elif isinstance(f, data_filter.FilterDiscrete):
                 if conjunction:
-                    s2 = np.zeros(len(self))
+                    s2 = np.zeros(len(self), dtype=bool)
                     for val in f.values:
                         if not isinstance(val, Real):
                             val = self.domain[f.column].to_val(val)
@@ -1210,13 +1185,9 @@ class Table(MutableSequence, Storage):
                              "and continuous values")
 
         if any(isinstance(var, ContinuousVariable) for var in col_desc):
-            dep_indices = np.argsort(row_data)
-            dep_sizes, nans = bn.bincount(row_data, n_rows - 1)
-            if nans:
+            if bn.countnans(row_data):
                 raise ValueError("cannot compute contigencies with missing "
                                  "row data")
-        else:
-            dep_indices = dep_sizes = None
 
         contingencies = [None] * len(col_desc)
         for arr, f_cond, f_ind in (
@@ -1244,35 +1215,29 @@ class Table(MutableSequence, Storage):
 
             cont_vars = [v for v in vars if isinstance(v[2], ContinuousVariable)]
             if cont_vars:
-                for col_i, _, _ in cont_vars:
-                    contingencies[col_i] = ([], np.empty(n_rows))
-                fr = 0
-                for clsi, cs in enumerate(dep_sizes):
-                    to = fr + cs
-                    grp_rows = dep_indices[fr:to]
-                    grp_data = arr[grp_rows, :]
-                    grp_W = W and W[grp_rows]
-                    if sp.issparse(grp_data):
-                        grp_data = sp.csc_matrix(grp_data)
-                    for col_i, arr_i, _ in cont_vars:
-                        if sp.issparse(grp_data):
-                            col_data = grp_data.data[grp_data.indptr[arr_i]:
-                                                     grp_data.indptr[arr_i+1]]
-                        else:
-                            col_data = grp_data[:, arr_i]
-                        if W is not None:
-                            ranks = np.argsort(col_data)
-                            vals = np.vstack((col_data[ranks], grp_W[ranks]))
-                            nans = bn.countnans(col_data, grp_W)
-                        else:
-                            col_data.sort()
-                            vals = np.ones((2, len(col_data)))
-                            vals[0, :] = col_data
-                            nans = bn.countnans(col_data)
-                        dist = np.array(_valuecount.valuecount(vals))
-                        contingencies[col_i][0].append(dist)
-                        contingencies[col_i][1][clsi] = nans
-                    fr = to
+
+                classes = row_data.astype(dtype=np.int8)
+                if W is not None:
+                    W = W.astype(dtype=np.float64)
+                if sp.issparse(arr):
+                    arr = sp.csc_matrix(arr)
+
+                for col_i, arr_i, _ in cont_vars:
+                    if sp.issparse(arr):
+                        col_data = arr.data[arr.indptr[arr_i]:
+                                            arr.indptr[arr_i+1]]
+                        rows = arr.indices[arr.indptr[arr_i]:
+                                           arr.indptr[arr_i+1]]
+                        W_ = None if W is None else W[rows]
+                        classes_ = classes[rows]
+                    else:
+                        col_data, W_, classes_ = arr[:, arr_i], W, classes
+
+                    col_data = col_data.astype(dtype=np.float64)
+                    U, C, unknown = _contingency.contingency_floatarray( \
+                        col_data, classes_, n_rows, W_)
+                    contingencies[col_i] = ([U, C], unknown)
+
         return contingencies
 
 

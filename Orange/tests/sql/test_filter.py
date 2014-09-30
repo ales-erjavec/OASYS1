@@ -1,9 +1,11 @@
+import unittest
 from Orange.data.sql.table import SqlTable, SqlRowInstance
 from Orange.data import filter, domain
 
-from Orange.tests.sql.base import PostgresTest
+from Orange.tests.sql.base import PostgresTest, has_psycopg2
 
 
+@unittest.skipIf(not has_psycopg2, "Psycopg2 is required for sql tests.")
 class IsDefinedFilterTests(PostgresTest):
     def setUp(self):
         self.data = [
@@ -57,6 +59,7 @@ class IsDefinedFilterTests(PostgresTest):
         self.assertSequenceEqual(filtered_data, correct_data)
 
 
+@unittest.skipIf(not has_psycopg2, "Psycopg2 is required for sql tests.")
 class HasClassFilterTests(PostgresTest):
     def setUp(self):
         self.data = [
@@ -91,6 +94,7 @@ class HasClassFilterTests(PostgresTest):
         self.assertSequenceEqual(filtered_data, correct_data)
 
 
+@unittest.skipIf(not has_psycopg2, "Psycopg2 is required for sql tests.")
 class SameValueFilterTests(PostgresTest):
     def setUp(self):
         self.data = [
@@ -179,6 +183,7 @@ class SameValueFilterTests(PostgresTest):
         self.assertSequenceEqual(filtered_data, correct_data)
 
 
+@unittest.skipIf(not has_psycopg2, "Psycopg2 is required for sql tests.")
 class ValuesFilterTests(PostgresTest):
     def setUp(self):
         self.data = [
@@ -316,6 +321,7 @@ class ValuesFilterTests(PostgresTest):
         self.assertSequenceEqual(filtered_data, correct_data)
 
 
+@unittest.skipIf(not has_psycopg2, "Psycopg2 is required for sql tests.")
 class FilterStringTest(PostgresTest):
     def setUp(self):
         self.data = [
@@ -413,11 +419,11 @@ class FilterStringTest(PostgresTest):
 
     def test_filter_string_less(self):
         filtered_data = filter.Values(conditions=[
-            filter.FilterString(-1, filter.FilterString.Less, 'in')
+            filter.FilterString(-1, filter.FilterString.Less, 'A')
         ])(self.table)
         correct_data = [SqlRowInstance(filtered_data.domain, row)
                         for row in self.data
-                        if row[0] is not None and row[0] < 'in']
+                        if row[0] is not None and row[0] < 'A']
 
         self.assertEqual(len(filtered_data), len(correct_data))
         self.assertSequenceEqual(filtered_data, correct_data)
@@ -448,11 +454,11 @@ class FilterStringTest(PostgresTest):
 
     def test_filter_string_less_equal(self):
         filtered_data = filter.Values(conditions=[
-            filter.FilterString(-1, filter.FilterString.LessEqual, 'in')
+            filter.FilterString(-1, filter.FilterString.LessEqual, 'A')
         ])(self.table)
         correct_data = [SqlRowInstance(filtered_data.domain, row)
                         for row in self.data
-                        if row[0] is not None and row[0] <= 'in']
+                        if row[0] is not None and row[0] <= 'A']
 
         self.assertEqual(len(filtered_data), len(correct_data))
         self.assertSequenceEqual(filtered_data, correct_data)
@@ -483,11 +489,11 @@ class FilterStringTest(PostgresTest):
 
     def test_filter_string_greater(self):
         filtered_data = filter.Values(conditions=[
-            filter.FilterString(-1, filter.FilterString.Greater, 'in')
+            filter.FilterString(-1, filter.FilterString.Greater, 'volutpat')
         ])(self.table)
         correct_data = [SqlRowInstance(filtered_data.domain, row)
                         for row in self.data
-                        if row[0] is not None and row[0] > 'in']
+                        if row[0] is not None and row[0] > 'volutpat']
 
         self.assertEqual(len(filtered_data), len(correct_data))
         self.assertSequenceEqual(filtered_data, correct_data)
@@ -518,11 +524,11 @@ class FilterStringTest(PostgresTest):
 
     def test_filter_string_greater_equal(self):
         filtered_data = filter.Values(conditions=[
-            filter.FilterString(-1, filter.FilterString.GreaterEqual, 'in')
+            filter.FilterString(-1, filter.FilterString.GreaterEqual, 'volutpat')
         ])(self.table)
         correct_data = [SqlRowInstance(filtered_data.domain, row)
                         for row in self.data
-                        if row[0] is not None and row[0] >= 'in']
+                        if row[0] is not None and row[0] >= 'volutpat']
 
         self.assertEqual(len(filtered_data), len(correct_data))
         self.assertSequenceEqual(filtered_data, correct_data)
@@ -553,11 +559,11 @@ class FilterStringTest(PostgresTest):
 
     def test_filter_string_between(self):
         filtered_data = filter.Values(conditions=[
-            filter.FilterString(-1, filter.FilterString.Between, 'i', 'o')
+            filter.FilterString(-1, filter.FilterString.Between, 'a', 'c')
         ])(self.table)
         correct_data = [SqlRowInstance(filtered_data.domain, row)
                         for row in self.data
-                        if row[0] is not None and 'i' <= row[0] <= 'o']
+                        if row[0] is not None and 'a' <= row[0] <= 'c']
 
         self.assertEqual(len(filtered_data), len(correct_data))
         self.assertSequenceEqual(filtered_data, correct_data)
@@ -623,11 +629,11 @@ class FilterStringTest(PostgresTest):
 
     def test_filter_string_outside(self):
         filtered_data = filter.Values(conditions=[
-            filter.FilterString(-1, filter.FilterString.Outside, 'd', 'k')
+            filter.FilterString(-1, filter.FilterString.Outside, 'am', 'di')
         ])(self.table)
         correct_data = [SqlRowInstance(filtered_data.domain, row)
                         for row in self.data
-                        if row[0] is not None and not 'd' < row[0] < 'k']
+                        if row[0] is not None and not 'am' < row[0] < 'di']
 
         self.assertEqual(len(filtered_data), len(correct_data))
         self.assertSequenceEqual(filtered_data, correct_data)
