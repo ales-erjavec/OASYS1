@@ -124,7 +124,6 @@ cp -r "/Users/labx/env/orange3/lib/python3.3/site-packages/python_dateutil-2.2-p
 
 cp -f "/Users/labx/Documents/workspace/orange-shadow/orange3/scripts/easy-install.pth" "$SITE_PACKAGES"
 
-
 "$PIP" uninstall -y numpy
 "$PIP" install numpy
 
