@@ -12,7 +12,7 @@ from xml.etree.ElementTree import TreeBuilder, Element, ElementTree, parse
 from collections import defaultdict, namedtuple
 from itertools import chain, count
 
-from PyQt4.QtGui import QFileDialog
+from PyQt4.QtGui import QFileDialog, QMessageBox
 from PyQt4.QtCore import QSettings
 
 import pickle as pickle
@@ -26,7 +26,7 @@ import logging
 
 from . import SchemeNode, SchemeLink
 from .annotations import SchemeTextAnnotation, SchemeArrowAnnotation
-from .errors import IncompatibleChannelTypeError
+from .errors import IncompatibleChannelTypeError, NoWorkingDirectoryException
 from ..application import settings
 
 from ..registry import global_registry
@@ -216,7 +216,7 @@ def parse_scheme_v_2_0(etree, scheme, error_handler, widget_registry=None,
     if not os.path.exists(scheme.working_directory):
         scheme.working_directory = \
             settings.value("output/default-working-directory") or \
-            os.path.expanduser("~/Shadow")
+            os.path.expanduser("~/Oasys")
         if not os.path.exists(scheme.working_directory):
             os.mkdir(scheme.working_directory)
 
@@ -660,21 +660,43 @@ def scheme_load(scheme, stream, registry=None, error_handler=None, ignore_workin
     scheme.description = desc.description
 
     scheme.working_directory = getattr(desc, "working_directory",
-                                       os.path.expanduser("~/Shadow"))
+                                       os.path.expanduser("~/Oasys"))
 
-    if not ignore_working_dir_error and not os.path.exists(scheme.working_directory):
-        new_wd = QFileDialog.getExistingDirectory(
-                None, "Set working directory for project '" + scheme.title + "'",
-                QSettings().value("output/default-working-directory",
-                                os.path.expanduser("~/Shadow"), type=str))
-        if new_wd:
-            scheme.working_directory = new_wd
 
-            if not os.path.exists(scheme.working_directory):
-                os.mkdir(scheme.working_directory)
+    if not ignore_working_dir_error:
+        if not os.path.exists(scheme.working_directory):
+            new_wd = QFileDialog.getExistingDirectory(
+                    None, "Set working directory for project '" + scheme.title + "'",
+                    QSettings().value("output/default-working-directory",
+                                    os.path.expanduser("~/Oasys"), type=str))
+            if new_wd:
+                scheme.working_directory = new_wd
 
+                if not os.path.exists(scheme.working_directory):
+                    os.mkdir(scheme.working_directory)
+
+            else:
+                raise NoWorkingDirectoryException("Replacement of not existing Working Directory " + scheme.working_directory + " aborted by user")
         else:
-            raise ValueError("Replacement of not existing Working Directory " + scheme.working_directory + " aborted by user")
+            msgBox = QMessageBox()
+            msgBox.setText("Working directory set to:\n\n" + scheme.working_directory )
+            msgBox.setInformativeText("Do you want to change it?")
+            msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            msgBox.setDefaultButton(QMessageBox.No)
+            ret = msgBox.exec_()
+
+            if ret == QMessageBox.Yes:
+                new_wd = QFileDialog.getExistingDirectory(
+                        None, "Set working directory for project '" + scheme.title + "'",
+                        QSettings().value("output/default-working-directory",
+                                        os.path.expanduser("~/Oasys"), type=str))
+                if new_wd:
+                    scheme.working_directory = new_wd
+
+                    if not os.path.exists(scheme.working_directory):
+                        os.mkdir(scheme.working_directory)
+                else:
+                    raise NoWorkingDirectoryException("Replacement of not existing Working Directory " + scheme.working_directory + " aborted by user")
 
     os.chdir(scheme.working_directory)
 

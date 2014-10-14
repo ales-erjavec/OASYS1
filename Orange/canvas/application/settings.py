@@ -502,7 +502,7 @@ class UserSettingsDialog(QMainWindow):
 
     def change_working_directory(self):
         cur_wd = QSettings().value("output/default-working-directory",
-                                   os.path.expanduser("~/Shadow"), type=str)
+                                   os.path.expanduser("~/Oasys"), type=str)
         new_wd = QFileDialog.getExistingDirectory(
             self, "Set working directory", cur_wd
         )

@@ -35,3 +35,7 @@ class IncompatibleChannelTypeError(TypeError):
     """
     Source and sink channels do not have compatible types
     """
+
+class NoWorkingDirectoryException(Exception):
+
+    pass

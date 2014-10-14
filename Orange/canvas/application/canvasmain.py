@@ -49,6 +49,7 @@ from ..document.schemeedit import SchemeEditWidget
 
 from ..scheme import widgetsscheme
 from ..scheme.readwrite import scheme_load, sniff_version
+from ..scheme.errors import NoWorkingDirectoryException
 
 from . import welcomedialog
 from ..preview import previewdialog, previewmodel
@@ -876,9 +877,8 @@ class CanvasMainWindow(QMainWindow):
             start_dir, self.tr("Orange Scheme (*.ows)"),
         )
 
-        if filename:
-            self.load_scheme(filename)
-            return QDialog.Accepted
+        if filename: # MODIFIED BY LUCA REBUFFI 14/10/2014
+            return self.load_scheme(filename)
         else:
             return QDialog.Rejected
 
@@ -912,8 +912,8 @@ class CanvasMainWindow(QMainWindow):
             if self.ask_save_changes() == QDialog.Rejected:
                 return QDialog.Rejected
 
-        self.load_scheme(filename)
-        return QDialog.Accepted
+        # MODIFIED BY LUCA REBUFFI 14/10/2014
+        return self.load_scheme(filename)
 
     def load_scheme(self, filename):
         """Load a scheme from a file (`filename`) into the current
@@ -926,6 +926,8 @@ class CanvasMainWindow(QMainWindow):
         self.last_scheme_dir = dirname
 
         new_scheme = self.new_scheme_from(filename)
+        status = QDialog.Accepted
+
         if new_scheme is not None:
             self.set_new_scheme(new_scheme)
 
@@ -933,8 +935,15 @@ class CanvasMainWindow(QMainWindow):
             scheme_doc_widget.setPath(filename)
 
             self.add_recent_scheme(new_scheme.title, filename)
-        else: # MODIFIED BY LUCA REBUFFI 15-05-2014
-            raise Exception("Aborted")
+        else: # MODIFIED BY LUCA REBUFFI 14-10-2014
+            msgBox = QMessageBox()
+            msgBox.setText("Working directory not set by user:\n\nproject load aborted")
+            msgBox.setStandardButtons(QMessageBox.Ok)
+            msgBox.setDefaultButton(QMessageBox.Ok)
+            msgBox.exec_()
+            status = QDialog.Rejected
+
+        return status
 
     def new_scheme_from(self, filename):
         """Create and return a new :class:`widgetsscheme.WidgetsScheme`
@@ -946,7 +955,8 @@ class CanvasMainWindow(QMainWindow):
         try:
             scheme_load(new_scheme, open(filename, "rb"),
                         error_handler=errors.append)
-
+        except NoWorkingDirectoryException:
+            return None
         except Exception:
             message_critical(
                  self.tr("Could not load an Orange Scheme file"),
@@ -1260,7 +1270,8 @@ class CanvasMainWindow(QMainWindow):
 
             selected = model.item(index)
 
-            self.load_scheme(str(selected.path()))
+            #MODIFIED BY LUCA REBUFFI 14/10/2014
+            status = self.load_scheme(str(selected.path()))
 
         return status
 

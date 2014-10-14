@@ -113,7 +113,7 @@ class Scheme(QObject):
         self.__working_directory = (
             working_directory or
             settings.value("output/default-working-directory",
-                           os.path.expanduser("~/Shadow"), type=str))
+                           os.path.expanduser("~/Oasys"), type=str))
 
         if not os.path.exists(self.__working_directory):
             os.mkdir(self.__working_directory)
