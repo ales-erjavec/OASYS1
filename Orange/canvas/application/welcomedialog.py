@@ -112,13 +112,14 @@ class WelcomeDialog(QDialog):
         bottom_bar.setSizePolicy(QSizePolicy.MinimumExpanding,
                                  QSizePolicy.Maximum)
 
-        check = QCheckBox(self.tr("Show at startup"), bottom_bar)
-        check.setChecked(False)
+        # MODIFIED BY LUCA REBUFFI 14/10/2014
+        #check = QCheckBox(self.tr("Show at startup"), bottom_bar)
+        #check.setChecked(False)
 
-        self.__showAtStartupCheck = check
+        #self.__showAtStartupCheck = check
 
-        bottom_bar_layout.addWidget(check, alignment=Qt.AlignVCenter | \
-                                   Qt.AlignLeft)
+        #bottom_bar_layout.addWidget(check, alignment=Qt.AlignVCenter | \
+        #                           Qt.AlignLeft)
 
         self.layout().addWidget(bottom_bar, alignment=Qt.AlignBottom,
                                 stretch=1)

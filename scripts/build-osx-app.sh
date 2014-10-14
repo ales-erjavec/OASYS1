@@ -116,7 +116,7 @@ cp -f "/Users/labx/env/orange3/lib/python3.3/site-packages/xraymessages.py" "$SI
 
 
 cp -r "/Users/labx/env/orange3/lib/python3.3/site-packages/Shadow"  "$SITE_PACKAGES"
-cp -r "/Users/labx/env/orange3/lib/python3.3/site-packages/PyMca"  "$SITE_PACKAGES"
+cp -r "/Users/labx/env/orange3/lib/python3.3/site-packages/PyMca5"  "$SITE_PACKAGES"
 cp -r "/Users/labx/env/orange3/lib/python3.3/site-packages/matplotlib-1.4.x-py3.3-macosx-10.8-x86_64.egg" "$SITE_PACKAGES"
 cp -r "/Users/labx/env/orange3/lib/python3.3/site-packages/pyparsing-2.0.1-py3.3.egg" "$SITE_PACKAGES"
 cp -r "/Users/labx/env/orange3/lib/python3.3/site-packages/six-1.5.2-py3.3.egg" "$SITE_PACKAGES"
@@ -133,6 +133,8 @@ UMFPACK=None "$PIP" install scipy
 echo "Installing bottlechest"
 echo "======================"
 "$PIP" install git+https://github.com/biolab/bottlechest@bottlechest#egg=bottlechest
+
+cp -r "/Users/labx/Documents/workspace/orange-shadow/shadow-addon/orangecontrib" "$SITE_PACKAGES"
 
 echo "Installing Orange"
 echo "================="
@@ -151,11 +153,11 @@ cat <<-'EOF' > "$TEMPLATE"/Contents/MacOS/Orange
 	    shift 1
 	fi
 
-	exec -a "$0" "$DIRNAME"/PythonAppStart -m Orange.canvas "$@"
+	exec -a "$0" "$DIRNAME"/PythonAppStart -m orangecontrib.shadow "$@"
 EOF
 
 chmod +x "$TEMPLATE"/Contents/MacOS/Orange
-
+#chmod +x "$TEMPLATE"/Contents/MacOS/orangecontrib
 
 if [[ ! $INPLACE ]]; then
     echo "Moving the application to $APP"
