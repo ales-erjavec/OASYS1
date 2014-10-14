@@ -103,7 +103,7 @@ class SplashScreen(QSplashScreen):
         self.__color = color
         self.__message = message
         QSplashScreen.showMessage(self, message, alignment, color)
-        time.sleep(0.05)
+        time.sleep(0.075)
         QApplication.instance().processEvents()
 
     # Reimplemented to allow graceful fall back if the windowing system

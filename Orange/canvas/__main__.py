@@ -238,7 +238,7 @@ def main(argv=None):
         pm, rect = config.splash_screen()
         splash_screen = SplashScreen(pixmap=pm, textRect=rect)
         splash_screen.setFont(QFont("Helvetica", 12))
-        color = QColor("#FFD39F")
+        color = QColor("#ff7600")
 
         def show_message(message):
             splash_screen.showMessage(message, color=color)

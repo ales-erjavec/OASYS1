@@ -43,7 +43,7 @@ class SchemeInfoEdit(QWidget):
 
         cur_wd = settings.value("output/default-working-directory",
                                 "", type=str) or \
-            os.path.expanduser("~/Shadow")
+            os.path.expanduser("~/OASYS")
 
         self.working_dir_line.setText(cur_wd)
         pb = QPushButton("Change ...")

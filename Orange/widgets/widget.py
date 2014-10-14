@@ -244,7 +244,6 @@ class OWWidget(QDialog, metaclass=WidgetMetaClass):
     def setWorkingDirectory(self, dir):
         self.working_directory = dir
 
-
     # status bar handler functions
     def setState(self, stateType, id, text):
         stateChanged = super().setState(stateType, id, text)
