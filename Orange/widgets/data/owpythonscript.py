@@ -383,7 +383,9 @@ class OWPythonScript(widget.OWWidget):
         self.in_learner = None
         self.in_classifier = None
         self.in_object = None
-        self.auto_execute = False
+
+        # MODIFIED BY LUCA REBUFFI 14/10/2014
+        #self.auto_execute = False
 
         for s in self.libraryListSource:
             s.flags = 0
