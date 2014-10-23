@@ -57,7 +57,6 @@ log = logging.getLogger(__name__)
 
 __GLOBAL_REGISTRY = {}
 
-
 def global_registry(entry_point_group="_default"):
     """
     Return a global WidgetRegistry instance for the entry point group.
@@ -78,7 +77,7 @@ def global_registry(entry_point_group="_default"):
             entry_points_iter = entry_point_group
         reg = WidgetRegistry()
         menu_reg = MenuRegistry()
-        disc = discovery.WidgetDiscovery(reg, menu_reg)
+        disc = discovery.WidgetDiscovery(registry=reg, menu_registry=menu_reg)
         disc.run(entry_points_iter)
         log.info("'global_registry()' discovery finished.")
         __GLOBAL_REGISTRY[entry_point_group] = reg

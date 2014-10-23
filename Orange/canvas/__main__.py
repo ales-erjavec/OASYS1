@@ -30,7 +30,7 @@ from Orange.canvas.utils.redirect import redirect_stdout, redirect_stderr
 from Orange.canvas.utils.qtcompat import QSettings
 
 from Orange.canvas.registry import qt
-from Orange.canvas.registry import WidgetRegistry, set_global_registry
+from Orange.canvas.registry import WidgetRegistry, MenuRegistry, set_global_registry
 from Orange.canvas.registry import cache
 
 log = logging.getLogger(__name__)
@@ -235,7 +235,7 @@ def main(argv=None):
     else:
         reg_cache = None
 
-    widget_discovery = qt.QtWidgetDiscovery(cached_descriptions=reg_cache)
+    widget_discovery = qt.QtWidgetDiscovery(menu_registry=MenuRegistry(), cached_descriptions=reg_cache)
 
     widget_registry = qt.QtWidgetRegistry()
 
@@ -275,8 +275,11 @@ def main(argv=None):
         cache.save_registry_cache(widget_discovery.cached_descriptions)
         pickle.dump(WidgetRegistry(widget_registry),
                      open(cache_filename, "wb"))
+
     set_global_registry(widget_registry)
+
     canvas_window.set_widget_registry(widget_registry)
+    canvas_window.set_menu_registry(widget_discovery.menu_registry)
     canvas_window.show()
     canvas_window.raise_()
 

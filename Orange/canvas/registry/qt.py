@@ -38,9 +38,9 @@ class QtWidgetDiscovery(QObject, WidgetDiscovery):
     # Found a category with description
     found_category = Signal(CategoryDescription)
 
-    def __init__(self, parent=None, registry=None, cached_descriptions=None):
+    def __init__(self, parent=None, registry=None, menu_registry=None, cached_descriptions=None):
         QObject.__init__(self, parent)
-        WidgetDiscovery.__init__(self, registry, cached_descriptions)
+        WidgetDiscovery.__init__(self, registry, menu_registry, cached_descriptions)
 
     def run(self, entry_points_iter):
         self.discovery_start.emit()
@@ -53,7 +53,6 @@ class QtWidgetDiscovery(QObject, WidgetDiscovery):
 
     def handle_category(self, description):
         self.found_category.emit(description)
-
 
 class QtWidgetRegistry(QObject, WidgetRegistry):
     """

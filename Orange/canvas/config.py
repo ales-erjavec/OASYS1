@@ -255,19 +255,16 @@ def default_entry_point():
                                   dist=dist)
     return ep
 
-def menu_entry_points():
-    ep_menu_iter = pkg_resources.iter_entry_points(MENU_ENTRY)
-    chain = [ep_menu_iter]
-    return itertools.chain(*chain)
-
 def widgets_entry_points():
     """
     Return an `EntryPoint` iterator for all 'orange.widget' entry
     points plus the default Orange Widgets.
 
     """
+    ep_menu_iter = pkg_resources.iter_entry_points(MENU_ENTRY)
     ep_iter = pkg_resources.iter_entry_points(WIDGETS_ENTRY)
     chain = [[default_entry_point()],
+             ep_menu_iter,
              ep_iter
              ]
     return itertools.chain(*chain)

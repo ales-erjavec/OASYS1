@@ -260,9 +260,8 @@ def main(argv=None):
         cache.save_registry_cache(widget_discovery.cached_descriptions)
         pickle.dump(WidgetRegistry(widget_registry),
                      open(cache_filename, "wb"))
-    set_global_registry(widget_registry)
 
-    widget_discovery.run(config.menu_entry_points())
+    set_global_registry(widget_registry)
 
     canvas_window.set_widget_registry(widget_registry)
     canvas_window.set_menu_registry(widget_discovery.menu_registry)

@@ -9,7 +9,6 @@ This module implements a discovery process
 """
 
 import os
-import sys
 import stat
 import glob
 import logging
@@ -18,13 +17,15 @@ import pkgutil
 from collections import namedtuple
 import pkg_resources
 
+import Orange.menus.menu
+
 from .description import (
     WidgetDescription, CategoryDescription,
     WidgetSpecificationError, CategorySpecificationError
 )
 
 from . import VERSION_HEX
-from . import cache, WidgetRegistry
+from . import cache, WidgetRegistry, MenuRegistry
 import collections
 
 log = logging.getLogger(__name__)
@@ -81,6 +82,7 @@ class WidgetDiscovery(object):
         to retrieve the iterator using `pkg_resources.iter_entry_points`.
 
         """
+
         if isinstance(entry_points_iter, str):
             entry_points_iter = \
                 pkg_resources.iter_entry_points(entry_points_iter)
@@ -191,9 +193,12 @@ class WidgetDiscovery(object):
             for _, mod_name, ispkg in pkgutil.iter_modules([path]):
                 if ispkg:
                     continue
-                name = package.__name__ + "." + mod_name
 
-                self.menu_registry.addMenu(name)
+                name = package.__name__ + "." + mod_name
+                module = asmodule(name)
+
+                if self.menu_registry:
+                    self.menu_registry.addMenu(module)
 
     def process_category_package(self, category, name=None, distribution=None):
         """
@@ -581,7 +586,8 @@ def run_discovery(entry_point, cached=False):
         reg_cache = cache.registry_cache()
 
     registry = WidgetRegistry()
-    discovery = WidgetDiscovery(registry, cached_descriptions=reg_cache)
+    menu_registry = MenuRegistry()
+    discovery = WidgetDiscovery(registry, menu_registry=menu_registry, cached_descriptions=reg_cache)
     discovery.run()
     if cached:
         cache.save_registry_cache(reg_cache)

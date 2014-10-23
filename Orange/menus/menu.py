@@ -1,9 +1,10 @@
 __author__ = 'labx'
 __menu__="just for discovery"
 
-from Orange.canvas.application.canvasmain import CanvasMainWindow
+from abc import ABCMeta, abstractmethod
 
 class OMenu():
+    __metaclass__ = ABCMeta
 
     canvas_main_window=None
     name = None
@@ -19,6 +20,7 @@ class OMenu():
     def getSubMenuNamesList(self):
         return self.sub_menu_names
 
+    @abstractmethod
     def executeAction(self, sub_menu_index):
         pass
 

@@ -8,6 +8,7 @@ import logging
 import operator
 from functools import partial
 from io import BytesIO
+import inspect
 
 import pkg_resources
 
@@ -57,6 +58,8 @@ from ..preview import previewdialog, previewmodel
 from .. import config
 
 from . import tutorials
+
+from ...menus.menu import OMenu
 
 log = logging.getLogger(__name__)
 
@@ -179,6 +182,7 @@ class CanvasMainWindow(QMainWindow):
         self.__first_show = True
 
         self.widget_registry = None
+        self.menu_registry = None
 
         self.last_scheme_dir = QDesktopServices.StandardLocation(
             QDesktopServices.DocumentsLocation
@@ -671,6 +675,8 @@ class CanvasMainWindow(QMainWindow):
         self.help_menu.addAction(self.documentation_action)
         menu_bar.addMenu(self.help_menu)
 
+        self.menu_bar = menu_bar
+
         self.setMenuBar(menu_bar)
 
     def restore(self):
@@ -734,9 +740,37 @@ class CanvasMainWindow(QMainWindow):
         return self.__document_title
 
     def set_menu_registry(self, menu_registry):
+        if self.menu_registry is not None:
+            pass
 
-        #TODO: CREATION OF MENUS
-        pass
+        self.menu_registry = menu_registry
+
+        for menu_module in self.menu_registry.menus():
+            for name, menu_class in inspect.getmembers(menu_module):
+                if inspect.isclass(menu_class):
+                    if issubclass(menu_class, OMenu) and not name=="OMenu":
+                        try:
+                            instance = menu_class(self)
+
+                            custom_menu = QMenu(instance.name, self)
+
+                            sub_menus = instance.getSubMenuNamesList()
+
+                            for index in range(0, len(sub_menus)):
+                                custom_action = \
+                                    QAction(sub_menus[index], self,
+                                            objectName= sub_menus[index].lower() + "-action",
+                                            toolTip=self.tr(sub_menus[index]),
+                                            #TODO:implementation of triggered
+                                            #triggered=instance.executeAction(index)
+                                            )
+
+                                custom_menu.addAction(custom_action)
+
+                            self.menu_bar.addMenu(custom_menu)
+                        except:
+                            continue
+
 
     def set_widget_registry(self, widget_registry):
         """Set widget registry.
