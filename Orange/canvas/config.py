@@ -238,7 +238,7 @@ def save_recent_scheme_list(scheme_list):
 
 
 WIDGETS_ENTRY = "orange.widgets"
-
+MENU_ENTRY = "orange.menu"
 
 # This could also be achieved by declaring the entry point in
 # Orange's setup.py, but that would not guaranty this entry point
@@ -255,6 +255,10 @@ def default_entry_point():
                                   dist=dist)
     return ep
 
+def menu_entry_points():
+    ep_menu_iter = pkg_resources.iter_entry_points(MENU_ENTRY)
+    chain = [ep_menu_iter]
+    return itertools.chain(*chain)
 
 def widgets_entry_points():
     """
@@ -269,10 +273,9 @@ def widgets_entry_points():
     return itertools.chain(*chain)
 
 #: Parameters for searching add-on packages in PyPi using xmlrpc api.
-ADDON_PYPI_SEARCH_SPEC = {"keywords": "orange3 add-on"}
+ADDON_PYPI_SEARCH_SPEC = {"keywords": "oasys"}
 #: Entry points by which add-ons register with pkg_resources.
-ADDON_ENTRY = "orange3.addon"
-
+ADDON_ENTRY = "orangecontrib"
 
 def splash_screen():
     """

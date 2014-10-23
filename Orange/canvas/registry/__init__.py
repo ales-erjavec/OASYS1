@@ -48,7 +48,7 @@ from .description import (
     InputSignal, OutputSignal
 )
 
-from .base import WidgetRegistry, VERSION_HEX
+from .base import WidgetRegistry, MenuRegistry, VERSION_HEX
 from . import discovery
 from .discovery import WidgetDiscovery
 
@@ -77,7 +77,8 @@ def global_registry(entry_point_group="_default"):
         else:
             entry_points_iter = entry_point_group
         reg = WidgetRegistry()
-        disc = discovery.WidgetDiscovery(reg)
+        menu_reg = MenuRegistry()
+        disc = discovery.WidgetDiscovery(reg, menu_reg)
         disc.run(entry_points_iter)
         log.info("'global_registry()' discovery finished.")
         __GLOBAL_REGISTRY[entry_point_group] = reg

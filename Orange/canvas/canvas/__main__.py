@@ -217,6 +217,9 @@ def main(argv=None):
     else:
         reg_cache = None
 
+    #TODO: qui aggiungere la discovery di classi di tipo menu.
+    # N.B. il costruttore di CanvasMainWindow crea i menu, quindi bisogna agire prima di show()
+
     widget_discovery = qt.QtWidgetDiscovery(cached_descriptions=reg_cache)
 
     widget_registry = qt.QtWidgetRegistry()
@@ -258,7 +261,11 @@ def main(argv=None):
         pickle.dump(WidgetRegistry(widget_registry),
                      open(cache_filename, "wb"))
     set_global_registry(widget_registry)
+
+    widget_discovery.run(config.menu_entry_points())
+
     canvas_window.set_widget_registry(widget_registry)
+    canvas_window.set_menu_registry(widget_discovery.menu_registry)
     canvas_window.show()
     canvas_window.raise_()
 

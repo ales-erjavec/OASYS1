@@ -217,3 +217,19 @@ class WidgetRegistry(object):
         insertion_i = bisect.bisect_right(priorities, priority)
         widgets.insert(insertion_i, desc)
         self._widgets_dict[desc.qualified_name] = desc
+
+
+"""
+ ADDED BY LUCA REBUFFI
+"""
+
+class MenuRegistry(object):
+
+    def __init__(self):
+        self.registry = []
+
+    def menus(self):
+        return self.registry
+
+    def addMenu(self, menu):
+        self.registry.append(menu)

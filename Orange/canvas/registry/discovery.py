@@ -63,8 +63,9 @@ class WidgetDiscovery(object):
     Base widget discovery runner.
     """
 
-    def __init__(self, registry=None, cached_descriptions=None):
+    def __init__(self, registry=None, menu_registry=None, cached_descriptions=None):
         self.registry = registry
+        self.menu_registry = menu_registry
         self.cached_descriptions = cached_descriptions or {}
         version = (VERSION_HEX, )
         if self.cached_descriptions.get("!VERSION") != version:
@@ -102,20 +103,23 @@ class WidgetDiscovery(object):
 
             try:
                 if isinstance(point, types.ModuleType):
-                    if hasattr(point, "__path__"):
-                        # Entry point is a package (a widget category)
-                        self.process_category_package(
-                            point,
-                            name=entry_point.name,
-                            distribution=entry_point.dist
-                        )
+                    if "MENU" in point.__dict__:
+                        self.process_menu_package(point)
                     else:
-                        # Entry point is a module (a single widget)
-                        self.process_widget_module(
-                            point,
-                            name=entry_point.name,
-                            distribution=entry_point.dist
-                        )
+                        if hasattr(point, "__path__"):
+                            # Entry point is a package (a widget category)
+                            self.process_category_package(
+                                point,
+                                name=entry_point.name,
+                                distribution=entry_point.dist
+                            )
+                        else:
+                            # Entry point is a module (a single widget)
+                            self.process_widget_module(
+                                point,
+                                name=entry_point.name,
+                                distribution=entry_point.dist
+                            )
                 elif isinstance(point, (types.FunctionType, types.MethodType)):
                     # Entry point is a callable loader function
                     self.process_loader(point)
@@ -177,6 +181,19 @@ class WidgetDiscovery(object):
             return
 
         self.handle_widget(desc)
+
+
+    def process_menu_package(self, package):
+
+        package = asmodule(package)
+
+        for path in package.__path__:
+            for _, mod_name, ispkg in pkgutil.iter_modules([path]):
+                if ispkg:
+                    continue
+                name = package.__name__ + "." + mod_name
+
+                self.menu_registry.addMenu(name)
 
     def process_category_package(self, category, name=None, distribution=None):
         """

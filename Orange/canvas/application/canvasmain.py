@@ -733,6 +733,11 @@ class CanvasMainWindow(QMainWindow):
         """
         return self.__document_title
 
+    def set_menu_registry(self, menu_registry):
+
+        #TODO: CREATION OF MENUS
+        pass
+
     def set_widget_registry(self, widget_registry):
         """Set widget registry.
         """
