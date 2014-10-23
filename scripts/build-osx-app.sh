@@ -122,7 +122,7 @@ cp -r "/Users/labx/env/orange3/lib/python3.3/site-packages/pyparsing-2.0.1-py3.3
 cp -r "/Users/labx/env/orange3/lib/python3.3/site-packages/six-1.5.2-py3.3.egg" "$SITE_PACKAGES"
 cp -r "/Users/labx/env/orange3/lib/python3.3/site-packages/python_dateutil-2.2-py3.3.egg" "$SITE_PACKAGES"
 
-cp -f "/Users/labx/Documents/workspace/orange-shadow/orange3/scripts/easy-install.pth" "$SITE_PACKAGES"
+cp -f "/Users/labx/Documents/workspace/OASYS-Develop/OASYS1/scripts/easy-install.pth" "$SITE_PACKAGES"
 
 "$PIP" uninstall -y numpy
 "$PIP" install numpy
@@ -134,7 +134,7 @@ echo "Installing bottlechest"
 echo "======================"
 "$PIP" install git+https://github.com/biolab/bottlechest@bottlechest#egg=bottlechest
 
-cp -r "/Users/labx/Documents/workspace/orange-shadow/shadow-addon/orangecontrib" "$SITE_PACKAGES"
+cp -r "/Users/labx/Documents/workspace/OASYS-Develop/Orange-Shadow/orangecontrib" "$SITE_PACKAGES"
 
 echo "Installing Orange"
 echo "================="
