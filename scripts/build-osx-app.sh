@@ -81,7 +81,7 @@ if [[ ! $INPLACE ]]; then
     echo "Retrieving a template from $TEMPLATE_URL"
     # check for a url schema
     if [[ $TEMPLATE_URL =~ $SCHEMA_REGEX ]]; then
-        curl --fail --silent "$TEMPLATE_URL" | tar -x -C "$BUILD_DIR"
+        curl --fail --silent --location --max-redirs 1 "$TEMPLATE_URL" | tar -x -C "$BUILD_DIR"
         TEMPLATE=( $BUILD_DIR/*.app )
 
     elif [[ -d $TEMPLATE_URL ]]; then
@@ -135,6 +135,11 @@ echo "======================"
 "$PIP" install git+https://github.com/biolab/bottlechest@bottlechest#egg=bottlechest
 
 cp -r "/Users/labx/Documents/workspace/OASYS-Develop/Orange-Shadow/orangecontrib" "$SITE_PACKAGES"
+
+echo "Installing pyqtgraph sqlparse"
+echo "============================="
+
+"$PIP" install pyqtgraph sqlparse
 
 echo "Installing Orange"
 echo "================="

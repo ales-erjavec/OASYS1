@@ -48,6 +48,19 @@ if "PYCHARM_HOSTED" in os.environ:
     import signal
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
+
+def fix_osx_10_9_private_font():
+    """Temporary fix for QTBUG-32789."""
+    from PyQt4.QtCore import QSysInfo, QT_VERSION
+    if sys.platform == "darwin":
+        try:
+            if QSysInfo.MacintoshVersion > QSysInfo.MV_10_8 and \
+                    QT_VERSION < 0x40806:
+                QFont.insertSubstitution(".Lucida Grande UI", "Lucida Grande")
+        except AttributeError:
+            pass
+
+
 def fix_win_pythonw_std_stream():
     """
     On windows when running without a console (using pythonw.exe) the
@@ -112,6 +125,9 @@ def main(argv=None):
     # Fix streams before configuring logging (otherwise it will store
     # and write to the old file descriptors)
     fix_win_pythonw_std_stream()
+
+    # Try to fix fonts on OSX Mavericks
+    fix_osx_10_9_private_font()
 
     # File handler should always be at least INFO level so we need
     # the application root level to be at least at INFO.
@@ -238,7 +254,7 @@ def main(argv=None):
         pm, rect = config.splash_screen()
         splash_screen = SplashScreen(pixmap=pm, textRect=rect)
         splash_screen.setFont(QFont("Helvetica", 12))
-        color = QColor("#ff7600")
+        color = QColor("#FFD39F")
 
         def show_message(message):
             splash_screen.showMessage(message, color=color)
@@ -262,7 +278,6 @@ def main(argv=None):
     set_global_registry(widget_registry)
     canvas_window.set_widget_registry(widget_registry)
     canvas_window.show()
-
     canvas_window.raise_()
 
     want_welcome = True or \

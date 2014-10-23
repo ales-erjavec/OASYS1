@@ -29,12 +29,14 @@ class OWSql(widget.OWWidget):
     want_main_area = False
 
     host = Setting(None)
+    port = Setting(None)
     database = Setting(None)
     username = Setting(None)
     password = Setting(None)
     table = Setting(None)
     tables = Setting([])
     sql = Setting("")
+    guess_values = Setting(True)
 
     def __init__(self, parent=None, signalManager=None, stored_settings=None):
         super(OWSql, self).__init__(parent=parent,
@@ -48,7 +50,8 @@ class OWSql(widget.OWWidget):
         self.servertext = QtGui.QLineEdit(box)
         self.servertext.setPlaceholderText('Server')
         if self.host:
-            self.servertext.setText(self.host)
+            self.servertext.setText(self.host if not self.port else
+                                    '{}:{}'.format(self.host, self.port))
         box.layout().addWidget(self.servertext)
         self.databasetext = QtGui.QLineEdit(box)
         self.databasetext.setPlaceholderText('Database')
@@ -94,31 +97,66 @@ class OWSql(widget.OWWidget):
 
         box.layout().addWidget(self.custom_sql)
 
+        gui.checkBox(box, self, "guess_values",
+                     "Auto-discover discrete variables.",
+                     callback=self.open_table)
+
         if self.table:
             self.open_table()
 
+    def error(self, id=0, text=""):
+        super().error(id, text)
+        if 'server' in text or 'host' in text:
+            self.servertext.setStyleSheet('QLineEdit {border: 2px solid red;}')
+        else:
+            self.servertext.setStyleSheet('')
+        if 'role' in text:
+            self.usernametext.setStyleSheet('QLineEdit {border: 2px solid red;}')
+        else:
+            self.usernametext.setStyleSheet('')
+        if 'database' in text:
+            self.databasetext.setStyleSheet('QLineEdit {border: 2px solid red;}')
+        else:
+            self.databasetext.setStyleSheet('')
+
+
     def connect(self):
-        self.host = self.servertext.text()
+        hostport = self.servertext.text().split(':')
+        self.host = hostport[0]
+        self.port = hostport[1] if len(hostport) == 2 else None
         self.database = self.databasetext.text()
         self.username = self.usernametext.text() or None
         self.password = self.passwordtext.text() or None
-        self._connection = psycopg2.connect(
-            host=self.host,
-            database=self.database,
-            user=self.username,
-            password=self.password
-        )
-        print("Connected")
+        try:
+            self._connection = psycopg2.connect(
+                host=self.host,
+                port=self.port,
+                database=self.database,
+                user=self.username,
+                password=self.password
+            )
+            self.error(0)
+            self.refresh_tables()
+        except psycopg2.Error as err:
+            self.error(0, str(err).split('\n')[0])
+            self.tables = []
+            self.tablecombo.clear()
 
-        self.refresh_tables()
 
     def refresh_tables(self):
         if self._connection is None:
             return
         cur = self._connection.cursor()
-        cur.execute("SELECT table_name "
-                    "  FROM information_schema.tables "
-                    " WHERE table_schema = 'public'")
+        cur.execute("""SELECT --n.nspname as "Schema",
+                              c.relname as "Name"
+                       FROM pg_catalog.pg_class c
+                  LEFT JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+                      WHERE c.relkind IN ('r','v','m','S','f','')
+                        AND n.nspname <> 'pg_catalog'
+                        AND n.nspname <> 'information_schema'
+                        AND n.nspname !~ '^pg_toast'
+                        AND pg_catalog.pg_table_is_visible(c.oid)
+                   ORDER BY 1;""")
         self.tablecombo.clear()
         self.tablecombo.addItem("Select a table")
         tables = []
@@ -143,16 +181,19 @@ class OWSql(widget.OWWidget):
         self.table = self.tablecombo.currentText()
 
         table = SqlTable(host=self.host,
+                         port=self.port,
                          database=self.database,
                          user=self.username,
                          password=self.password,
-                         table=self.table)
+                         table=self.table,
+                         guess_values=self.guess_values)
         self.send("Data", table)
 
     def execute_sql(self):
         self.sql = self.sqltext.toPlainText()
         table = SqlTable.from_sql(
             host=self.host,
+            port=self.port,
             database=self.database,
             user=self.username,
             password=self.password,

@@ -14,6 +14,7 @@ from Orange.canvas.registry import description as widget_description
 from Orange.canvas.scheme import widgetsscheme as widget_scheme
 from Orange.widgets.gui import ControlledAttributesDict, notify_changed
 from Orange.widgets.settings import SettingsHandler
+from Orange.widgets.utils import vartype
 
 
 class WidgetMetaClass(type(QDialog)):
@@ -38,8 +39,8 @@ class WidgetMetaClass(type(QDialog)):
         # TODO Remove this when all widgets are migrated to Orange 3.0
         if (hasattr(cls, "settingsToWidgetCallback") or
                 hasattr(cls, "settingsFromWidgetCallback")):
-            raise SystemError("Reimplement settingsToWidgetCallback and "
-                              "settingsFromWidgetCallback")
+            raise TypeError("Reimplement settingsToWidgetCallback and "
+                            "settingsFromWidgetCallback")
 
         cls.settingsHandler = SettingsHandler.create(cls, template=cls.settingsHandler)
 
@@ -96,10 +97,8 @@ class OWWidget(QDialog, metaclass=WidgetMetaClass):
         self = super().__new__(cls, None, cls.get_flags())
         QDialog.__init__(self, None, self.get_flags())
 
-        # 'current_context' MUST be the first thing assigned to a widget
-        self.current_context = settings.Context()
+        stored_settings = kwargs.get('stored_settings', None)
         if self.settingsHandler:
-            stored_settings = kwargs.get('stored_settings', None)
             self.settingsHandler.initialize(self, stored_settings)
 
         self.signalManager = kwargs.get('signal_manager', None)
@@ -313,6 +312,7 @@ class OWWidget(QDialog, metaclass=WidgetMetaClass):
 
 
     # ##############################################
+    """
     def isDataWithClass(self, data, wantedVarType=None, checkMissing=False):
         self.error([1234, 1235, 1236])
         if not data:
@@ -328,6 +328,7 @@ class OWWidget(QDialog, metaclass=WidgetMetaClass):
             self.error(1236, "Unable to handle data set with no known classes")
             return 0
         return 1
+    """
 
     def restoreWidgetPosition(self):
         if self.save_position:
@@ -465,9 +466,7 @@ class OWWidget(QDialog, metaclass=WidgetMetaClass):
         self.settingsHandler.open_context(self, *a)
 
     def closeContext(self):
-        if self.current_context is not None:
-            self.settingsHandler.close_context(self)
-        self.current_context = None
+        self.settingsHandler.close_context(self)
 
     def retrieveSpecificSettings(self):
         pass

@@ -15,11 +15,10 @@ class IsDefinedFilterTests(PostgresTest):
             [7, None, 3, None, 'f'],
         ]
         self.table_uri = self.create_sql_table(self.data)
-        self.table = SqlTable(self.table_uri)
+        self.table = SqlTable(self.table_uri, guess_values=True)
 
     def tearDown(self):
         self.drop_sql_table(self.table_name)
-        self.table.connection.close()
 
     def test_on_all_columns(self):
         filtered_data = filter.IsDefined()(self.table)
@@ -69,7 +68,7 @@ class HasClassFilterTests(PostgresTest):
             [7, None, 3, None, 'f'],
         ]
         self.table_uri = self.create_sql_table(self.data)
-        table = SqlTable(self.table_uri)
+        table = SqlTable(self.table_uri, guess_values=True)
         variables = table.domain.variables
         new_table = table.copy()
         new_table.domain = domain.Domain(variables[:-1], variables[-1:])
@@ -77,7 +76,6 @@ class HasClassFilterTests(PostgresTest):
 
     def tearDown(self):
         self.drop_sql_table(self.table_name)
-        self.table.connection.close()
 
     def test_has_class(self):
         filtered_data = filter.HasClass()(self.table)
@@ -104,11 +102,10 @@ class SameValueFilterTests(PostgresTest):
             [2, 2, 3, 'b', 'f'],
         ]
         self.table_uri = self.create_sql_table(self.data)
-        self.table = SqlTable(self.table_uri)
+        self.table = SqlTable(self.table_uri, guess_values=True)
 
     def tearDown(self):
         self.drop_sql_table(self.table_name)
-        self.table.connection.close()
 
     def test_on_continuous_attribute(self):
         filtered_data = filter.SameValue(0, 1)(self.table)
@@ -193,18 +190,14 @@ class ValuesFilterTests(PostgresTest):
             [2, 2, 3, 'b', 'f'],
         ]
         self.table_uri = self.create_sql_table(self.data)
-        self.table = SqlTable(self.table_uri)
+        self.table = SqlTable(self.table_uri, guess_values=True)
 
     def tearDown(self):
         self.drop_sql_table(self.table_name)
-        self.table.connection.close()
 
     def test_values_filter_with_no_conditions(self):
-        filtered_data = filter.Values()(self.table)
-        correct_data = self.data
-
-        self.assertEqual(len(filtered_data), len(correct_data))
-        self.assertSequenceEqual(filtered_data, correct_data)
+        with self.assertRaises(ValueError):
+            filtered_data = filter.Values([])(self.table)
 
     def test_discrete_value_filter(self):
         filtered_data = filter.Values(conditions=[
@@ -341,7 +334,6 @@ class FilterStringTest(PostgresTest):
 
     def tearDown(self):
         self.drop_sql_table(self.table_name)
-        self.table.connection.close()
 
     def test_filter_string_is_defined(self):
         filtered_data = filter.Values(conditions=[
