@@ -745,31 +745,29 @@ class CanvasMainWindow(QMainWindow):
 
         self.menu_registry = menu_registry
 
-        for menu_module in self.menu_registry.menus():
-            for name, menu_class in inspect.getmembers(menu_module):
-                if inspect.isclass(menu_class):
-                    if issubclass(menu_class, OMenu) and not name=="OMenu":
-                        try:
-                            instance = menu_class(self)
+        for menu_instance in self.menu_registry.menus():
+            try:
+                menu_instance.setCanvasMainWindow(self)
 
-                            custom_menu = QMenu(instance.name, self)
+                custom_menu = QMenu(menu_instance.name, self)
 
-                            sub_menus = instance.getSubMenuNamesList()
+                sub_menus = menu_instance.getSubMenuNamesList()
 
-                            for index in range(0, len(sub_menus)):
-                                custom_action = \
-                                    QAction(sub_menus[index], self,
-                                            objectName= sub_menus[index].lower() + "-action",
-                                            toolTip=self.tr(sub_menus[index]),
-                                            #TODO:implementation of triggered
-                                            #triggered=instance.executeAction(index)
-                                            )
+                for index in range(0, len(sub_menus)):
+                    custom_action = \
+                        QAction(sub_menus[index], self,
+                                objectName= sub_menus[index].lower() + "-action",
+                                toolTip=self.tr(sub_menus[index]),
+                                )
 
-                                custom_menu.addAction(custom_action)
+                    custom_action.triggered.connect(getattr(menu_instance, 'executeAction_' + str(index+1)))
 
-                            self.menu_bar.addMenu(custom_menu)
-                        except:
-                            continue
+                    custom_menu.addAction(custom_action)
+
+                self.menu_bar.addMenu(custom_menu)
+            except:
+                print("Error in creating Customized Menu: " + str(menu_instance))
+                continue
 
 
     def set_widget_registry(self, widget_registry):

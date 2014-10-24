@@ -14,10 +14,11 @@ import glob
 import logging
 import types
 import pkgutil
+import inspect
 from collections import namedtuple
 import pkg_resources
 
-import Orange.menus.menu
+from Orange.menus.menu import OMenu
 
 from .description import (
     WidgetDescription, CategoryDescription,
@@ -195,10 +196,18 @@ class WidgetDiscovery(object):
                     continue
 
                 name = package.__name__ + "." + mod_name
-                module = asmodule(name)
+                menu_module = asmodule(name)
 
                 if self.menu_registry:
-                    self.menu_registry.addMenu(module)
+                    for name, menu_class in inspect.getmembers(menu_module):
+                        if inspect.isclass(menu_class):
+                            if issubclass(menu_class, OMenu) and not name=="OMenu":
+                                try:
+                                    self.menu_registry.addMenu(menu_class())
+                                except Exception as e:
+                                    print("Error creating menu instance from " + str(menu_class))
+                                    print(e)
+                                    continue
 
     def process_category_package(self, category, name=None, distribution=None):
         """
