@@ -134,7 +134,7 @@ echo "Installing bottlechest"
 echo "======================"
 "$PIP" install git+https://github.com/biolab/bottlechest@bottlechest#egg=bottlechest
 
-cp -r "/Users/labx/Documents/workspace/OASYS-Develop/Orange-Shadow/orangecontrib" "$SITE_PACKAGES"
+#cp -r "/Users/labx/Documents/workspace/OASYS-Develop/Orange-Shadow/orangecontrib" "$SITE_PACKAGES"
 
 echo "Installing pyqtgraph sqlparse"
 echo "============================="
@@ -158,7 +158,7 @@ cat <<-'EOF' > "$TEMPLATE"/Contents/MacOS/Orange
 	    shift 1
 	fi
 
-	exec -a "$0" "$DIRNAME"/PythonAppStart -m orangecontrib.shadow "$@"
+	exec -a "$0" "$DIRNAME"/PythonAppStart -m Orange.canvas "$@"
 EOF
 
 chmod +x "$TEMPLATE"/Contents/MacOS/Orange

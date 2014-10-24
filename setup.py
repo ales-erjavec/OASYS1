@@ -174,6 +174,7 @@ PACKAGES = [
     "Orange.data.sql",
     "Orange.evaluation",
     "Orange.feature",
+    "Orange.menus",
     "Orange.misc",
     "Orange.statistics",
     "Orange.testing",
