@@ -21,7 +21,7 @@ from PyQt4.QtGui import (
     QWidget, QDialog, QLabel, QLineEdit, QTreeView, QHeaderView,
     QTextBrowser, QTextOption, QDialogButtonBox, QProgressDialog,
     QVBoxLayout, QPalette, QStandardItemModel, QStandardItem,
-    QSortFilterProxyModel, QStyle, QStyledItemDelegate,
+    QSortFilterProxyModel, QItemSelectionModel, QStyle, QStyledItemDelegate,
     QStyleOptionViewItemV4, QApplication
 )
 
@@ -30,7 +30,8 @@ from PyQt4.QtCore import (
 )
 from PyQt4.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
-from ..gui.utils import message_warning, message_critical as message_error
+from ..gui.utils import message_warning, message_information, \
+                        message_critical as message_error
 from ..help.manager import get_dist_meta, trim
 
 Installable = namedtuple(
@@ -157,7 +158,7 @@ class AddonManagerWidget(QWidget):
         self.layout().addWidget(view)
 
         self.__model = model = QStandardItemModel()
-        model.setHorizontalHeaderLabels(["", "Name", "Version"])
+        model.setHorizontalHeaderLabels(["", "Name", "Version", "Action"])
         model.dataChanged.connect(self.__data_changed)
         proxy = QSortFilterProxyModel(
             filterKeyColumn=1,
@@ -191,7 +192,7 @@ class AddonManagerWidget(QWidget):
         self.__items = items
         model = self.__model
         model.clear()
-        model.setHorizontalHeaderLabels(["", "Name", "Version"])
+        model.setHorizontalHeaderLabels(["", "Name", "Version", "Action"])
 
         for item in items:
             if isinstance(item, Installed):
@@ -203,6 +204,7 @@ class AddonManagerWidget(QWidget):
             else:
                 installed = False
                 (ins,) = item
+                dist = None
                 name = ins.name
                 summary = ins.summary
                 version = ins.version
@@ -227,13 +229,28 @@ class AddonManagerWidget(QWidget):
             item2.setToolTip(summary)
             item2.setData(item, Qt.UserRole)
 
+            if updatable:
+                version = "{} < {}".format(dist.version, ins.version)
+
             item3 = QStandardItem(version)
             item3.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
-            model.appendRow([item1, item2, item3])
+
+            item4 = QStandardItem()
+            item4.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
+
+            model.appendRow([item1, item2, item3, item4])
 
         self.__view.resizeColumnToContents(0)
         self.__view.setColumnWidth(
-            1, max(100, self.__view.sizeHintForColumn(1)))
+            1, max(150, self.__view.sizeHintForColumn(1)))
+        self.__view.setColumnWidth(
+            2, max(150, self.__view.sizeHintForColumn(2)))
+
+        if self.__items:
+            self.__view.selectionModel().select(
+                self.__view.model().index(0, 0),
+                QItemSelectionModel.Select | QItemSelectionModel.Rows
+            )
 
     def item_state(self):
         steps = []
@@ -258,7 +275,28 @@ class AddonManagerWidget(QWidget):
         else:
             return -1
 
-    def __data_changed(self, *q):
+    def __data_changed(self, topleft, bottomright):
+        rows = range(topleft.row(), bottomright.row() + 1)
+        proxy = self.__view.model()
+        map_to_source = proxy.mapToSource
+
+        for i in rows:
+            sourceind = map_to_source(proxy.index(i, 0))
+            modelitem = self.__model.itemFromIndex(sourceind)
+            actionitem = self.__model.item(modelitem.row(), 3)
+            item = self.__items[modelitem.row()]
+
+            state = modelitem.checkState()
+            flags = modelitem.flags()
+
+            if flags & Qt.ItemIsTristate and state == Qt.Checked:
+                actionitem.setText("Update")
+            elif isinstance(item, Available) and state == Qt.Checked:
+                actionitem.setText("Install")
+            elif isinstance(item, Installed) and state == Qt.Unchecked:
+                actionitem.setText("Uninstall")
+            else:
+                actionitem.setText("")
         self.statechanged.emit()
 
     def __update_details(self):
@@ -287,7 +325,7 @@ class AddonManagerWidget(QWidget):
             remote, dist = item
             if remote is None:
                 description = get_dist_meta(dist).get("Description")
-                description = trim(description)
+                description = description
             else:
                 description = remote.description
         else:
@@ -296,7 +334,7 @@ class AddonManagerWidget(QWidget):
         if docutils is not None:
             try:
                 html = docutils.core.publish_string(
-                    description,
+                    trim(description),
                     writer_name="html",
                     settings_overrides={
                         "output-encoding": "utf-8",
@@ -306,7 +344,9 @@ class AddonManagerWidget(QWidget):
                     }
                 ).decode("utf-8")
 
-            except ValueError:
+            except docutils.utils.SystemMessage:
+                html = "<pre>{}<pre>".format(escape(description))
+            except Exception:
                 html = "<pre>{}<pre>".format(escape(description))
         else:
             html = "<pre>{}<pre>".format(escape(description))
@@ -431,7 +471,6 @@ class AddonManagerDialog(QDialog):
         self._executor.shutdown(wait=False)
 
         if self.__thread is not None:
-
             self.__thread.quit()
             self.__thread.wait(1000)
 
@@ -448,7 +487,7 @@ class AddonManagerDialog(QDialog):
             self.__thread.start()
 
             self.__installer.moveToThread(self.__thread)
-            self.__installer.finished.connect(self.accept)
+            self.__installer.finished.connect(self.__on_installer_finished)
             self.__installer.error.connect(self.__on_installer_error)
             self.__installer.installStatusChanged.connect(
                 self.__progress.setLabelText)
@@ -469,6 +508,12 @@ class AddonManagerDialog(QDialog):
             parent=self
         )
         self.reject()
+
+    def __on_installer_finished(self):
+        message_information(
+            "Please restart the application for changes to take effect.",
+            parent=self)
+        self.accept()
 
 
 def list_pypi_addons():
