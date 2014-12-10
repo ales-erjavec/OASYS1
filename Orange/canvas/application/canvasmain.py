@@ -59,8 +59,6 @@ from .. import config
 
 from . import tutorials
 
-from ...menus.menu import OMenu
-
 log = logging.getLogger(__name__)
 
 # TODO: Orange Version in the base link
