@@ -158,8 +158,9 @@ class Table(MutableSequence, Storage):
         try:
             if isinstance(args[0], str):
                 return cls.from_file(args[0], **kwargs)
-
-            if isinstance(args[0], orange_domain.Domain):
+            elif isinstance(args[0], Table):
+                return cls.from_table(args[0].domain, args[0])
+            elif isinstance(args[0], orange_domain.Domain):
                 domain, args = args[0], args[1:]
                 if not args:
                     return cls.from_domain(domain, **kwargs)
@@ -449,8 +450,8 @@ class Table(MutableSequence, Storage):
                            (Unknown if not i else i(example))
                            for i in c.class_vars]
             self.metas[row] = [example._values[i] if isinstance(i, int) else
-                               (Unknown if not i else i(example))
-                               for i in c.metas]
+                               (var.Unknown if not i else i(example))
+                               for i, var in zip(c.metas, domain.metas)]
         else:
             self.X[row] = [var.to_val(val)
                            for var, val in zip(domain.attributes, example)]
@@ -458,7 +459,8 @@ class Table(MutableSequence, Storage):
                            for var, val in
                            zip(domain.class_vars,
                                example[len(domain.attributes):])]
-            self.metas[row] = Unknown
+            self.metas[row] = np.array([var.Unknown for var in domain.metas],
+                                       dtype=object)
 
 
     # Helper function for __setitem__ and insert:
@@ -1135,7 +1137,7 @@ class Table(MutableSequence, Storage):
             else:
                 if W is not None:
                     ranks = np.argsort(m)
-                    vals = np.vstack((m[ranks], W[ranks]))
+                    vals = np.vstack((m[ranks], W[ranks].flatten()))
                     unknowns = bn.countnans(m, W)
                 else:
                     vals = np.ones((2, m.shape[0]))

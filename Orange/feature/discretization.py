@@ -1,3 +1,5 @@
+import itertools
+
 import numpy as np
 import Orange.statistics.distribution
 
@@ -37,14 +39,40 @@ class Discretizer(ColumnTransformation):
             return np.array([], dtype=int)
 
 
+def _fmt_interval(low, high, decimals):
+    assert (low if low is not None else -np.inf) < \
+           (high if high is not None else np.inf)
+    assert decimals >= 0
+
+    def fmt_value(value, decimals):
+        return (("%%.%if" % decimals) % value).rstrip("0").rstrip(".")
+
+    if (low is None or np.isinf(low)) and \
+            not (high is None or np.isinf(high)):
+        return "<{}".format(fmt_value(high, decimals))
+    elif (high is None or np.isinf(high)) and \
+            not (low is None or np.isinf(low)):
+        return ">={}".format(fmt_value(low, decimals))
+    else:
+        return "[{}, {})".format(fmt_value(low, decimals),
+                                 fmt_value(high, decimals))
+
+
 def _discretized_var(data, var, points):
     name = "D_" + data.domain[var].name
     var = data.domain[var]
 
+    def pairwise(iterable):
+        "Iterator over neighboring pairs of `iterable`"
+        first, second = itertools.tee(iterable, 2)
+        next(second)
+        yield from zip(first, second)
+
     if len(points) >= 1:
-        values = ["<%f" % points[0]] \
-            + ["[%f, %f)" % (p1, p2) for p1, p2 in zip(points, points[1:])] \
-            + [">=%f" % points[-1]]
+        values = [_fmt_interval(low, high, var.number_of_decimals)
+                  for low, high in pairwise([-np.inf] + list(points) +
+                                            [np.inf])]
+
         def discretized_attribute():
             return 'bin(%s, ARRAY%s)' % (var.to_sql(), str(list(points)))
     else:
@@ -53,7 +81,8 @@ def _discretized_var(data, var, points):
             return "'%s'" % values[0]
 
     dvar = Orange.data.variable.DiscreteVariable(name=name, values=values)
-    dvar.get_value_from = Discretizer(var, points)
+    dvar.compute_value = Discretizer(var, points)
+    dvar.source_variable = var
     dvar.to_sql = discretized_attribute
     return dvar
 
@@ -64,13 +93,12 @@ class Discretization:
 
 
 class EqualFreq(Discretization):
-    """Discretizes the feature by spliting its domain to a fixed number of
-    equal-width intervals. The span of original variable is the difference
-    between the smallest and the largest feature value.
+    """Discretization into intervals that contain
+    an approximately equal number of data instances.
 
     .. attribute:: n
 
-        Number of discretization intervals (default: 4).
+        Maximum number of discretization intervals (default: 4).
     """
     def __init__(self, n=4):
         self.n = n
@@ -81,7 +109,7 @@ class EqualFreq(Discretization):
             quantiles = [(i + 1) / self.n for i in range(self.n - 1)]
             query = data._sql_query(['quantile(%s, ARRAY%s)' % (att, str(quantiles))])
             with data._execute_sql_query(query) as cur:
-                points = cur.fetchone()[0]
+                points = sorted(set(cur.fetchone()[0]))
         else:
             d = Orange.statistics.distribution.get_distribution(data, attribute)
             points = _discretization.split_eq_freq(d, n=self.n)
@@ -89,8 +117,7 @@ class EqualFreq(Discretization):
 
 
 class EqualWidth(Discretization):
-    """Infers the cut-off points so that the discretization intervals contain
-    approximately equal number of training data instances.
+    """Discretization into a fixed number of equal-width intervals.
 
     .. attribute:: n
 
@@ -254,7 +281,7 @@ def _entropy_discretize_sorted(C, force=False):
 
     # Note the + 1
     cut_index = np.argmin(E) + 1
-    
+
     # Distribution of classed in S1, S2 and S
     S1_c = np.sum(C[:cut_index], axis=0)
     S2_c = np.sum(C[cut_index:], axis=0)
@@ -304,7 +331,7 @@ class EntropyMDL(Discretization):
         gain is lower than MDL (default: False).
 
     """
-    
+
     def __init__(self, force=False):
         self.force = force
 

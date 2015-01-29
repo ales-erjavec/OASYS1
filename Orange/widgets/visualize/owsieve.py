@@ -1,3 +1,5 @@
+from collections import defaultdict
+from itertools import product
 from math import sqrt, floor, ceil
 import random
 import sys
@@ -6,10 +8,10 @@ from PyQt4.QtCore import Qt
 from PyQt4.QtGui import (QGraphicsScene, QGraphicsView, QColor, QPen, QBrush,
                          QDialog, QApplication)
 
+
 import Orange
-from Orange.data import Table, ContinuousVariable
-from Orange.data.discretization import DiscretizeTable
-from Orange.feature.discretization import EqualFreq
+from Orange.data import Table, ContinuousVariable, DiscreteVariable
+from Orange.data.sql.table import SqlTable, LARGE_TABLE, DEFAULT_SAMPLE_TIME
 from Orange.statistics.contingency import get_contingency
 from Orange.widgets import gui
 from Orange.widgets.utils import getHtmlCompatibleString
@@ -19,21 +21,15 @@ from Orange.widgets.widget import OWWidget, Default, AttributeList
 
 
 class OWSieveDiagram(OWWidget):
-    """
-    <name>Sieve Diagram</name>
-    <description>Sieve diagram.</description>
-    <contact>Gregor Leban (gregor.leban@fri.uni-lj.si)</contact>
-    <icon>icons/SieveDiagram.svg</icon>
-    <priority>4200</priority>
-    """
     name = "Sieve Diagram"
     icon = "icons/SieveDiagram.svg"
+    priority = 4200
 
-    inputs = [("Data", Table, "setData", Default), ("Features", AttributeList, "setShownAttributes")]
+    inputs = [("Data", Table, "setData", Default),
+              ("Features", AttributeList, "setShownAttributes")]
     outputs = []
 
     settingsList = ["showLines", "showCases", "showInColor"]
-
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Sieve diagram", True)
 
@@ -101,18 +97,20 @@ class OWSieveDiagram(OWWidget):
 
     # receive new data and update all fields
     def setData(self, data):
+        if type(data) == SqlTable and data.approx_len() > LARGE_TABLE:
+            data = data.sample_time(DEFAULT_SAMPLE_TIME)
+
         self.information(0)
         self.information(1)
         sameDomain = self.data and data and self.data.domain.checksum() == data.domain.checksum() # preserve attribute choice if the domain is the same
         # self.data = self.optimizationDlg.setData(data, 0)
         self.data = data
 
+        self.warning(0, "")
         if data:
             if any(isinstance(attr, ContinuousVariable) for attr in data.domain):
-                self.data = DiscretizeTable(data, method=EqualFreq())
-                self.information(0, "Continuous attributes were discretized.")
-#            if not self.data or len(data.domain) != len(self.data.domain):
-#                self.information(1, "Unused attribute values were removed.")
+                self.warning(0, "Data contains continuous variables. " +
+                             "Discretize the data to use them.")
 
         if not sameDomain:
             self.initCombos()
@@ -145,10 +143,9 @@ class OWSieveDiagram(OWWidget):
         else:
             # data = orange.Preprocessor_dropMissing(self.data.select([xAttr, yAttr, self.attrCondition]))
             # data = self.data.select({self.attrCondition:self.attrConditionValue})
-            filt = Orange.data.filter.Values()
-            filt.domain = self.data.domain
             fd = Orange.data.filter.FilterDiscrete(column=self.attrCondition, values=[self.attrConditionValue])
-            filt.conditions.append(fd)
+            filt = Orange.data.filter.Values([fd])
+            filt.domain = self.data.domain
             data = filt(self.data)
 
         # if dropMissingData: return orange.Preprocessor_dropMissing(data)
@@ -174,10 +171,11 @@ class OWSieveDiagram(OWWidget):
         self.attrConditionValueCombo.clear()
 
         if not self.data: return
-        for i in range(len(self.data.domain)):
-            self.attrXCombo.addItem(self.icons[self.data.domain[i]], self.data.domain[i].name)
-            self.attrYCombo.addItem(self.icons[self.data.domain[i]], self.data.domain[i].name)
-            self.attrConditionCombo.addItem(self.icons[self.data.domain[i]], self.data.domain[i].name)
+        for i, var in enumerate(self.data.domain):
+            if isinstance(var, DiscreteVariable):
+                self.attrXCombo.addItem(self.icons[self.data.domain[i]], self.data.domain[i].name)
+                self.attrYCombo.addItem(self.icons[self.data.domain[i]], self.data.domain[i].name)
+                self.attrConditionCombo.addItem(self.icons[self.data.domain[i]], self.data.domain[i].name)
         self.attrCondition = str(self.attrConditionCombo.itemText(0))
 
         if self.attrXCombo.count() > 0:
@@ -211,18 +209,18 @@ class OWSieveDiagram(OWWidget):
 
         # compute contingency of x and y attributes
         for entry in contX:
-            sum = 0
+            sum_ = 0
             try:
-                for val in entry: sum += val
+                for val in entry: sum_ += val
             except: pass
-            valsX.append(sum)
+            valsX.append(sum_)
 
         for entry in contY:
-            sum = 0
+            sum_ = 0
             try:
-                for val in entry: sum += val
+                for val in entry: sum_ += val
             except: pass
-            valsY.append(sum)
+            valsY.append(sum_)
 
         # create cartesian product of selected attributes and compute contingency
         # (cart, profit) = FeatureByCartesianProduct(data, [data.domain[self.attrX], data.domain[self.attrY]])
@@ -247,8 +245,8 @@ class OWSieveDiagram(OWWidget):
                 probs['%s-%s' %(data.domain[self.attrX].values[i], data.domain[self.attrY].values[j])] = ((data.domain[self.attrX].values[i], valx), (data.domain[self.attrY].values[j], valy), actualProb, len(data))
 
         # get text width of Y attribute name
-        text = OWCanvasText(self.canvas, data.domain[self.attrY].name, x  = 0, y = 0, bold = 1, show = 0)
-        xOff = int(text.boundingRect().width() + 40)
+        text = OWCanvasText(self.canvas, data.domain[self.attrY].name, x  = 0, y = 0, bold = 1, show = 0, vertical=True)
+        xOff = int(text.boundingRect().height() + 40)
         yOff = 50
         sqareSize = min(self.canvasView.width() - xOff - 35, self.canvasView.height() - yOff - 30)
         if sqareSize < 0: return    # canvas is too small to draw rectangles
@@ -267,8 +265,8 @@ class OWSieveDiagram(OWWidget):
         chisquare = 0.0
         for i in range(len(valsX)):
             for j in range(len(valsY)):
-                ((xAttr, xVal), (yAttr, yVal), actual, sum) = probs['%s-%s' %(data.domain[self.attrX].values[i], data.domain[self.attrY].values[j])]
-                expected = float(xVal*yVal)/float(sum)
+                ((xAttr, xVal), (yAttr, yVal), actual, sum_) = probs['%s-%s' %(data.domain[self.attrX].values[i], data.domain[self.attrY].values[j])]
+                expected = float(xVal*yVal)/float(sum_)
                 if expected == 0: continue
                 pearson2 = (actual - expected)*(actual - expected) / expected
                 chisquare += pearson2
@@ -276,74 +274,78 @@ class OWSieveDiagram(OWWidget):
         ######################
         # draw rectangles
         currX = xOff
+        max_ylabel_w = 0
+
+        normX, normY = sum(valsX), sum(valsY)
         for i in range(len(valsX)):
             if valsX[i] == 0: continue
             currY = yOff
-            width = int(float(sqareSize * valsX[i])/float(len(data)))
-
+            width = int(float(sqareSize * valsX[i])/float(normX))
+            
             #for j in range(len(valsY)):
             for j in range(len(valsY)-1, -1, -1):   # this way we sort y values correctly
-                ((xAttr, xVal), (yAttr, yVal), actual, sum) = probs['%s-%s' %(data.domain[self.attrX].values[i], data.domain[self.attrY].values[j])]
+                ((xAttr, xVal), (yAttr, yVal), actual, sum_) = probs['%s-%s' %(data.domain[self.attrX].values[i], data.domain[self.attrY].values[j])]
                 if valsY[j] == 0: continue
-                height = int(float(sqareSize * valsY[j])/float(len(data)))
+                height = int(float(sqareSize * valsY[j])/float(normY))
 
                 # create rectangle
                 rect = OWCanvasRectangle(self.canvas, currX+2, currY+2, width-4, height-4, z = -10)
-                self.addRectIndependencePearson(rect, currX+2, currY+2, width-4, height-4, (xAttr, xVal), (yAttr, yVal), actual, sum)
+                self.addRectIndependencePearson(rect, currX+2, currY+2, width-4, height-4, (xAttr, xVal), (yAttr, yVal), actual, sum_)
 
-                expected = float(xVal*yVal)/float(sum)
+                expected = float(xVal*yVal)/float(sum_)
                 pearson = (actual - expected) / sqrt(expected)
                 tooltipText = """<b>X Attribute: %s</b><br>Value: <b>%s</b><br>Number of examples (p(x)): <b>%d (%.2f%%)</b><hr>
                                 <b>Y Attribute: %s</b><br>Value: <b>%s</b><br>Number of examples (p(y)): <b>%d (%.2f%%)</b><hr>
                                 <b>Number Of Examples (Probabilities):</b><br>Expected (p(x)p(y)): <b>%.1f (%.2f%%)</b><br>Actual (p(x,y)): <b>%d (%.2f%%)</b>
-                                <hr><b>Statistics:</b><br>Chi-square: <b>%.2f</b><br>Standardized Pearson residual: <b>%.2f</b>""" %(self.attrX, getHtmlCompatibleString(xAttr), xVal, 100.0*float(xVal)/float(sum), self.attrY, getHtmlCompatibleString(yAttr), yVal, 100.0*float(yVal)/float(sum), expected, 100.0*float(xVal*yVal)/float(sum*sum), actual, 100.0*float(actual)/float(sum), chisquare, pearson )
+                                <hr><b>Statistics:</b><br>Chi-square: <b>%.2f</b><br>Standardized Pearson residual: <b>%.2f</b>""" %(self.attrX, getHtmlCompatibleString(xAttr), xVal, 100.0*float(xVal)/float(sum_), self.attrY, getHtmlCompatibleString(yAttr), yVal, 100.0*float(yVal)/float(sum_), expected, 100.0*float(xVal*yVal)/float(sum_*sum_), actual, 100.0*float(actual)/float(sum_), chisquare, pearson )
                 rect.setToolTip(tooltipText)
 
                 currY += height
                 if currX == xOff:
-                    OWCanvasText(self.canvas, "", xOff - 10, currY - height/2, Qt.AlignRight | Qt.AlignVCenter, htmlText = getHtmlCompatibleString(data.domain[self.attrY].values[j]))
+                    xl = OWCanvasText(self.canvas, "", xOff - 10, currY - height/2, Qt.AlignRight | Qt.AlignVCenter, htmlText = getHtmlCompatibleString(data.domain[self.attrY].values[j]))
+                    max_ylabel_w = max(int(xl.boundingRect().width()), max_ylabel_w)
 
             OWCanvasText(self.canvas, "", currX + width/2, yOff + sqareSize + 5, Qt.AlignCenter, htmlText = getHtmlCompatibleString(data.domain[self.attrX].values[i]))
             currX += width
 
         # show attribute names
-        OWCanvasText(self.canvas, self.attrY, xOff-20, yOff + sqareSize/2, Qt.AlignRight, bold = 1)
+        OWCanvasText(self.canvas, self.attrY, max(xOff-20-max_ylabel_w, 20), yOff + sqareSize/2, Qt.AlignRight | Qt.AlignVCenter, bold = 1, vertical=True)
         OWCanvasText(self.canvas, self.attrX, xOff + sqareSize/2, yOff + sqareSize + 15, Qt.AlignCenter, bold = 1)
 
         #self.canvas.update()
 
     # create a dictionary with all possible pairs of "combination-of-attr-values" : count
     def getConditionalDistributions(self, data, attrs):
-        def counter(s):
-            t = [0 for i in range(0, len(s))]
-            while True:
-                yield t
-                for i in range(len(s)):
-                    t[i] = (t[i] + 1) % s[i]
-                    if t[i]:
-                        break
-                else:
-                    break
+        cond_dist = defaultdict(int)
+        all_attrs = [data.domain[a] for a in attrs]
+        if data.domain.class_var is not None:
+            all_attrs.append(data.domain.class_var)
 
-        dict = {}
-        for i in range(0, len(attrs)):
-            attr = attrs
-            # for j in range(0, i+1):
-            #     attr.append([a for a in data.domain.attributes if a.name == attrs[j].name][0])
-
-            s = [len(a.values) for a in attr]
-            for indices in counter(s):
-                vals = []
-                filt = Orange.data.filter.Values()
-                filt.domain = data.domain
-                for k in range(len(indices)):
-                    vals.append(attr[k].values[indices[k]])
-                    fd = Orange.data.filter.FilterDiscrete(column=attr[k], values=[attr[k].values[indices[k]]])
-                    filt.conditions.append(fd)
-                filtdata = filt(data)
-                dict['-'.join(vals)] = len(filtdata)
-
-        return dict
+        for i in range(1, len(all_attrs) + 1):
+            attr = all_attrs[:i]
+            if type(data) == SqlTable:
+                # make all possible pairs of attributes + class_var
+                attr = [a.to_sql() for a in attr]
+                fields = attr + ["COUNT(*)"]
+                query = data._sql_query(fields, group_by=attr)
+                with data._execute_sql_query(query) as cur:
+                    res = cur.fetchall()
+                for r in res:
+                    str_values =[a.repr_val(a.to_val(x)) for a, x in zip(all_attrs, r[:-1])]
+                    str_values = [x if x != '?' else 'None' for x in str_values]
+                    cond_dist['-'.join(str_values)] = r[-1]
+            else:
+                for indices in product(*(range(len(a.values)) for a in attr)):
+                    vals = []
+                    conditions = []
+                    for k, ind in enumerate(indices):
+                        vals.append(attr[k].values[ind])
+                        fd = Orange.data.filter.FilterDiscrete(column=attr[k], values=[attr[k].values[ind]])
+                        conditions.append(fd)
+                    filt = Orange.data.filter.Values(conditions)
+                    filtdata = filt(data)
+                    cond_dist['-'.join(vals)] = len(filtdata)
+        return cond_dist
 
     ######################################################################
     ## show deviations from attribute independence with standardized pearson residuals

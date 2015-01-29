@@ -5,10 +5,8 @@ import functools
 import re
 import threading
 from contextlib import contextmanager
-from urllib import parse
 
 import numpy as np
-import sys
 
 import Orange.misc
 psycopg2 = Orange.misc.import_late_warning("psycopg2")
@@ -17,9 +15,9 @@ psycopg2.pool = Orange.misc.import_late_warning("psycopg2.pool")
 from .. import domain, variable, value, table, instance, filter,\
     DiscreteVariable, ContinuousVariable, StringVariable
 from Orange.data.sql import filter as sql_filter
-from Orange.data.sql.filter import CustomFilterSql
-from Orange.data.sql.parser import SqlParser
 
+LARGE_TABLE = 100000
+DEFAULT_SAMPLE_TIME = 1
 
 
 class SqlTable(table.Table):
@@ -34,200 +32,129 @@ class SqlTable(table.Table):
         return super().__new__(cls)
 
     def __init__(
-            self, uri=None,
-            host=None, database=None, user=None, password=None, schema=None,
-            table=None, type_hints=None, guess_values=False, **kwargs):
+            self, connection_params, table_or_sql,
+            type_hints=None, inspect_values=False):
         """
         Create a new proxy for sql table.
 
-        Database connection parameters can be specified either as a string:
+        To create a new SqlTable, specify the connection parameters
+        for psycopg2 and the name of the table/sql query used to fetch
+        the data.
 
-            table = SqlTable("user:password@host:port/database/table")
+            table = SqlTable('database_name', 'table_name')
+            table = SqlTable('database_name', 'SELECT * FROM table')
 
-        or using a set of keyword arguments:
+        For complex configurations, dictionary of connection parameters can
+        be used instead of the database name. For documentation about
+        connection parameters, see:
+        http://www.postgresql.org/docs/current/static/libpq-connect.html#LIBPQ-PARAMKEYWORDS
 
-            table = SqlTable(database="test", table="iris")
 
-        All but the database and table parameters are optional. Any additional
-        parameters will be forwarded to the psycopg2 backend.
+        Data domain is inferred from the columns of the table/query.
 
-        If type_hints (an Orange domain) contain a column name, then
-        the variable type from type_hints will be used. If it does not,
-        the variable type is selected based on the column type (double
-        -> ContinuousVariable, everything else -> StringVariable).
-        If guess_values is True, database columns with less that 20
-        different strings will become DiscreteVariables.
+        The (very quick) default setting is to treat all numeric columns as
+        continuous variables and everything else as strings and placed among
+        meta attributes.
 
-        Class vars and metas can be specified as a list of column names in
-        __class_vars__ and __metas__ keys in type_hints dict.
+        If inspect_values parameter is set to True, all column values are
+        inspected and int/string columns with less than 21 values are
+        intepreted as discrete features.
+
+        Domains can be constructed by the caller and passed in
+        type_hints parameter. Variables from the domain are used for
+        the columns with the matching names; for columns without the matching
+        name in the domain, types are inferred as described above.
         """
-        assert uri is not None or database is not None
-
-        connection_args = dict(
-            host=host,
-            user=user,
-            password=password,
-            database=database,
-            schema=schema
-        )
-        if uri is not None:
-            parameters = self.parse_uri(uri)
-            table = parameters.pop("table", None)
-            connection_args.update(parameters)
-        connection_args.update(kwargs)
+        if isinstance(connection_params, str):
+            connection_params = dict(database=connection_params)
 
         if self.connection_pool is None:
             self.connection_pool = psycopg2.pool.ThreadedConnectionPool(
-                1, 6, **connection_args)
-        self.host = host
-        self.database = database
+                1, 16, **connection_params)
+        self.connection_params = connection_params
 
-        if table is not None:
-            self.table_name = self.quote_identifier(table)
-            self.domain = self.domain_from_fields(
-                self._get_fields(table, guess_values=guess_values),
-                type_hints=type_hints)
+        if table_or_sql is not None:
+            if "SELECT" in table_or_sql.upper():
+                table = "(%s) as my_table" % table_or_sql.strip("; ")
+            else:
+                table = self.quote_identifier(table_or_sql)
+            self.table_name = table
+            self.domain = self.get_domain(type_hints, inspect_values)
             self.name = table
 
-    @classmethod
-    def from_sql(
-            cls, uri=None,
-            host=None, database=None, user=None, password=None, schema=None,
-            sql=None, type_hints=None, **kwargs):
-        """
-        Create a new proxy for sql select.
+    def get_domain(self, type_hints=None, guess_values=False):
+        if type_hints is None:
+            type_hints = domain.Domain([])
 
-        Database connection parameters can be specified either as a string:
+        fields = []
+        query = "SELECT * FROM %s LIMIT 0" % self.table_name
+        with self._execute_sql_query(query) as cur:
+            for col in cur.description:
+                fields.append(col)
 
-            table = SqlTable.from_sql("user:password@host:port/database/table")
+        def add_to_sql(var, field_name):
+            if isinstance(var, ContinuousVariable):
+                var.to_sql = lambda: "({})::double precision".format(
+                    self.quote_identifier(field_name))
+            elif isinstance(var, DiscreteVariable):
+                var.to_sql = lambda: "({})::text".format(
+                    self.quote_identifier(field_name))
+            else:
+                var.to_sql = lambda: self.quote_identifier(field_name)
 
-        or using a set of keyword arguments:
+        attrs, class_vars, metas = [], [], []
+        for field_name, type_code, *rest in fields:
+            if field_name in type_hints:
+                var = type_hints[field_name]
+            else:
+                var = self.get_variable(field_name, type_code, guess_values)
+            add_to_sql(var, field_name)
 
-            table = SqlTable.from_sql(database="test", sql="SELECT iris FROM iris")
-
-        All but the database and the sql parameters are optional. Any
-        additional parameters will be forwarded to the psycopg2 backend.
-
-        If type_hints (an Orange domain) contain a column name, then
-        the variable type from type_hints will be used. If it does not,
-        the variable type is selected based on the column type (double
-        -> ContinuousVariable, everything else -> StringVariable).
-
-        Class vars and metas can be specified as a list of column names in
-        __class_vars__ and __metas__ keys in type_hints dict.
-        """
-        table = cls(uri, host, database, user, password, schema, **kwargs)
-        p = SqlParser(sql)
-        conn = table.connection_pool.getconn()
-        table.table_name = p.from_
-        table.domain = table.domain_from_fields(
-            p.fields_with_types(conn),
-            type_hints=type_hints)
-        table.connection_pool.putconn(conn)
-        if p.where:
-            table.row_filters = (CustomFilterSql(p.where), )
-
-        return table
-
-    @staticmethod
-    def parse_uri(uri):
-        parsed_uri = parse.urlparse(uri)
-        database = parsed_uri.path.strip('/')
-        if "/" in database:
-            database, table = database.split('/', 1)
-        else:
-            table = ""
-
-        params = parse.parse_qs(parsed_uri.query)
-        for key, value in params.items():
-            if len(params[key]) == 1:
-                params[key] = value[0]
-
-        params.update(dict(
-            host=parsed_uri.hostname,
-            port=parsed_uri.port,
-            user=parsed_uri.username,
-            database=database,
-            password=parsed_uri.password,
-        ))
-        if table:
-            params['table'] = table
-        return params
-
-    def domain_from_fields(self, fields, type_hints=None):
-        """:fields: tuple(field_name, field_type, field_expression, values)"""
-        attributes, class_vars, metas = [], [], []
-        suggested_metas, suggested_class_vars = [],[]
-        if type_hints != None:
-            suggested_metas = [ f.name for f in type_hints.metas ]
-            suggested_class_vars = [ f.name for f in type_hints.class_vars ]
-
-        for name, field_type, field_expr, values in fields:
-            var = self.var_from_field(name, field_type, field_expr, values,
-                                      type_hints)
-
-            if var.name in suggested_metas or \
-                    isinstance(var, variable.StringVariable):
+            if isinstance(var, StringVariable):
                 metas.append(var)
-            elif var.name in suggested_class_vars:
-                class_vars.append(var)
             else:
-                attributes.append(var)
-
-        return domain.Domain(attributes, class_vars, metas=metas)
-
-    @staticmethod
-    def var_from_field(name, field_type, field_expr, values, type_hints):
-        if type_hints != None and name in type_hints:
-            var = type_hints[name]
-        else:
-            # always continuous
-            if any(t in field_type for t in
-                   ('real', 'float', 'double', 'numeric')):
-                var = variable.ContinuousVariable(name=name)
-            # continuous or discrete
-            elif any(t in field_type for t in ('int', 'serial')):
-                if values:
-                    values = [str(val) for val in values]
-                    var = variable.DiscreteVariable(name=name, values=values)
-                    var.has_numeric_values = True
+                if var in type_hints.class_vars:
+                    class_vars.append(var)
+                elif var in type_hints.metas:
+                    metas.append(var)
                 else:
-                    var = variable.ContinuousVariable(name=name)
-            # always discrete
-            elif 'boolean' in field_type:
-                var = variable.DiscreteVariable(name=name,
-                                                values=['False', 'True'])
-                var.has_numeric_values = True
-            # discrete or string
-            elif any(t in field_type for t in ('char', 'text')) and values:
-                var = variable.DiscreteVariable(name=name, values=values)
-            else:
-                var = variable.StringVariable(name=name)
-        var.to_sql = lambda: field_expr
-        return var
+                    attrs.append(var)
 
-    def _get_fields(self, table_name, guess_values=False):
-        table_name = self.unquote_identifier(table_name)
-        sql = ["SELECT column_name, data_type",
-               "FROM INFORMATION_SCHEMA.COLUMNS",
-               "WHERE table_name =", self.quote_string(table_name),
-               "ORDER BY ordinal_position"]
-        with self._execute_sql_query(" ".join(sql)) as cur:
-            fields = cur.fetchall()
-        for field, field_type in fields:
-            yield (field, field_type,
-                   self.quote_identifier(field),
-                   self._get_field_values(field, field_type) if guess_values else ())
+        return domain.Domain(attrs, class_vars, metas)
 
-    def _get_field_values(self, field_name, field_type):
-        if any(t in field_type for t in ('int', 'serial', 'char', 'text')):
-            return self._get_distinct_values(field_name)
-        else:
-            return ()
+    def get_variable(self, field_name, type_code, inspect_values=False):
+        FLOATISH_TYPES = (700, 701, 1700)  # real, float8, numeric
+        INT_TYPES = (20, 21, 23)  # bigint, int, smallint
+        CHAR_TYPES = (25, 1042, 1043,)  # text, char, varchar
+        BOOLEAN_TYPES = (16,)  # bool
 
-    def _get_distinct_values(self, field_name):
-        sql = " ".join(["SELECT DISTINCT", self.quote_identifier(field_name),
+        if type_code in FLOATISH_TYPES:
+            return ContinuousVariable(field_name)
+
+        if type_code in INT_TYPES:  # bigint, int, smallint
+            if inspect_values:
+                values = self.get_distinct_values(field_name)
+                if values:
+                    return DiscreteVariable(field_name, values)
+            return ContinuousVariable(field_name)
+
+        if type_code in BOOLEAN_TYPES:
+                return DiscreteVariable(field_name, ['false', 'true'])
+
+        if type_code in CHAR_TYPES:
+            if inspect_values:
+                values = self.get_distinct_values(field_name)
+                if values:
+                    return DiscreteVariable(field_name, values)
+
+        return StringVariable(field_name)
+
+    def get_distinct_values(self, field_name):
+        sql = " ".join(["SELECT DISTINCT (%s)::text" %
+                            self.quote_identifier(field_name),
                         "FROM", self.table_name,
+                        "WHERE {} IS NOT NULL".format(
+                            self.quote_identifier(field_name)),
                         "ORDER BY", self.quote_identifier(field_name),
                         "LIMIT 21"])
         with self._execute_sql_query(sql) as cur:
@@ -344,8 +271,7 @@ class SqlTable(table.Table):
         table.row_filters = self.row_filters
         table.table_name = self.table_name
         table.name = self.name
-        table.database = self.database
-        table.host = self.host
+        table.connection_params = self.connection_params
         return table
 
     def __bool__(self):
@@ -382,11 +308,39 @@ class SqlTable(table.Table):
             threading.Thread(target=len, args=(self,)).start()
         return alen
 
+    _X = None
+    _Y = None
+
+    def download_data(self, limit=None):
+        """Download SQL data and store it in memory as numpy matrices."""
+        if limit and len(self) > limit: #TODO: faster check for size limit
+            raise ValueError("Too many rows to download the data into memory.")
+        self._X = np.vstack(row._x for row in self)
+        self._Y = np.vstack(row._y for row in self)
+        self._cached__len__ = self._X.shape[0]
+
+    @property
+    def X(self):
+        """Numpy array with attribute values."""
+        if self._X is None:
+            self.download_data(1000)
+        return self._X
+
+    @property
+    def Y(self):
+        """Numpy array with class values."""
+        if self._Y is None:
+            self.download_data(1000)
+        return self._Y
+
     def has_weights(self):
         return False
 
     def _compute_basic_stats(self, columns=None,
                              include_metas=False, compute_var=False):
+        if self.approx_len() > LARGE_TABLE:
+            self = self.sample_time(DEFAULT_SAMPLE_TIME)
+
         if columns is not None:
             columns = [self.domain.var_from_domain(col) for col in columns]
         else:
@@ -417,6 +371,9 @@ class SqlTable(table.Table):
         return stats
 
     def _compute_distributions(self, columns=None):
+        if self.approx_len() > LARGE_TABLE:
+            self = self.sample_time(DEFAULT_SAMPLE_TIME)
+
         if columns is not None:
             columns = [self.domain.var_from_domain(col) for col in columns]
         else:
@@ -441,6 +398,9 @@ class SqlTable(table.Table):
         return dists
 
     def _compute_contingency(self, col_vars=None, row_var=None):
+        if self.approx_len() > LARGE_TABLE:
+            self = self.sample_time(DEFAULT_SAMPLE_TIME)
+
         if col_vars is None:
             col_vars = range(len(self.domain.variables))
         if len(col_vars) != 1:
@@ -634,14 +594,60 @@ class SqlTable(table.Table):
     def quote_string(self, value):
         return "'%s'" % value
 
+    def sample_percentage(self, percentage, no_cache=False):
+        return self._sample('blocksample_percent', percentage,
+                            no_cache=no_cache)
+
+    def sample_time(self, time_in_seconds, no_cache=False):
+        return self._sample('blocksample_time', int(time_in_seconds * 1000),
+                            no_cache=no_cache)
+
+    def _sample(self, method, parameter, no_cache=False):
+        if "," in self.table_name:
+            raise NotImplementedError("Sampling of complex queries is not supported")
+
+        sample_table = '__%s_%s_%s' % (
+            self.unquote_identifier(self.table_name),
+            method,
+            str(parameter).replace('.', '_'))
+        create = False
+        try:
+            with self._execute_sql_query("SELECT * FROM %s LIMIT 0" % self.quote_identifier(sample_table)) as cur:
+                cur.fetchall()
+
+            if no_cache:
+                with self._execute_sql_query("DROP TABLE %s" % self.quote_identifier(sample_table)) as cur:
+                    cur.fetchall()
+                create = True
+
+        except psycopg2.ProgrammingError:
+            create = True
+
+        if create:
+            with self._execute_sql_query('SELECT %s(%s, %s, %s)' % (
+                    method,
+                    self.quote_string(sample_table),
+                    self.quote_string(self.unquote_identifier(self.table_name)),
+                    parameter)) as cur:
+                cur.fetchall()
+
+        sampled_table = self.copy()
+        sampled_table.table_name = self.quote_identifier(sample_table)
+        return sampled_table
+
     @contextmanager
     def _execute_sql_query(self, query, param=None):
         connection = self.connection_pool.getconn()
         cur = connection.cursor()
-        cur.execute(query, param)
-        connection.commit()
-        yield cur
-        self.connection_pool.putconn(connection)
+        try:
+            cur.execute(query, param)
+            yield cur
+        finally:
+            connection.commit()
+            self.connection_pool.putconn(connection)
+
+    def checksum(self, include_metas=True):
+        return np.nan
 
 
 class SqlRowInstance(instance.Instance):
@@ -650,7 +656,7 @@ class SqlRowInstance(instance.Instance):
     attributes.
     """
     def __init__(self, domain, data=None):
-        super().__init__(domain, data)
         nvar = len(domain.variables)
+        super().__init__(domain, data[:nvar])
         if len(data) > nvar:
             self._metas = data[nvar:]

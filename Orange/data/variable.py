@@ -1,105 +1,121 @@
+from math import isnan, floor
 from numbers import Real
-from ..misc.enum import Enum
-import threading
+import types
+
 from ..data.value import Value, Unknown
 import collections
-from math import isnan, floor
+
+
+ValueUnknown = Unknown  # Shadowing within classes
 
 
 class Variable:
     """
-    The base class for variable descriptors, which contains the variable's
-    name, type and basic properties.
+    The base class for variable descriptors contains the variable's
+    name and some basic properties.
 
     .. attribute:: name
 
         The name of the variable.
 
-    .. attribute:: ordered
-
-        A flag which tells whether the variable`s values are ordered.
-
     .. attribute:: unknown_str
 
-        A set of values that represent unknowns in conversion form textual
-        formats. Default is :obj:`Variable.DefaultUnknownStr`, which contains
-        "?", ".", "", "NA" and "~" (and, for technical reasons `None`).
+        A set of values that represent unknowns in conversion from textual
+        formats. Default is `{"?", ".", "", "NA", "~", None}`.
 
-    .. attribute:: get_value_from
+    .. attribute:: compute_value
 
         A function for computing the variable's value when converting from
-        another domain which does not have this variable. Details are described
-        below.
+        another domain which does not contain this variable. The base class
+        defines a static method `compute_value`, which returns `Unknown`.
+        Non-primitive variables must redefine it to return `None`.
 
     .. attribute:: source_variable
 
-        If a variable is computed (via :obj:`getValueFrom` from another
-        variable, this attribute contains its descriptor.
+        An optional descriptor of the source variable - if any - from which
+        this variable is derived and computed via :obj:`compute_value`.
 
     .. attribute:: attributes
 
         A dictionary with user-defined attributes of the variable
     """
-    MakeStatus = Enum("OK", "MissingValues", "NoRecognizedValues",
-                      "Incompatible", "NotFound")
-    DefaultUnknownStr = {"?", ".", "", "NA", "~", None}
 
-    variable_types = []
+    _DefaultUnknownStr = {"?", ".", "", "NA", "~", None}
 
-    def __init__(self, name="", ordered=False):
+    _variable_types = []
+    Unknown = ValueUnknown
+
+
+    def __init__(self, name="", compute_value=None):
         """
-        Construct a variable descriptor and store the general properties of
-        variables.
+        Construct a variable descriptor.
         """
         self.name = name
-        self.ordered = ordered
-        self.unknown_str = set(Variable.DefaultUnknownStr)
+        if compute_value is not None:
+            self.compute_value = compute_value
+        self.unknown_str = set(Variable._DefaultUnknownStr)
         self.source_variable = None
         self.attributes = {}
-        self.get_value_from = None
-        self._get_value_lock = threading.Lock()
-        # TODO: do we need locking? Don't we expect the code to be reentrant?
-
-        # TODO: the original intention was to prevent deadlocks. Locks block,
-        #       we would need more like a semaphore. But then - which
-        #       reasonable use of get_value_from can lead to deadlocks?!
-
-    def compute_value(self, inst):
-        """
-        Call get_value_from if it exists; return :obj:`Unknown` otherwise.
-
-        :param inst: Data instance from the original domain
-        :type inst: data.Instance
-        :rtype: float
-        """
-        if self.get_value_from is None:
-            return Unknown
-        with self._get_value_lock:
-            return self.get_value_from(inst)
 
     @staticmethod
     def is_primitive():
         """
-        Tell whether the value is primitive, that is, represented as a float,
-        not a Python object. Primitive variables are
-        :obj:`~data.DiscreteVariable` and :obj:`~data.ContinuousVariable`.
+        `True` if the variable's values are stored as floats.
+        Primitive variables are :obj:`~data.DiscreteVariable` and
+        :obj:`~data.ContinuousVariable`. Non-primitive variables can appear
+        in the data only as meta attributes.
 
-        Derived classes should overload the function.
+        Derived classes must overload the function.
         """
-        raise RuntimeError(
-            "variable descriptors should overload is_primitive()")
+        raise RuntimeError("variable descriptors must overload is_primitive()")
 
     def repr_val(self, val):
         """
         Return a textual representation of variable's value `val`. Argument
-        `val` can be a float (for primitive variables) or a an arbitrary
+        `val` must be a float (for primitive variables) or an arbitrary
         Python object (for non-primitives).
 
-        Derived classes should overload the function.
+        Derived classes must overload the function.
         """
-        raise RuntimeError("variable descriptors should overload repr_val()")
+        raise RuntimeError("variable descriptors must overload repr_val()")
 
     str_val = repr_val
+
+    def to_val(self, s):
+        """
+        Convert the given argument to a value of the variable. The
+        argument can be a string, a number or `None`. For primitive variables,
+        the base class provides a method that returns
+        :obj:`~Orange.data.value.Unknown` if `s` is found in
+        :obj:`~Orange.data.Variable.unknown_str`, and raises an exception
+        otherwise. For non-primitive variables it returns the argument itself.
+
+        Derived classes of primitive variables must overload the function.
+
+        :param s: value, represented as a number, string or `None`
+        :type s: str, float or None
+        :rtype: float or object
+        """
+        if not self.is_primitive():
+            return s
+        if s in self.unknown_str:
+            return Unknown
+        raise RuntimeError(
+            "primitive variable descriptors must overload to_val()")
+
+    def val_from_str_add(self, s):
+        """
+        Convert the given string to a value of the variable. The method
+        is similar to :obj:`to_val` except that it only accepts strings and
+        that it adds new values to the variable's domain where applicable.
+
+        The base class method calls `to_val`.
+
+        :param s: symbolic representation of the value
+        :type s: str
+        :rtype: float or object
+        """
+        return self.to_val(s)
 
     def __str__(self):
         """
@@ -111,29 +127,142 @@ class Variable:
 
     __repr__ = __str__
 
-    def __getstate__(self):
-        state = self.__dict__.copy()
-        state.pop("_get_value_lock")
-        return state
-
-    def __setstate__(self, state):
-        self.__dict__.update(state)
-        self._get_value_lock = threading.Lock()
+    @staticmethod
+    def compute_value(_):
+        return Unknown
 
     @classmethod
-    def clear_cache(cls):
-        for tpe in cls.variable_types:
-            tpe.clear_cache()
+    def _clear_cache(cls):
+        for tpe in cls._variable_types:
+            tpe._clear_cache()
+
+
+class ContinuousVariable(Variable):
+    """
+    Descriptor for continuous variables.
+
+    .. attribute:: number_of_decimals
+
+        The number of decimals when the value is printed out (default: 3).
+
+    .. attribute:: adjust_decimals
+
+        A flag regulating whether the `number_of_decimals` is being adjusted
+        by :obj:`to_val`.
+
+    The value of `number_of_decimals` is set to 3 and `adjust_decimals`
+    is set to 2. When :obj:`val_from_str_add` is called for the first
+    time with a string as an argument, `number_of_decimals` is set to the
+    number of decimals in the string and `adjust_decimals` is set to 1.
+    In the subsequent calls of `to_val`, the nubmer of decimals is
+    increased if the string argument has a larger number of decimals.
+
+    If the `number_of_decimals` is set manually, `adjust_decimals` is
+    set to 0 to prevent changes by `to_val`.
+    """
+    all_continuous_vars = {}
+
+    def __init__(self, name="", number_of_decimals=None):
+        """
+        Construct a new continuous variable. The number of decimals is set to
+        three, but adjusted at the first call of :obj:`to_val`.
+        """
+        super().__init__(name)
+        if number_of_decimals is None:
+            self.number_of_decimals = 3
+            self.adjust_decimals = 2
+        else:
+            self.number_of_decimals = number_of_decimals
+        ContinuousVariable.all_continuous_vars[name] = self
+
+    @property
+    def number_of_decimals(self):
+        return self._number_of_decimals
+
+    # noinspection PyAttributeOutsideInit
+    @number_of_decimals.setter
+    def number_of_decimals(self, x):
+        self._number_of_decimals = x
+        self.adjust_decimals = 0
+        self._out_format = "%.{}f".format(self.number_of_decimals)
+
+    @staticmethod
+    def make(name):
+        """
+        Return an existing continuous variable with the given name, or
+        construct and return a new one.
+        """
+        existing_var = ContinuousVariable.all_continuous_vars.get(name)
+        return existing_var or ContinuousVariable(name)
+
+    @classmethod
+    def _clear_cache(cls):
+        """
+        Clears the list of variables for reuse by :obj:`make`.
+        """
+        cls.all_continuous_vars.clear()
+
+    @staticmethod
+    def is_primitive():
+        """ Return `True`: continuous variables are stored as floats."""
+        return True
+
+    def to_val(self, s):
+        """
+        Convert a value, given as an instance of an arbitrary type, to a float.
+        """
+        if s in self.unknown_str:
+            return Unknown
+        return float(s)
+
+    def val_from_str_add(self, s):
+        """
+        Convert a value from a string and adjust the number of decimals if
+        `adjust_decimals` is non-zero.
+        """
+        if s in self.unknown_str:
+            return Unknown
+        val = float(s)  # raise exception before setting the number of decimals
+        if self.adjust_decimals and isinstance(s, str):
+            #TODO: This may significantly slow down file reading.
+            #      Is there something we can do about it?
+            s = s.strip()
+            i = s.find(".")
+            ndec = len(s) - i - 1 if i > 0 else 0
+            if self.adjust_decimals == 2:
+                self.number_of_decimals = ndec
+            elif ndec > self.number_of_decimals:
+                self.number_of_decimals = ndec
+            self.adjust_decimals = 1
+        return val
+
+    def repr_val(self, val):
+        """
+        Return the value as a string with the prescribed number of decimals.
+        """
+        if isnan(val):
+            return "?"
+        return self._out_format % val
+
+    str_val = repr_val
+
 
 class DiscreteVariable(Variable):
     """
-    Descriptor for symbolic, discrete variables. Besides the inherited
-    attributes, it stores a list of values. Discrete variables are stored
-    as floats; the number corresponds to the index in the list of values.
+    Descriptor for symbolic, discrete variables. Values of discrete variables
+    are stored as floats; the numbers corresponds to indices in the list of
+    values.
 
     .. attribute:: values
 
-        A list of values for the attribute.
+        A list of variable's values.
+
+    .. attribute:: ordered
+
+        Some algorithms (and, in particular, visualizations) may
+        sometime reorder the values of the variable, e.g. alphabetically.
+        This flag hints that the given order of values is "natural"
+        (e.g. "small", "middle", "large") and should not be changed.
 
     .. attribute:: base_value
 
@@ -142,12 +271,12 @@ class DiscreteVariable(Variable):
         for regression.
     """
     all_discrete_vars = collections.defaultdict(set)
-    has_numeric_values = False
     presorted_values = []
 
     def __init__(self, name="", values=(), ordered=False, base_value=-1):
         """ Construct a discrete variable descriptor with the given values. """
-        super().__init__(name, ordered)
+        super().__init__(name)
+        self.ordered = ordered
         self.values = list(values)
         self.base_value = base_value
         DiscreteVariable.all_discrete_vars[name].add(self)
@@ -173,31 +302,31 @@ class DiscreteVariable(Variable):
     def to_val(self, s):
         """
         Convert the given argument to a value of the variable (`float`).
-        If the argument is numeric, its value is returned without checking that
-        it is integer and withing bounds. `Unknown` is returned if the argument
-        is one of the representations for unknown values. Otherwise, the
-        argument must be a string and the method returns its index in
+        If the argument is numeric, its value is returned without checking
+        whether it is integer and within bounds. `Unknown` is returned if the
+        argument is one of the representations for unknown values. Otherwise,
+        the argument must be a string and the method returns its index in
         :obj:`values`.
 
         :param s: values, represented as a number, string or `None`
         :rtype: float
         """
-        if self.has_numeric_values:
-            s = str(s)
+        if s is None:
+            return ValueUnknown
 
         if isinstance(s, int):
             return s
         if isinstance(s, Real):
             return s if isnan(s) else floor(s + 0.25)
         if s in self.unknown_str:
-            return Unknown
+            return ValueUnknown
         if not isinstance(s, str):
             raise TypeError('Cannot convert {} to value of "{}"'.format(
                 type(s).__name__, self.name))
         return self.values.index(s)
 
     def add_value(self, s):
-        """ Add a value to the list of values.
+        """ Add a value `s` to the list of values.
         """
         self.values.append(s)
 
@@ -206,21 +335,21 @@ class DiscreteVariable(Variable):
         Similar to :obj:`to_val`, except that it accepts only strings and that
         it adds the value to the list if it does not exist yet.
 
-        :param s: symbolic representation of value
+        :param s: symbolic representation of the value
         :type s: str
         :rtype: float
         """
         try:
-            return Unknown if s in self.unknown_str else self.values.index(s)
+            return ValueUnknown if s in self.unknown_str \
+                else self.values.index(s)
         except ValueError:
             self.add_value(s)
             return len(self.values) - 1
 
     def repr_val(self, val):
         """
-        Return a textual representation of a value. The result is a "?" for
-        unknowns and the symbolic representation from :obj:`values`
-        (that is, `self.values[int(val)]`) otherwise.
+        Return a textual representation of the value (`self.values[int(val)]`)
+        or "?" if the value is unknown.
 
         :param val: value
         :type val: float (should be whole number)
@@ -236,7 +365,7 @@ class DiscreteVariable(Variable):
     def make(name, values=(), ordered=False, base_value=-1):
         """
         Return a variable with the given name and other properties. The method
-        first looks for a useful existing variable. First, the existing
+        first looks for a compatible existing variable: the existing
         variable must have the same name and both variables must have either
         ordered or unordered values. If values are ordered, the order must be
         compatible: all common values must have the same order. If values are
@@ -258,8 +387,8 @@ class DiscreteVariable(Variable):
         :type base_value: int
         :returns: an existing compatible variable or `None`
         """
-        var = DiscreteVariable.find_compatible(name, values, ordered,
-                                               base_value)
+        var = DiscreteVariable._find_compatible(
+            name, values, ordered, base_value)
         if var:
             return var
         if not ordered:
@@ -270,7 +399,7 @@ class DiscreteVariable(Variable):
         return DiscreteVariable(name, values, ordered, base_value)
 
     @staticmethod
-    def find_compatible(name, values=(), ordered=False, base_value=-1):
+    def _find_compatible(name, values=(), ordered=False, base_value=-1):
         """
         Return a compatible existing value, or `None` if there is None.
         See :obj:`make` for details; this function differs by returning `None`
@@ -289,7 +418,7 @@ class DiscreteVariable(Variable):
         """
         base_rep = base_value != -1 and values[base_value]
         existing = DiscreteVariable.all_discrete_vars.get(name)
-        if not existing:
+        if existing is None:
             return None
         if not ordered:
             values = DiscreteVariable.ordered_values(values)
@@ -298,6 +427,8 @@ class DiscreteVariable(Variable):
                     var.base_value != -1
                     and var.values[var.base_value] != base_rep):
                 continue
+            if not values:
+                break  # we have the variable - any existing values are OK
             if ordered:
                 i = 0
                 for val in var.values:
@@ -305,18 +436,20 @@ class DiscreteVariable(Variable):
                         i += 1
                         if i == len(values):
                             break  # we have all the values
-                else:  # We have some remaining values: check them, add them
-                    if set(ordered[i:]) & set(var.values):
+                else:  # we have some remaining values: check them, add them
+                    if set(values[i:]) & set(var.values):
                         continue  # next var in existing
                     for val in values[i:]:
                         var.add_value(val)
                 break  # we have the variable
-            elif not var.values or not values or set(var.values) & set(values):
+            else:  # not ordered
+                if var.values and not set(var.values) & set(values):
+                    continue  # empty intersection of values; not compatible
                 vv = set(var.values)
                 for val in values:
                     if val not in vv:
                         var.add_value(val)
-                break
+                break  # we have the variable
         else:
             return None
         if base_value != -1 and var.base_value == -1:
@@ -324,9 +457,9 @@ class DiscreteVariable(Variable):
         return var
 
     @classmethod
-    def clear_cache(cls):
+    def _clear_cache(cls):
         """
-        Cleans the list of variables for reuse by :obj:`make`.
+        Clears the list of variables for reuse by :obj:`make`.
         """
         cls.all_discrete_vars.clear()
 
@@ -343,112 +476,27 @@ class DiscreteVariable(Variable):
         return sorted(values)
 
 
-class ContinuousVariable(Variable):
-    """
-    Descriptor for continuous variables. Additional attributes describe the
-    output format.
-
-    .. attribute:: number_of_decimals
-
-        The number of decimals in the textual representation
-
-    .. attribute:: adjust_decimals
-
-        A flag telling whether the number of decimals need to be adjusted
-        according to strings passed to :obj:`to_val`: 0 for no adjustment,
-        1 for increasing the number of decimals whenever a value with a
-        larger number of decimals is passed to :obj:`to_val`, and 2 if the
-        number of decimals is still at the default (3) and needs to be set
-        at the first call to :obj:`to_val`.
-    """
-    all_continuous_vars = {}
-
-    def __init__(self, name=""):
-        """
-        Construct a new continuous variable. The number of decimals is set to
-        three, but adjusted at the first call of :obj:`to_val`.
-        """
-        super().__init__(name)
-        self.number_of_decimals = 3
-        self.adjust_decimals = 2
-        ContinuousVariable.all_continuous_vars[name] = self
-
-    @property
-    def number_of_decimals(self):
-        return self._number_of_decimals
-
-    # noinspection PyAttributeOutsideInit
-    @number_of_decimals.setter
-    def number_of_decimals(self, x):
-        self._number_of_decimals = x
-        self._out_format = "%.{}f".format(self.number_of_decimals)
-
-    @staticmethod
-    def make(name):
-        """
-        Return an existing continuous variable with the given name, or
-        construct and return a new one.
-        """
-        existing_var = ContinuousVariable.all_continuous_vars.get(name)
-        return existing_var or ContinuousVariable(name)
-
-    @classmethod
-    def clear_cache(cls):
-        """
-        Cleans the list of variables for reuse by :obj:`make`.
-        """
-        cls.all_continuous_vars.clear()
-
-    @staticmethod
-    def is_primitive():
-        """ Return `True`: continuous variables are stored as floats."""
-        return True
-
-    def to_val(self, s):
-        """
-        Convert a value, given as an instance of an arbitrary type, to a float.
-        If the value is given as a string, it adjusts the number of decimals
-        if needed.
-        """
-        if s in self.unknown_str:
-            return Unknown
-        if self.adjust_decimals and isinstance(s, str):
-            #TODO: This may significantly slow down file reading.
-            #      Is there something we can do about it?
-            ndec = s.strip().rfind(".")
-            ndec = len(s) - ndec - 1 if ndec != -1 else 0
-            if self.adjust_decimals == 2 or ndec > self.number_of_decimals:
-                self.number_of_decimals = ndec
-        return float(s)
-
-    val_from_str_add = to_val
-
-    def repr_val(self, val):
-        """
-        Return the value as a string with the prescribed number of decimals.
-        """
-        if isnan(val):
-            return "?"
-        return self._out_format % val
-
-    str_val = repr_val
-
-
 class StringVariable(Variable):
     """
-    Descriptor for string variables.
+    Descriptor for string variables. String variables can only appear as
+    meta attributes.
     """
     all_string_vars = {}
+    Unknown = None
 
     def __init__(self, name="", default_col=-1):
         """Construct a new descriptor."""
-        super().__init__(name, default_col)
+        super().__init__(name)
         StringVariable.all_string_vars[name] = self
 
     @staticmethod
     def is_primitive():
         """Return `False`: string variables are not stored as floats."""
         return False
+
+    @staticmethod
+    def compute_value(_):
+        return None
 
     def to_val(self, s):
         """
@@ -485,11 +533,11 @@ class StringVariable(Variable):
         return existing_var or StringVariable(name)
 
     @classmethod
-    def clear_cache(cls):
+    def _clear_cache(cls):
         """
-        Cleans the list of variables for reuse by :obj:`make`.
+        Clears the list of variables for reuse by :obj:`make`.
         """
         cls.all_string_vars.clear()
 
-Variable.variable_types += [DiscreteVariable, ContinuousVariable, StringVariable
+Variable._variable_types += [DiscreteVariable, ContinuousVariable, StringVariable
     ]

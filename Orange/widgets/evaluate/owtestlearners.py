@@ -4,8 +4,9 @@ import functools
 import numpy
 
 from PyQt4 import QtGui
-from PyQt4.QtGui import QTreeView, QStandardItemModel, QStandardItem
-from PyQt4.QtCore import Qt
+from PyQt4.QtGui import QTreeView, QStandardItemModel, QStandardItem, \
+    QHeaderView, QItemDelegate
+from PyQt4.QtCore import Qt, QSize
 
 import Orange.data
 import Orange.classification
@@ -19,12 +20,14 @@ Input = namedtuple("Input", ["learner", "results", "stats"])
 
 
 def classification_stats(results):
-    return (CA(results),
-            F1(results),
-            Precision(results),
-            Recall(results))
+    stats = (AUC(results),
+             CA(results),
+             F1(results),
+             Precision(results),
+             Recall(results))
+    return stats
 
-classification_stats.headers = ["CA", "F1", "Precision", "Recall"]
+classification_stats.headers = ["AUC", "CA", "F1", "Precision", "Recall"]
 
 
 def regression_stats(results):
@@ -33,12 +36,17 @@ def regression_stats(results):
             MAE(results),
             R2(results))
 
-
 regression_stats.headers = ["MSE", "RMSE", "MAE", "R2"]
 
 
 def is_discrete(var):
     return isinstance(var, Orange.data.DiscreteVariable)
+
+
+class ItemDelegate(QItemDelegate):
+    def sizeHint(self, *args):
+        size = super().sizeHint(*args)
+        return QSize(size.width(), size.height() + 6)
 
 
 class OWTestLearners(widget.OWWidget):
@@ -83,16 +91,16 @@ class OWTestLearners(widget.OWWidget):
         gui.appendRadioButton(rbox, "Cross validation")
         ibox = gui.indentedBox(rbox)
         gui.spin(ibox, self, "k_folds", 2, 50, label="Number of folds:",
-                 callback=self._param_changed)
+                 callback=self.kfold_changed)
         gui.appendRadioButton(rbox, "Leave one out")
         gui.appendRadioButton(rbox, "Random sampling")
         ibox = gui.indentedBox(rbox)
         gui.spin(ibox, self, "n_repeat", 2, 50, label="Repeat train/test",
-                 callback=self._param_changed)
+                 callback=self.bootstrap_changed)
         gui.widgetLabel(ibox, "Relative training set size:")
         gui.hSlider(ibox, self, "sample_p", minValue=1, maxValue=100,
-                    ticks=20, vertical=False,
-                    callback=self._param_changed)
+                    ticks=20, vertical=False, labelFormat="%d %%",
+                    callback=self.bootstrap_changed)
 
         gui.appendRadioButton(rbox, "Test on train data")
         gui.appendRadioButton(rbox, "Test on test data")
@@ -108,12 +116,15 @@ class OWTestLearners(widget.OWWidget):
             wordWrap=True,
             editTriggers=QTreeView.NoEditTriggers
         )
+        header = self.view.header()
+        header.setResizeMode(QHeaderView.ResizeToContents)
+        header.setDefaultAlignment(Qt.AlignCenter)
+        header.setStretchLastSection(False)
 
         self.result_model = QStandardItemModel()
-        self.result_model.setHorizontalHeaderLabels(
-            ["Method"] + classification_stats.headers
-        )
         self.view.setModel(self.result_model)
+        self.view.setItemDelegate(ItemDelegate())
+        self._update_header()
         box = gui.widgetBox(self.mainArea, "Evaluation Results")
         box.layout().addWidget(self.view)
 
@@ -121,18 +132,27 @@ class OWTestLearners(widget.OWWidget):
         if key in self.learners and learner is None:
             del self.learners[key]
         else:
-            self.learners[key] = Input(learner, None, None)
+            self.learners[key] = Input(learner, None, ())
+        self._update_stats_model()
 
     def set_train_data(self, data):
+        self.error(0)
+        if data is not None:
+            if data.domain.class_var is None:
+                self.error(0, "Train data input requires a class variable")
+                data = None
+
         self.train_data = data
+        self._update_header()
         self._invalidate()
-        if data is not None and is_discrete(data.domain.class_var):
-            headers = ["Method"] + classification_stats.headers
-        else:
-            headers = ["Method"] + regression_stats.headers
-        self.result_model.setHorizontalHeaderLabels(headers)
 
     def set_test_data(self, data):
+        self.error(1)
+        if data is not None:
+            if data.domain.class_var is None:
+                self.error(1, "Test data input requires a class variable")
+                data = None
+
         self.test_data = data
         if self.resampling == OWTestLearners.TestOnTest:
             self._invalidate()
@@ -141,16 +161,45 @@ class OWTestLearners(widget.OWWidget):
         self.update_results()
         self.commit()
 
+    def kfold_changed(self):
+        self.resampling = OWTestLearners.KFold
+        self._param_changed()
+
+    def bootstrap_changed(self):
+        self.resampling = OWTestLearners.Bootstrap
+        self._param_changed()
+
     def _param_changed(self):
         self._invalidate()
 
     def update_results(self):
+        self.warning([1, 2])
+        self.error(2)
+
+        if self.train_data is None:
+            return
+
+        if self.resampling == OWTestLearners.TestOnTest:
+            if self.test_data is None:
+                self.warning(2, "Missing separate test data input")
+                return
+
+            elif self.test_data.domain.class_var != \
+                    self.train_data.domain.class_var:
+                self.error(2, ("Inconsistent class variable between test " +
+                               "and train data sets"))
+                return
+
         # items in need of an update
         items = [(key, input) for key, input in self.learners.items()
                  if input.results is None]
         learners = [input.learner for _, input in items]
 
         self.setStatusMessage("Running")
+        if self.test_data is not None and \
+                self.resampling != OWTestLearners.TestOnTest:
+            self.warning(1, "Test data is present but unused. "
+                            "Select 'Test on test data' to use it.")
 
         # TODO: Test each learner individually
 
@@ -173,7 +222,8 @@ class OWTestLearners(widget.OWWidget):
                 self.train_data, learners, store_data=True
             )
         elif self.resampling == OWTestLearners.TestOnTest:
-            assert self.test_data is not None
+            if self.test_data is None:
+                return
             results = testing.TestOnTestData(
                 self.train_data, self.test_data, learners, store_data=True
             )
@@ -182,18 +232,34 @@ class OWTestLearners(widget.OWWidget):
 
         results = list(split_by_model(results))
         class_var = self.train_data.domain.class_var
-
+        
         if is_discrete(class_var):
             test_stats = classification_stats
         else:
             test_stats = regression_stats
-
+        
+        self._update_header()
+        
         stats = [test_stats(res) for res in results]
         for (key, input), res, stat in zip(items, results, stats):
             self.learners[key] = input._replace(results=res, stats=stat)
 
         self.setStatusMessage("")
+        
         self._update_stats_model()
+
+    def _update_header(self):
+        headers = ["Method"]
+        if self.train_data is not None:
+            if is_discrete(self.train_data.domain.class_var):
+                headers.extend(classification_stats.headers)
+            else:
+                headers.extend(regression_stats.headers)
+        for i in reversed(range(len(headers),
+                                self.result_model.columnCount())):
+            self.result_model.takeColumn(i)
+
+        self.result_model.setHorizontalHeaderLabels(headers)
 
     def _update_stats_model(self):
         model = self.view.model()
@@ -209,11 +275,9 @@ class OWTestLearners(widget.OWWidget):
             row.append(head)
             for stat in input.stats:
                 item = QStandardItem()
-                item.setData(float(stat[0]), Qt.DisplayRole)
+                item.setData(" {:.3f} ".format(stat[0]), Qt.DisplayRole)
                 row.append(item)
             model.appendRow(row)
-
-        self.view.resizeColumnToContents(0)
 
     def _invalidate(self, which=None):
         if which is None:
@@ -230,14 +294,16 @@ class OWTestLearners(widget.OWWidget):
                 row = all_keys.index(key)
                 for c in range(1, model.columnCount()):
                     item = model.item(row, c)
-                    item.setData(None, Qt.DisplayRole)
+                    if item is not None:
+                        item.setData(None, Qt.DisplayRole)
 
     def apply(self):
         self.update_results()
         self.commit()
 
     def commit(self):
-        results = [val.results for val in self.learners.values()]
+        results = [val.results for val in self.learners.values()
+                   if val.results is not None]
         if results:
             combined = results_merge(results)
             combined.fitter_names = [learner_name(val.learner)
@@ -326,6 +392,29 @@ def Precision(results):
 
 def Recall(results):
     return _skl_metric(results, sklearn.metrics.recall_score)
+
+def multi_class_auc(results):
+    number_of_classes = len(results.data.domain.class_var.values)
+    N = results.actual.shape[0]
+    
+    class_cases = [sum(results.actual == class_) 
+               for class_ in range(number_of_classes)]
+    weights = [c*(N-c) for c in class_cases]
+    weights_norm = [w/sum(weights) for w in weights]
+    
+    auc_array = np.array([np.mean(np.fromiter(
+        (sklearn.metrics.roc_auc_score(results.actual == class_, predicted)
+        for predicted in results.predicted == class_),
+        dtype=np.float64, count=len(results.predicted))) 
+        for class_ in range(number_of_classes)])
+    
+    return np.array([np.sum(auc_array*weights_norm)])
+    
+def AUC(results):
+    if len(results.data.domain.class_var.values) == 2:
+        return _skl_metric(results, sklearn.metrics.roc_auc_score)
+    else:
+        return multi_class_auc(results)
 
 
 def F1(results):

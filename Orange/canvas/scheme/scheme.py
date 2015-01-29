@@ -103,10 +103,10 @@ class Scheme(QObject):
         QObject.__init__(self, parent)
 
         self.__title = title or ""
-        "Scheme title (empty string by default)."
+        "Workflow title (empty string by default)."
 
         self.__description = description or ""
-        "Scheme description (empty string by default)."
+        "Workflow description (empty string by default)."
 
         settings = QSettings()
 

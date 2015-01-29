@@ -11,7 +11,7 @@ import logging
 import optparse
 import pickle
 import shlex
-import time
+import shutil
 
 import pkg_resources
 
@@ -54,11 +54,22 @@ def fix_osx_10_9_private_font():
     from PyQt4.QtCore import QSysInfo, QT_VERSION
     if sys.platform == "darwin":
         try:
+            QFont.insertSubstitution(".Helvetica Neue DeskInterface",
+                                     "Helvetica Neue")
             if QSysInfo.MacintoshVersion > QSysInfo.MV_10_8 and \
-                    QT_VERSION < 0x40806:
-                QFont.insertSubstitution(".Lucida Grande UI", "Lucida Grande")
+                            QT_VERSION < 0x40806:
+                QFont.insertSubstitution(".Lucida Grande UI",
+                                         "Lucida Grande")
         except AttributeError:
             pass
+
+
+def fix_osx_spacing(app):
+    if sys.platform == "darwin":
+        app.setStyleSheet("""
+            QCheckBox, QRadioButton { padding-top: 2px; padding-bottom: 1px; vertical-align: bottom;}
+            QCheckBoxLabel { padding:20px;}
+            """)
 
 
 def fix_win_pythonw_std_stream():
@@ -80,18 +91,20 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv
 
-    usage = "usage: %prog [options] [scheme_file]"
+    usage = "usage: %prog [options] [workflow_file]"
     parser = optparse.OptionParser(usage=usage)
 
     parser.add_option("--no-discovery",
                       action="store_true",
                       help="Don't run widget discovery "
                            "(use full cache instead)")
-
     parser.add_option("--force-discovery",
                       action="store_true",
                       help="Force full widget discovery "
                            "(invalidate cache)")
+    parser.add_option("--clear-widget-settings",
+                      action="store_true",
+                      help="Remove stored widget setting")
     parser.add_option("--no-welcome",
                       action="store_true",
                       help="Don't show welcome dialog.")
@@ -152,8 +165,13 @@ def main(argv=None):
 
     qt_argv += args
 
+    if options.clear_widget_settings:
+        log.debug("Clearing widget settings")
+        shutil.rmtree(config.widget_settings_dir(), ignore_errors=True)
+
     log.debug("Starting CanvasApplicaiton with argv = %r.", qt_argv)
     app = CanvasApplication(qt_argv)
+    fix_osx_spacing(app)
 
     # NOTE: config.init() must be called after the QApplication constructor
     config.init()

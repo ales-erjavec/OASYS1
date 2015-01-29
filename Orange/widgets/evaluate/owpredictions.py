@@ -8,14 +8,15 @@ from collections import OrderedDict, namedtuple
 import numpy
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
+from PyQt4.QtCore import pyqtSignal as Signal
 
 import Orange.data
 import Orange.classification
 from Orange.classification import Model
+from Orange.evaluation import testing
+
 from Orange.widgets import widget, gui
 from Orange.widgets.settings import Setting
-
-from Orange.widgets.data.owtable import ExampleTableModel
 
 
 # Input slot for the Predictors channel
@@ -43,10 +44,11 @@ class OWPredictions(widget.OWWidget):
     inputs = [("Data", Orange.data.Table, "setData"),
               ("Predictors", Orange.classification.Model,
                "setPredictor", widget.Multiple)]
-    outputs = [("Predictions", Orange.data.Table)]
+    outputs = [("Predictions", Orange.data.Table),
+               ("Evaluation Results", testing.Results)]
 
-    showProbabilities = Setting(True)
-    showFullDataset = Setting(False)
+    show_probabilities = Setting(True)
+    show_class = Setting(True)
 
     def __init__(self):
         super().__init__()
@@ -59,60 +61,14 @@ class OWPredictions(widget.OWWidget):
         self.infolabel.setMinimumWidth(200)
 
         box = gui.widgetBox(self.controlArea, "Options")
-        gui.checkBox(box, self, "showProbabilities",
-                     "Show predicted probabilities",
-                     callback=self._updatePredictionDelegate)
-        gui.checkBox(box, self, "showFullDataset", "Show full data set",
-                     callback=self._updateDataView,
-                     tooltip="Show the whole input data set or just the " +
-                             "class column if available"
-        )
-
-        gui.rubber(self.controlArea)
-        box = gui.widgetBox(self.controlArea, self.tr("Commit"))
-#         cb = gui.checkBox(box, self, "autocommit", "Auto commit")
-        button = gui.button(box, self, "Send Predictions",
-                            callback=self.commit,
-                            default=True)
-
-        # Main GUI
-        self.splitter = QtGui.QSplitter(
-            orientation=Qt.Horizontal,
-            childrenCollapsible=False,
-            handleWidth=2,
-        )
-        self.tableview = QtGui.QTableView(
-            verticalScrollBarPolicy=Qt.ScrollBarAlwaysOff,
-            horizontalScrollBarPolicy=Qt.ScrollBarAlwaysOn,
-            horizontalScrollMode=QtGui.QTableView.ScrollPerPixel
-        )
-
-        self.predictionsview = QtGui.QTableView(
-            verticalScrollBarPolicy=Qt.ScrollBarAlwaysOn,
-            horizontalScrollBarPolicy=Qt.ScrollBarAlwaysOn,
-            horizontalScrollMode=QtGui.QTableView.ScrollPerPixel
-        )
-        self.predictionsview.setItemDelegate(PredictionsItemDelegate())
-        self.predictionsview.verticalHeader().hide()
-
-        table_sbar = self.tableview.verticalScrollBar()
-        prediction_sbar = self.predictionsview.verticalScrollBar()
-
-        prediction_sbar.valueChanged.connect(table_sbar.setValue)
-        table_sbar.valueChanged.connect(prediction_sbar.setValue)
-
-        self.tableview.verticalHeader().setDefaultSectionSize(22)
-        self.predictionsview.verticalHeader().setDefaultSectionSize(22)
-        self.tableview.verticalHeader().sectionResized.connect(
-            lambda index, _, size:
-                self.predictionsview.verticalHeader()
-                    .resizeSection(index, size)
-        )
-
-        self.splitter.addWidget(self.tableview)
-        self.splitter.addWidget(self.predictionsview)
-
-        self.mainArea.layout().addWidget(self.splitter)
+        self.checkbox_class = gui.checkBox(box, self, "show_class",
+                                           "Show predicted class",
+                                           callback=self.flipClass)
+        self.checkbox_prob = gui.checkBox(box, self, "show_probabilities",
+                                          "Show predicted probabilities",
+                                          callback=self.flipProb)
+        QtGui.qApp.processEvents()
+        QtCore.QTimer.singleShot(0, self.fix_size)
 
         #: input data
         self.data = None
@@ -123,18 +79,25 @@ class OWPredictions(widget.OWWidget):
         #: A class variable (prediction target)
         self.class_var = None
 
+    def fix_size(self):
+        self.adjustSize()
+        self.targets = "None"
+        self.setFixedSize(self.size())
+
+    def flipClass(self):
+        if not self.show_class and not self.show_probabilities:
+            self.checkbox_class.setChecked(True)
+        self.commit()
+
+    def flipProb(self):
+        if not self.show_class and not self.show_probabilities:
+            self.checkbox_prob.setChecked(True)
+        self.commit()
+
     def setData(self, data):
         """Set the input data to predict on."""
         self.data = data
-        if data is None:
-            self.tableview.setModel(None)
-            self.predictionsview.setModel(None)
-            self.invalidatePredictions()
-        else:
-            model = ExampleTableModel(data, None)
-            self.tableview.setModel(model)
-            self.invalidatePredictions()
-        self._updateDataView()
+        self.invalidatePredictions()
 
     def setPredictor(self, predictor=None, id=None):
         """Set input predictor."""
@@ -146,7 +109,7 @@ class OWPredictions(widget.OWWidget):
             self.predictors[id] = PredictorSlot(predictor, pname(predictor),
                                                 None)
 
-        if self.class_var is None and predictor is not None:
+        if predictor is not None:
             self.class_var = predictor.domain.class_var
 
     def handleNewSignals(self):
@@ -161,9 +124,6 @@ class OWPredictions(widget.OWWidget):
 
         if not self.predictors:
             self.class_var = None
-
-        self._updatePredictionDelegate()
-        self._updatePredictionsModel()
 
         # Check for prediction target consistency
         target_vars = set([p.predictor.domain.class_var
@@ -188,8 +148,12 @@ class OWPredictions(widget.OWWidget):
         if self.class_var is not None:
             if is_discrete(self.class_var):
                 info.append("Task: Classification")
+                self.checkbox_class.setEnabled(True)
+                self.checkbox_prob.setEnabled(True)
             else:
                 info.append("Task: Regression")
+                self.checkbox_class.setEnabled(False)
+                self.checkbox_prob.setEnabled(False)
         else:
             info.append("Task: N/A")
 
@@ -202,58 +166,10 @@ class OWPredictions(widget.OWWidget):
         for inputid, pred in list(self.predictors.items()):
             self.predictors[inputid] = pred._replace(results=None)
 
-    def _updatePredictionsModel(self):
-        """Update the prediction view model."""
-        if self.data is not None:
-            slots = self.predictors.values()
-            results = []
-            for p in slots:
-                values, prob = p.results
-                if is_discrete(p.predictor.domain.class_var):
-                    values = [
-                        Orange.data.Value(p.predictor.domain.class_var, v)
-                        for v in values
-                    ]
-                results.append((values, prob))
-            results = list(zip(*(zip(*res) for res in results)))
-
-            headers = [p.name for p in slots]
-            model = PredictionsModel(results, headers)
-        else:
-            model = None
-
-        self.predictionsview.setModel(model)
-
-    def _updateDataView(self):
-        """Update data column visibility."""
-        if self.data is not None:
-            for i in range(len(self.data.domain.attributes)):
-                self.tableview.setColumnHidden(i, not self.showFullDataset)
-            if self.data.domain.class_var:
-                self.tableview.setColumnHidden(
-                    len(self.data.domain.attributes), False
-                )
-
-    def _updatePredictionDelegate(self):
-        """Update the predicted probability visibility state"""
-        delegate = PredictionsItemDelegate()
-        if self.class_var is not None:
-            if self.showProbabilities and is_discrete(self.class_var):
-                float_fmt = "{{dist[{}]:.1f}}"
-                dist_fmt = " : ".join(
-                    float_fmt.format(i)
-                    for i in range(len(self.class_var.values))
-                )
-                dist_fmt = "{dist:.1f}"
-                fmt = dist_fmt + " -> {value!s}"
-            else:
-                fmt = "{value!s}"
-            delegate.setFormat(fmt)
-            self.predictionsview.setItemDelegate(delegate)
-
     def commit(self):
         if self.data is None or not self.predictors:
             self.send("Predictions", None)
+            self.send("Evaluation Results", None)
             return
 
         predictor = next(iter(self.predictors.values())).predictor
@@ -263,20 +179,23 @@ class OWPredictions(widget.OWWidget):
         newattrs = []
         newcolumns = []
         slots = list(self.predictors.values())
-        if classification:
-            for p in slots:
-                m = [Orange.data.ContinuousVariable(
-                         name="%s(%s)" % (p.name, value))
-                     for value in class_var.values]
-                newattrs.extend(m)
-            newcolumns.extend(p.results[1] for p in slots)
 
-            mc = [Orange.data.DiscreteVariable(
-                      name=p.name, values=class_var.values)
-                  for p in slots]
-            newattrs.extend(mc)
-            newcolumns.extend(p.results[0].reshape((-1, 1))
-                              for p in slots)
+        if classification:
+            if self.show_class:
+                mc = [Orange.data.DiscreteVariable(
+                          name=p.name, values=class_var.values)
+                      for p in slots]
+                newattrs.extend(mc)
+                newcolumns.extend(p.results[0].reshape((-1, 1))
+                                  for p in slots)
+
+            if self.show_probabilities:
+                for p in slots:
+                    m = [Orange.data.ContinuousVariable(
+                             name="%s(%s)" % (p.name, value))
+                         for value in class_var.values]
+                    newattrs.extend(m)
+                newcolumns.extend(p.results[1] for p in slots)
 
         else:
             # regression
@@ -290,15 +209,34 @@ class OWPredictions(widget.OWWidget):
                                     self.data.domain.class_var,
                                     metas=tuple(newattrs))
 
-        newcolumns = [numpy.atleast_2d(cols) for cols in newcolumns]
-        newcolumns = numpy.hstack(tuple(newcolumns))
+        if newcolumns:
+            newcolumns = [numpy.atleast_2d(cols) for cols in newcolumns]
+            newcolumns = numpy.hstack(tuple(newcolumns))
+        else:
+            newcolumns = None
 
         predictions = Orange.data.Table.from_numpy(
             domain, self.data.X, self.data.Y, metas=newcolumns
         )
 
         predictions.name = self.data.name
+
+        results = None
+        if self.data.domain.class_var == class_var:
+            N = len(self.data)
+            results = testing.Results(self.data, store_data=True)
+            results.folds = None
+            results.row_indices = numpy.arange(N)
+            results.actual = self.data.Y.ravel()
+            results.predicted = numpy.vstack(
+                tuple(p.results[0] for p in slots))
+            if classification:
+                results.probabilities = numpy.array(
+                    [p.results[1] for p in slots])
+            results.fitter_names = [pname(p.predictor) for p in slots]
+
         self.send("Predictions", predictions)
+        self.send("Evaluation Results", results)
 
 
 def predict(predictor, data):
@@ -319,111 +257,21 @@ def predict_continuous(predictor, data):
     return values, [None] * len(data)
 
 
-class PredictionsItemDelegate(QtGui.QStyledItemDelegate):
-    def __init__(self, parent=None, **kwargs):
-        self.__fmt = "{value!s}"
-        super().__init__(parent, **kwargs)
-
-    def setFormat(self, fmt):
-        if fmt != self.__fmt:
-            self.__fmt = fmt
-            self.sizeHintChanged.emit(QtCore.QModelIndex())
-
-    def displayText(self, value, locale):
-        try:
-            value, dist = value
-        except ValueError:
-            return ""
-        else:
-            fmt = self.__fmt
-            if dist is not None:
-                text = fmt.format(dist=DistFormater(dist), value=value)
-            else:
-                text = fmt.format(value=value)
-            return text
-
-    def paint(self, painter, option, index):
-        super().paint(painter, option, index)
-
-
-class TableModel(QtCore.QAbstractTableModel):
-    def __init__(self, table=None, headers=None, parent=None):
-        super().__init__(parent)
-        self._table = [[]] if table is None else table
-        self._header = [None] * len(self._table) if headers is None else headers
-
-    def _value(self, index):
-        row, column = index.row(), index.column()
-        return self._table[row][column]
-
-    def data(self, index, role=Qt.DisplayRole):
-        if role == Qt.DisplayRole or role == Qt.EditRole:
-            return self._value(index)
-        else:
-            return None
-
-    def rowCount(self, parent=QtCore.QModelIndex()):
-        if parent.isValid():
-            return 0
-        else:
-            return len(self._table)
-
-    def columnCount(self, parent=QtCore.QModelIndex()):
-        if parent.isValid():
-            return 0
-        else:
-            return max([len(row) for row in self._table] or [0])
-
-    def headerData(self, section, orientation, role=Qt.DisplayRole):
-        if orientation == Qt.Vertical and  role == Qt.DisplayRole:
-            return str(section + 1)
-        elif orientation == Qt.Horizontal and role == Qt.DisplayRole:
-            return (self._header[section] if section < len(self._header)
-                    else str(section))
-        else:
-            return None
-
-
-class PredictionsModel(TableModel):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def data(self, index, role=Qt.DisplayRole):
-        if role == Qt.ToolTipRole:
-            value = self._value(index)
-            return tool_tip(value)
-        else:
-            return super().data(index, role)
-
-
-def tool_tip(value):
-    value, dist = value
-    if dist is not None:
-        return "{!s} -> {!s}".format(dist, value)
-    else:
-        return str(value)
-
-
 def is_discrete(var):
     return isinstance(var, Orange.data.DiscreteVariable)
 
 
-class DistFormater(object):
-    def __init__(self, dist):
-        self.dist = dist
-
-    def __format__(self, fmt):
-        return " : ".join(("%" + fmt) % v for v in self.dist)
-
-
 if __name__ == "__main__":
-    import Orange.classification.naive_bayes
+    import Orange.classification.svm as svm
+    import Orange.classification.logistic_regression as lr
     app = QtGui.QApplication([])
     w = OWPredictions()
     data = Orange.data.Table("iris")
-    nb = Orange.classification.naive_bayes.BayesLearner()(data)
+    svm_clf = svm.SVMLearner(probability=True)(data)
+    lr_clf = lr.LogisticRegressionLearner()(data)
     w.setData(data)
-    w.setPredictor(nb, 1)
+    w.setPredictor(svm_clf, 0)
+    w.setPredictor(lr_clf, 1)
     w.handleNewSignals()
     w.show()
     app.exec_()

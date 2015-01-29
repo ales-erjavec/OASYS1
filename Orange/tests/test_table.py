@@ -1008,7 +1008,8 @@ class TableTests(unittest.TestCase):
     def setUp(self):
         self.data = np.random.random((self.nrows, len(self.attributes)))
         self.class_data = np.random.random((self.nrows, len(self.class_vars)))
-        self.meta_data = np.random.randint(0, 5, (self.nrows, len(self.metas)))
+        self.meta_data = np.random.randint(0, 5, (self.nrows, len(self.metas))
+                                           ).astype(object)
         self.weight_data = np.random.random((self.nrows, 1))
 
     def mock_domain(self, with_classes=False, with_metas=False):
@@ -1635,6 +1636,32 @@ class InterfaceTest(unittest.TestCase):
         for i in self.table:
             self.fail("Table should not contain any rows.")
 
+
+
+class TestRowInstance(unittest.TestCase):
+    def test_assignment(self):
+        table = data.Table("zoo")
+        inst = table[2]
+        self.assertIsInstance(inst, data.RowInstance)
+
+        inst[1] = 0
+        self.assertEqual(table[2, 1], 0)
+        inst[1] = 1
+        self.assertEqual(table[2, 1], 1)
+
+        inst.set_class("mammal")
+        self.assertEqual(table[2, len(table.domain.attributes)], "mammal")
+        inst.set_class("fish")
+        self.assertEqual(table[2, len(table.domain.attributes)], "fish")
+
+        inst[-1] = "Foo"
+        self.assertEqual(table[2, -1], "Foo")
+
+    def test_iteration_with_assignment(self):
+        table = data.Table("iris")
+        for i, row in enumerate(table):
+            row[0] = i
+        np.testing.assert_array_equal(table.X[:, 0], np.arange(len(table)))
 
 if __name__ == "__main__":
     unittest.main()

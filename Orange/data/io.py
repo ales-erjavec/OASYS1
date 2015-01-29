@@ -22,7 +22,7 @@ class FileReader:
                 vs[col].add(lne[col])
             for col in cont_cols:
                 val = lne[col]
-                if not col in Variable.DefaultUnknownStr and "." in val:
+                if not col in Variable._DefaultUnknownStr and "." in val:
                     decs = len(val) - val.find(".") - 1
                     if decs > decimals[col]:
                         decimals[col] = decs
@@ -136,8 +136,8 @@ class TabDelimReader:
         line_count = 0
         Xr = None
         for lne in f:
-            values = lne.strip()
-            if not values:
+            values = lne
+            if not values.strip():
                 continue
             values = values.split("\t")
             if len(values) > self.n_columns:
@@ -295,10 +295,10 @@ def _save_tab_fast(f, data):
 
 def save_tab_delimited(filename, data):
     """
-    Save the data to tab-delimited file.
+    Save data to tab-delimited file.
 
-    The function uses a fast implementation for numpy data, and a slower
-    fall-back for general storages.
+    Function uses fast implementation in case of numpy data, and slower
+    fall-back for general storage.
 
     :param filename: the name of the file
     :type filename: str

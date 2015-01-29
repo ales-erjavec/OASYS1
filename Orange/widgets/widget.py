@@ -4,9 +4,11 @@ import time
 import os
 import warnings
 
-from PyQt4.QtCore import QByteArray, Qt, pyqtSignal as Signal, pyqtProperty, SIGNAL, QDir
+from PyQt4.QtCore import QByteArray, Qt, pyqtSignal as Signal, pyqtProperty,\
+    QDir
 from PyQt4.QtGui import QDialog, QPixmap, QLabel, QVBoxLayout, QSizePolicy, \
-    qApp, QFrame, QStatusBar, QHBoxLayout, QIcon, QTabWidget, QScrollArea
+                        qApp, QFrame, QStatusBar, QHBoxLayout, QIcon, QTabWidget, QScrollArea, QStyle,\
+                        QApplication
 
 from Orange.canvas.utils import environ
 from Orange.widgets import settings, gui
@@ -82,7 +84,7 @@ class OWWidget(QDialog, metaclass=WidgetMetaClass):
     want_status_bar = False
     no_report = False
 
-    save_position = False
+    save_position = True
     resizing_enabled = True
 
     widgetStateChanged = Signal(str, int, str)
@@ -92,6 +94,8 @@ class OWWidget(QDialog, metaclass=WidgetMetaClass):
     processingStateChanged = Signal(int)
 
     settingsHandler = None
+
+    savedWidgetGeometry = settings.Setting(None)
 
     def __new__(cls, parent=None, *args, **kwargs):
         self = super().__new__(cls, None, cls.get_flags())
@@ -146,6 +150,7 @@ class OWWidget(QDialog, metaclass=WidgetMetaClass):
         return (Qt.Window if cls.resizing_enabled
                 else Qt.Dialog | Qt.MSWindowsFixedSizeDialogHint)
 
+    # noinspection PyAttributeOutsideInit
     def insertLayout(self):
         def createPixmapWidget(self, parent, iconName):
             w = QLabel(parent)
@@ -158,6 +163,15 @@ class OWWidget(QDialog, metaclass=WidgetMetaClass):
 
         self.setLayout(QVBoxLayout())
         self.layout().setMargin(2)
+
+        self.warning_bar = gui.widgetBox(self, orientation="horizontal",
+                                         margin=0, spacing=0)
+        self.warning_icon = gui.widgetLabel(self.warning_bar, "")
+        self.warning_label = gui.widgetLabel(self.warning_bar, "")
+        self.warning_label.setStyleSheet("padding-top: 5px")
+        self.warning_bar.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Maximum)
+        gui.rubber(self.warning_bar)
+        self.warning_bar.setVisible(False)
 
         self.topWidgetPart = gui.widgetBox(self,
                                            orientation="horizontal", margin=0)
@@ -331,9 +345,9 @@ class OWWidget(QDialog, metaclass=WidgetMetaClass):
     """
 
     def restoreWidgetPosition(self):
+        restored = False
         if self.save_position:
-            geometry = getattr(self, "savedWidgetGeometry", None)
-            restored = False
+            geometry = self.savedWidgetGeometry
             if geometry is not None:
                 restored = self.restoreGeometry(QByteArray(geometry))
 
@@ -348,43 +362,56 @@ class OWWidget(QDialog, metaclass=WidgetMetaClass):
                 height = min(height, geometry.height())
                 self.resize(width, height)
 
-                #Move the widget to the center of available space if it is
+                # Move the widget to the center of available space if it is
                 # currently outside it
                 if not space.contains(self.frameGeometry()):
                     x = max(0, space.width() / 2 - width / 2)
                     y = max(0, space.height() / 2 - height / 2)
 
                     self.move(x, y)
+        return restored
 
-    # when widget is resized, save new width and height into widgetWidth and
-    # widgetHeight. some widgets can put this two variables into settings and
-    # last widget shape is restored after restart
+    def __updateSavedGeometry(self):
+        if self.__was_restored:
+            # Update the saved geometry only between explicit show/hide
+            # events (i.e. changes initiated by the user not by Qt's default
+            # window management).
+            self.savedWidgetGeometry = self.saveGeometry()
+
+    # when widget is resized, save the new width and height
     def resizeEvent(self, ev):
         QDialog.resizeEvent(self, ev)
         # Don't store geometry if the widget is not visible
-        # (the widget receives the resizeEvent before showEvent and we must not
-        # overwrite the the savedGeometry before then)
+        # (the widget receives a resizeEvent (with the default sizeHint)
+        # before showEvent and we must not overwrite the the savedGeometry
+        # with it)
         if self.save_position and self.isVisible():
-            self.savedWidgetGeometry = str(self.saveGeometry())
+            self.__updateSavedGeometry()
+
+    def moveEvent(self, ev):
+        QDialog.moveEvent(self, ev)
+        if self.save_position and self.isVisible():
+            self.__updateSavedGeometry()
 
     # set widget state to hidden
     def hideEvent(self, ev):
         if self.save_position:
-            self.savedWidgetGeometry = str(self.saveGeometry())
+            self.__updateSavedGeometry()
+        self.__was_restored = False
         QDialog.hideEvent(self, ev)
 
-    # set widget state to shown
+    def closeEvent(self, ev):
+        if self.save_position and self.isVisible():
+            self.__updateSavedGeometry()
+        self.__was_restored = False
+        QDialog.closeEvent(self, ev)
+
     def showEvent(self, ev):
         QDialog.showEvent(self, ev)
         if self.save_position:
-            if not self.__was_restored:
-                self.__was_restored = True
-                self.restoreWidgetPosition()
-
-    def closeEvent(self, ev):
-        if self.save_position:
-            self.savedWidgetGeometry = str(self.saveGeometry())
-        QDialog.closeEvent(self, ev)
+            # Restore saved geometry on show
+            self.restoreWidgetPosition()
+        self.__was_restored = True
 
     def wheelEvent(self, event):
         """ Silently accept the wheel event. This is to ensure combo boxes
@@ -479,7 +506,7 @@ class OWWidget(QDialog, metaclass=WidgetMetaClass):
 
     # this function is only intended for derived classes to send appropriate
     # signals when all settings are loaded
-    def activateLoadedSettings(self):
+    def activate_loaded_settings(self):
         pass
 
     # reimplemented in other widgets
@@ -582,32 +609,88 @@ class OWWidget(QDialog, metaclass=WidgetMetaClass):
     def error(self, id=0, text=""):
         self.setState("Error", id, text)
 
-    def setState(self, stateType, id, text):
+    def setState(self, state_type, id, text):
         changed = 0
         if type(id) == list:
             for val in id:
-                if val in self.widgetState[stateType]:
-                    self.widgetState[stateType].pop(val)
+                if val in self.widgetState[state_type]:
+                    self.widgetState[state_type].pop(val)
                     changed = 1
         else:
             if type(id) == str:
                 text = id
                 id = 0
             if not text:
-                if id in self.widgetState[stateType]:
-                    self.widgetState[stateType].pop(id)
+                if id in self.widgetState[state_type]:
+                    self.widgetState[state_type].pop(id)
                     changed = 1
             else:
-                self.widgetState[stateType][id] = text
+                self.widgetState[state_type][id] = text
                 changed = 1
 
         if changed:
             if type(id) == list:
                 for i in id:
-                    self.widgetStateChanged.emit(stateType, i, "")
+                    self.widgetStateChanged.emit(state_type, i, "")
             else:
-                self.widgetStateChanged.emit(stateType, id, text or "")
+                self.widgetStateChanged.emit(state_type, id, text or "")
+
+        tooltip_lines = []
+        highest_type = None
+        for a_type in ("Error", "Warning", "Info"):
+            msgs_for_ids = self.widgetState.get(a_type)
+            if not msgs_for_ids:
+                continue
+            msgs_for_ids = list(msgs_for_ids.values())
+            if not msgs_for_ids:
+                continue
+            tooltip_lines += msgs_for_ids
+            if highest_type is None:
+                highest_type = a_type
+
+        if highest_type is None:
+            self.set_warning_bar(None)
+        elif len(tooltip_lines) == 1:
+            msg = tooltip_lines[0]
+            if "\n" in msg:
+                self.set_warning_bar(
+                    highest_type, msg[:msg.index("\n")] + " (...)", msg)
+            else:
+                self.set_warning_bar(
+                    highest_type, tooltip_lines[0], tooltip_lines[0])
+        else:
+            self.set_warning_bar(
+                highest_type,
+                "{} problems during execution".format(len(tooltip_lines)),
+                "\n".join(tooltip_lines))
+
         return changed
+
+    def set_warning_bar(self, state_type, text=None, tooltip=None):
+        colors = {"Error": ("#ffc6c6", "black", QStyle.SP_MessageBoxCritical),
+                  "Warning": ("#ffffc9", "black", QStyle.SP_MessageBoxWarning),
+                  "Info": ("#ceceff", "black", QStyle.SP_MessageBoxInformation)}
+        current_height = self.height()
+        if state_type is None:
+            if not self.warning_bar.isHidden():
+                new_height = current_height - self.warning_bar.height()
+                self.warning_bar.setVisible(False)
+                self.resize(self.width(), new_height)
+            return
+        background, foreground, icon = colors[state_type]
+        style = QApplication.instance().style()
+        self.warning_icon.setPixmap(style.standardIcon(icon).pixmap(14, 14))
+
+        self.warning_bar.setStyleSheet(
+            "background-color: {}; color: {};"
+            "padding: 3px; padding-left: 6px; vertical-align: center".
+            format(background, foreground))
+        self.warning_label.setText(text)
+        self.warning_label.setToolTip(tooltip)
+        if self.warning_bar.isHidden():
+            self.warning_bar.setVisible(True)
+            new_height = current_height + self.warning_bar.height()
+            self.resize(self.width(), new_height)
 
     def widgetStateToHtml(self, info=True, warning=True, error=True):
         pixmaps = self.getWidgetStateIcons()

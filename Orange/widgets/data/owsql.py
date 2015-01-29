@@ -2,9 +2,11 @@ import sys
 
 import psycopg2
 from PyQt4 import QtGui
+from PyQt4.QtCore import Qt
+from PyQt4.QtGui import QApplication, QCursor, QMessageBox
 
 from Orange.data import Table
-from Orange.data.sql.table import SqlTable
+from Orange.data.sql.table import SqlTable, LARGE_TABLE
 from Orange.widgets import widget, gui
 from Orange.widgets.settings import Setting
 
@@ -34,7 +36,6 @@ class OWSql(widget.OWWidget):
     username = Setting(None)
     password = Setting(None)
     table = Setting(None)
-    tables = Setting([])
     sql = Setting("")
     guess_values = Setting(True)
 
@@ -72,11 +73,6 @@ class OWSql(widget.OWWidget):
 
         tables = gui.widgetBox(box, orientation='horizontal')
         self.tablecombo = QtGui.QComboBox(tables)
-        choices = ['Select a table'] + self.tables + ['Custom SQL']
-        for i, item in enumerate(choices):
-            self.tablecombo.addItem(item)
-            if item == self.table:
-                self.tablecombo.setCurrentIndex(i)
 
         tables.layout().addWidget(self.tablecombo)
         self.tablecombo.activated[int].connect(self.select_table)
@@ -93,14 +89,14 @@ class OWSql(widget.OWWidget):
         self.custom_sql.layout().addWidget(self.sqltext)
 
         self.executebtn = gui.button(
-            self.custom_sql, self, 'Execute', callback=self.execute_sql)
+            self.custom_sql, self, 'Execute', callback=self.open_table)
 
         box.layout().addWidget(self.custom_sql)
 
         gui.checkBox(box, self, "guess_values",
                      "Auto-discover discrete variables.",
                      callback=self.open_table)
-
+        self.connect()
         if self.table:
             self.open_table()
 
@@ -139,16 +135,17 @@ class OWSql(widget.OWWidget):
             self.refresh_tables()
         except psycopg2.Error as err:
             self.error(0, str(err).split('\n')[0])
-            self.tables = []
             self.tablecombo.clear()
 
 
     def refresh_tables(self):
+        self.tablecombo.clear()
         if self._connection is None:
             return
+
         cur = self._connection.cursor()
         cur.execute("""SELECT --n.nspname as "Schema",
-                              c.relname as "Name"
+                              c.relname AS "Name"
                        FROM pg_catalog.pg_class c
                   LEFT JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
                       WHERE c.relkind IN ('r','v','m','S','f','')
@@ -157,13 +154,13 @@ class OWSql(widget.OWWidget):
                         AND n.nspname !~ '^pg_toast'
                         AND pg_catalog.pg_table_is_visible(c.oid)
                    ORDER BY 1;""")
-        self.tablecombo.clear()
+
         self.tablecombo.addItem("Select a table")
-        tables = []
-        for table_name, in cur.fetchall():
+        for i, (table_name,) in enumerate(cur.fetchall()):
             self.tablecombo.addItem(table_name)
-            tables.append(table_name)
-        self.tables = tables
+            if table_name == self.table:
+                self.tablecombo.setCurrentIndex(i + 1)
+        self.tablecombo.addItem("Custom SQL")
 
     def select_table(self):
         curIdx = self.tablecombo.currentIndex()
@@ -175,31 +172,51 @@ class OWSql(widget.OWWidget):
             self.table = None
 
     def open_table(self):
-        if self.tablecombo.currentIndex() == 0:
+        if self.tablecombo.currentIndex() <= 0:
             return
 
-        self.table = self.tablecombo.currentText()
+        if self.tablecombo.currentIndex() < self.tablecombo.count() - 1:
+            self.table = self.tablecombo.currentText()
+        else:
+            self.table = self.sqltext.toPlainText()
 
-        table = SqlTable(host=self.host,
-                         port=self.port,
-                         database=self.database,
-                         user=self.username,
-                         password=self.password,
-                         table=self.table,
-                         guess_values=self.guess_values)
+        table = SqlTable(dict(host=self.host,
+                              port=self.port,
+                              database=self.database,
+                              user=self.username,
+                              password=self.password),
+                         self.table,
+                         inspect_values=False)
+        sample = False
+        if table.approx_len() > LARGE_TABLE and self.guess_values:
+            confirm = QMessageBox(self)
+            confirm.setIcon(QMessageBox.Warning)
+            confirm.setText("Attribute discovery might take "
+                            "a long time on large tables.\n"
+                            "Do you want to auto discover attributes?")
+            confirm.addButton("Yes", QMessageBox.YesRole)
+            no_button = confirm.addButton("No", QMessageBox.NoRole)
+            sample_button = confirm.addButton("Yes, on a sample",
+                                              QMessageBox.YesRole)
+            confirm.exec()
+            if confirm.clickedButton() == no_button:
+                self.guess_values = False
+            elif confirm.clickedButton() == sample_button:
+                sample = True
+
+        if self.guess_values:
+            QApplication.setOverrideCursor(QCursor(Qt.WaitCursor))
+            if sample:
+                s = table.sample_time(1)
+                domain = s.get_domain(guess_values=True)
+                self.information(
+                    1, "Domain was generated from a sample of the table.")
+            else:
+                domain = table.get_domain(guess_values=True)
+            QApplication.restoreOverrideCursor()
+            table.domain = domain
+
         self.send("Data", table)
-
-    def execute_sql(self):
-        self.sql = self.sqltext.toPlainText()
-        table = SqlTable.from_sql(
-            host=self.host,
-            port=self.port,
-            database=self.database,
-            user=self.username,
-            password=self.password,
-            sql=self.sql)
-        self.send("Data", table)
-
 
 if __name__ == "__main__":
     import os

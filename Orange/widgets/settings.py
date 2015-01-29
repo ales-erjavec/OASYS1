@@ -683,10 +683,11 @@ class DomainContextHandler(ContextHandler):
             return
 
         def packer(setting, instance):
-            value = getattr(instance, setting.name)
-            yield setting.name, self.encode_setting(context, setting, value)
-            if hasattr(setting, "selected"):
-                yield setting.selected, list(getattr(instance, setting.selected))
+            if hasattr(instance, setting.name):
+                value = getattr(instance, setting.name)
+                yield setting.name, self.encode_setting(context, setting, value)
+                if hasattr(setting, "selected"):
+                    yield setting.selected, list(getattr(instance, setting.selected))
 
         context.values = self.provider.pack(widget, packer=packer)
 
@@ -898,7 +899,7 @@ class ClassValuesContextHandler(ContextHandler):
             return
 
         if name in self.known_settings:
-            self.update_packed_data(widget.current_context, name, copy.copy(value))
+            self.update_packed_data(widget.current_context.values, name, copy.copy(value))
 
 
 ### Requires the same the same attributes in the same order

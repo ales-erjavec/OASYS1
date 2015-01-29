@@ -8,7 +8,7 @@ import Orange.data
 class Fitter:
     supports_multiclass = False
 
-    def fit(self, X, Y, W):
+    def fit(self, X, Y, W=None):
         raise NotImplementedError(
             "Descendants of Fitter must overload method fit")
 
@@ -22,7 +22,7 @@ class Fitter:
         if type(self).fit is Fitter.fit:
             clf = self.fit_storage(data)
         else:
-            X, Y, W = data.X, data.Y, data.W if data.has_weights else None
+            X, Y, W = data.X, data.Y, data.W if data.has_weights() else None
             clf = self.fit(X, Y, W)
         clf.domain = data.domain
         clf.supports_multiclass = self.supports_multiclass
@@ -31,6 +31,7 @@ class Fitter:
 
 class Model:
     supports_multiclass = False
+    supports_weights = False
     Value = 0
     Probs = 1
     ValueProbs = 2
@@ -126,15 +127,19 @@ class Model:
             return value, probs
 
 
-class SklFitter(Fitter):
-    def __call__(self, data):
-        clf = super().__call__(data)
-        clf.used_vals = [np.unique(y) for y in data.Y.T]
-        return clf
-
-
 class SklModel(Model):
     used_vals = None
+
+    def __init__(self, clf):
+        self.clf = clf
+
+
+    def predict(self, X):
+        value = self.clf.predict(X)
+        if hasattr(self.clf, "predict_proba"):
+            probs = self.clf.predict_proba(X)
+            return value, probs
+        return value
 
     def __call__(self, data, ret=Model.Value):
         prediction = super().__call__(data, ret=ret)
@@ -172,3 +177,38 @@ class SklModel(Model):
             return probs
         else:  # ret == Model.ValueProbs
             return value, probs
+
+
+class SklFitter(Fitter):
+
+    __wraps__ = None
+    __returns__ = SklModel
+    _params = None
+
+    @property
+    def params(self):
+        return self._params
+
+    @params.setter
+    def params(self, value):
+        self._params = dict(value)
+        self._params.pop("self", None)
+
+    def __call__(self, data):
+        if any(isinstance(v, Orange.data.DiscreteVariable) and len(v.values) > 2
+               for v in data.domain.attributes):
+            raise ValueError("Wrapped scikit-learn methods do not support " +
+                             "multinomial variables.")
+        clf = super().__call__(data)
+        clf.used_vals = [np.unique(y) for y in data.Y.T]
+        return clf
+
+    def fit(self, X, Y, W):
+        clf = self.__wraps__(**self.params)
+        Y = Y.reshape(-1)
+        if W is None or not self.supports_weights:
+            return self.__returns__(clf.fit(X, Y))
+        return self.__returns__(clf.fit(X, Y, sample_weight=W.reshape(-1)))
+
+
+

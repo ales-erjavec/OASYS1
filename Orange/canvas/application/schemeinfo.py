@@ -6,7 +6,7 @@ Scheme Info editor widget.
 import os
 
 from PyQt4.QtGui import (
-    QWidget, QDialog, QLabel, QTextEdit, QLineEdit, QFormLayout, QPushButton,
+    QWidget, QDialog, QLabel, QTextEdit, QCheckBox, QLineEdit, QFormLayout, QPushButton,
     QVBoxLayout, QHBoxLayout, QDialogButtonBox, QSizePolicy, QFileDialog
 )
 
@@ -146,7 +146,7 @@ class SchemeInfoDialog(QDialog):
         self.editor.setSizePolicy(QSizePolicy.MinimumExpanding,
                                   QSizePolicy.MinimumExpanding)
 
-        heading = self.tr("Scheme Info")
+        heading = self.tr("Workflow Info")
         heading = "<h3>{0}</h3>".format(heading)
         self.heading = QLabel(heading, self, objectName="heading")
 
@@ -165,9 +165,19 @@ class SchemeInfoDialog(QDialog):
         widget = StyledWidget(self, objectName="auto-show-container")
         check_layout = QHBoxLayout()
         check_layout.setContentsMargins(20, 10, 20, 10)
+
+        self.__showAtNewSchemeCheck = \
+            QCheckBox(self.tr("Show when I make a New Workflow."),
+                      self,
+                      objectName="auto-show-check",
+                      checked=False,
+                      )
+
+        check_layout.addWidget(self.__showAtNewSchemeCheck)
+
         check_layout.addWidget(
-               QLabel(self.tr("You can also edit Scheme Info later "
-                              "(File -> Scheme Info)."),
+               QLabel(self.tr("You can also edit Workflow Info later "
+                              "(File -> Workflow Info)."),
                       self,
                       objectName="auto-show-info"),
                alignment=Qt.AlignRight)
