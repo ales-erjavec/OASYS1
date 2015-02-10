@@ -18,7 +18,7 @@ from Orange.feature.discretization import EqualFreq
 from Orange.statistics.contingency import get_contingencies, get_contingency
 from Orange.widgets.settings import Setting
 from Orange.data import ContinuousVariable, DiscreteVariable
-from Orange.widgets.utils.plot import OWPlot, UserAxis, AxisStart, AxisEnd, OWCurve, OWPoint, PolygonCurve, \
+from Orange.widgets.utils.plot.owplot import OWPlot, UserAxis, AxisStart, AxisEnd, OWCurve, OWPoint, PolygonCurve, \
     xBottom, yLeft, OWPlotItem
 from Orange.widgets.utils.scaling import get_variable_values_sorted, ScaleData
 

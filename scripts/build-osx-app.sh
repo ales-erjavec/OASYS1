@@ -108,19 +108,19 @@ EASY_INSTALL=$TEMPLATE/Contents/MacOS/easy_install
 PREFIX=$("$PYTHON" -c'import sys; print(sys.prefix)')
 SITE_PACKAGES=$("$PYTHON" -c'import sysconfig as sc; print(sc.get_path("platlib"))')
 
-cp -f "/Users/labx/env/orange3/lib/python3.3/site-packages/_xraylib.la" "$SITE_PACKAGES"
-cp -f "/Users/labx/env/orange3/lib/python3.3/site-packages/_xraylib.so" "$SITE_PACKAGES"
-cp -f "/Users/labx/env/orange3/lib/python3.3/site-packages/xrayhelp.py" "$SITE_PACKAGES"
-cp -f "/Users/labx/env/orange3/lib/python3.3/site-packages/xraylib.py" "$SITE_PACKAGES"
-cp -f "/Users/labx/env/orange3/lib/python3.3/site-packages/xraymessages.py" "$SITE_PACKAGES"
+cp -f "/opt/local/Library/Frameworks/Python.framework/Versions/3.4/lib/python3.4/site-packages/_xraylib.la" "$SITE_PACKAGES"
+cp -f "/opt/local/Library/Frameworks/Python.framework/Versions/3.4/lib/python3.4/site-packages/_xraylib.so" "$SITE_PACKAGES"
+cp -f "/opt/local/Library/Frameworks/Python.framework/Versions/3.4/lib/python3.4/site-packages/xrayhelp.py" "$SITE_PACKAGES"
+cp -f "/opt/local/Library/Frameworks/Python.framework/Versions/3.4/lib/python3.4/site-packages/xraylib.py" "$SITE_PACKAGES"
+cp -f "/opt/local/Library/Frameworks/Python.framework/Versions/3.4/lib/python3.4/site-packages/xraymessages.py" "$SITE_PACKAGES"
 
+cp -r "/opt/local/Library/Frameworks/Python.framework/Versions/3.4/lib/python3.4/site-packages/Shadow"  "$SITE_PACKAGES"
+cp -r "/opt/local/Library/Frameworks/Python.framework/Versions/3.4/lib/python3.4/site-packages/PyMca5"  "$SITE_PACKAGES"
 
-cp -r "/Users/labx/env/orange3/lib/python3.3/site-packages/Shadow"  "$SITE_PACKAGES"
-cp -r "/Users/labx/env/orange3/lib/python3.3/site-packages/PyMca5"  "$SITE_PACKAGES"
-cp -r "/Users/labx/env/orange3/lib/python3.3/site-packages/matplotlib-1.4.x-py3.3-macosx-10.8-x86_64.egg" "$SITE_PACKAGES"
-cp -r "/Users/labx/env/orange3/lib/python3.3/site-packages/pyparsing-2.0.1-py3.3.egg" "$SITE_PACKAGES"
-cp -r "/Users/labx/env/orange3/lib/python3.3/site-packages/six-1.5.2-py3.3.egg" "$SITE_PACKAGES"
-cp -r "/Users/labx/env/orange3/lib/python3.3/site-packages/python_dateutil-2.2-py3.3.egg" "$SITE_PACKAGES"
+cp -r "/opt/local/Library/Frameworks/Python.framework/Versions/3.4/lib/python3.4/site-packages/pyparsing-2.0.3.dist-info" "$SITE_PACKAGES"
+cp -f "/opt/local/Library/Frameworks/Python.framework/Versions/3.4/lib/python3.4/site-packages/pyparsing.py" "$SITE_PACKAGES"
+
+cp -r "/opt/local/Library/Frameworks/Python.framework/Versions/3.4/lib/python3.4/site-packages/dateutil" "$SITE_PACKAGES"
 
 cp -f "/Users/labx/Documents/workspace/OASYS-Develop/OASYS1/scripts/easy-install.pth" "$SITE_PACKAGES"
 
@@ -129,6 +129,12 @@ cp -f "/Users/labx/Documents/workspace/OASYS-Develop/OASYS1/scripts/easy-install
 
 "$PIP" uninstall -y scipy
 UMFPACK=None "$PIP" install scipy
+
+#"$PIP" uninstall -y six
+"$PIP" install six
+
+"$PIP" uninstall -y matplotlib
+"$PIP" install matplotlib
 
 echo "Installing bottlechest"
 echo "======================"

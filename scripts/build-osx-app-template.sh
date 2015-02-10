@@ -78,15 +78,15 @@ BUNDLE_LITE=$SCRIPT_DIR_NAME/bundle-lite/Orange.app
 
 # Versions of included 3rd party software
 
-PYTHON_VER=3.4.1
-PIP_VER=1.5.6
-SETUPTOOLS_VER=5.7
-NUMPY_VER=1.8.2
-SCIPY_VER=0.14.0
+PYTHON_VER=3.4.2
+PIP_VER=6.0.8
+SETUPTOOLS_VER=12.0.3
+NUMPY_VER=1.9.1
+SCIPY_VER=0.15.1
 QT_VER=4.8.6
 SIP_VER=4.16.2
 PYQT_VER=4.11.1
-SCIKIT_LEARN_VER=0.15.1
+SCIKIT_LEARN_VER=0.15.2
 #PYQWT_VER=5.2.0
 
 # Number of make jobs
@@ -96,7 +96,7 @@ PYTHON=$APP/Contents/MacOS/python
 EASY_INSTALL=$APP/Contents/MacOS/easy_install
 PIP=$APP/Contents/MacOS/pip
 
-export MACOSX_DEPLOYMENT_TARGET=10.6
+export MACOSX_DEPLOYMENT_TARGET=10.8
 
 SDK=/Developer/SDKs/MacOSX$MACOSX_DEPLOYMENT_TARGET.sdk
 
@@ -109,10 +109,10 @@ function create_template {
 	mkdir -p "$APP"/Contents/Resources
 
 	# Copy icons and Info.plist
-	cp "$BUNDLE_LITE"/Contents/Resources/* "$APP"/Contents/Resources
-	cp "$BUNDLE_LITE"/Contents/Info.plist "$APP"/Contents/Info.plist
+	cp -rf "$BUNDLE_LITE"/Contents/Resources/* "$APP"/Contents/Resources
+	cp -rf "$BUNDLE_LITE"/Contents/Info.plist "$APP"/Contents/Info.plist
 
-	cp "$BUNDLE_LITE"/Contents/PkgInfo $APP/Contents/PkgInfo
+	cp -rf "$BUNDLE_LITE"/Contents/PkgInfo $APP/Contents/PkgInfo
 
 	cat <<-'EOF' > "$APP"/Contents/MacOS/ENV
 		# Create an environment for running python from the bundle
