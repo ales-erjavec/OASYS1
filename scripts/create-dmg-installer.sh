@@ -21,7 +21,7 @@ DIRNAME=$(dirname "$0")
 # Path to dmg resources (volume icon, background, ...)
 RES=$DIRNAME/dmg-resources
 
-APP="dist/Orange3.app"
+APP="dist/Oasys.app"
 
 KEEP_TEMP=0
 
@@ -80,10 +80,10 @@ cp -a "$RES"/DS_Store "$TMP_TEMPLATE"/.DS_Store
 ln -s /Applications/ "$TMP_TEMPLATE"/Applications
 
 # Copy the .app directory in place
-cp -a "$APP" "$TMP_TEMPLATE"/Orange3.app
+cp -a "$APP" "$TMP_TEMPLATE"/Oasys.app
 
 # Remove unnecesary files.
-find "$TMP_TEMPLATE"/Orange3.app/Contents/ \( -name '*~' -or -name '*.bak' -or -name '*.pyc' -or -name '*.pyo' \) -delete
+find "$TMP_TEMPLATE"/Oasys.app/Contents/ \( -name '*~' -or -name '*.bak' -or -name '*.pyc' -or -name '*.pyo' \) -delete
 
 # Create a regular .fseventsd/no_log file
 # (see http://hostilefork.com/2009/12/02/trashes-fseventsd-and-spotlight-v100/ )

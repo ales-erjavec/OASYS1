@@ -7,7 +7,7 @@
 #
 
 function print_usage() {
-    echo 'build-osx-app.sh [-i] [--template] Orange3.app
+    echo 'build-osx-app.sh [-i] [--template] Oasys.app
 
 Build an Orange Canvas OSX application bundle (Orange3.app).
 
@@ -55,7 +55,7 @@ if [[ ! -f setup.py ]]; then
     exit 1
 fi
 
-APP=${1:-dist/Orange3.app}
+APP=${1:-dist/Oasys.app}
 
 if [[ $INPLACE ]]; then
     if [[ $TEMPLATE_URL ]]; then
@@ -108,8 +108,22 @@ EASY_INSTALL=$TEMPLATE/Contents/MacOS/easy_install
 PREFIX=$("$PYTHON" -c'import sys; print(sys.prefix)')
 SITE_PACKAGES=$("$PYTHON" -c'import sysconfig as sc; print(sc.get_path("platlib"))')
 
+
+cp -f "/opt/local/lib/libgcc/libgfortran.3.dylib" "$TEMPLATE/Contents/Frameworks"
+cp -f "/opt/X11/lib/libfreetype.6.dylib" "$TEMPLATE/Contents/Frameworks"
+cp -f "/opt/X11/lib/libpng15.15.dylib" "$TEMPLATE/Contents/Frameworks"
+cp -f "/opt/local/lib/libxrl.7.dylib" "$TEMPLATE/Contents/Frameworks"
+
+cp -f "/opt/X11/lib/libpng15.15.dylib" "$TEMPLATE/Contents/Frameworks"
+cp -f "/opt/local/lib/libxrl.7.dylib" "$TEMPLATE/Contents/Frameworks"
+
+
+cp -f "/opt/local/Library/Frameworks/Python.framework/Versions/3.4/lib/python3.4/site-packages/orangeqt.so" "$SITE_PACKAGES"
+
 cp -f "/opt/local/Library/Frameworks/Python.framework/Versions/3.4/lib/python3.4/site-packages/_xraylib.la" "$SITE_PACKAGES"
 cp -f "/opt/local/Library/Frameworks/Python.framework/Versions/3.4/lib/python3.4/site-packages/_xraylib.so" "$SITE_PACKAGES"
+cp -f "/opt/local/Library/Frameworks/Python.framework/Versions/3.4/lib/python3.4/site-packages/xraylib_np.la" "$SITE_PACKAGES"
+cp -f "/opt/local/Library/Frameworks/Python.framework/Versions/3.4/lib/python3.4/site-packages/xraylib_np.so" "$SITE_PACKAGES"
 cp -f "/opt/local/Library/Frameworks/Python.framework/Versions/3.4/lib/python3.4/site-packages/xrayhelp.py" "$SITE_PACKAGES"
 cp -f "/opt/local/Library/Frameworks/Python.framework/Versions/3.4/lib/python3.4/site-packages/xraylib.py" "$SITE_PACKAGES"
 cp -f "/opt/local/Library/Frameworks/Python.framework/Versions/3.4/lib/python3.4/site-packages/xraymessages.py" "$SITE_PACKAGES"
@@ -124,17 +138,19 @@ cp -r "/opt/local/Library/Frameworks/Python.framework/Versions/3.4/lib/python3.4
 
 cp -f "/Users/labx/Documents/workspace/OASYS-Develop/OASYS1/scripts/easy-install.pth" "$SITE_PACKAGES"
 
+
 "$PIP" uninstall -y numpy
 "$PIP" install numpy
 
 "$PIP" uninstall -y scipy
 UMFPACK=None "$PIP" install scipy
 
-#"$PIP" uninstall -y six
+"$PIP" uninstall -y six
 "$PIP" install six
 
 "$PIP" uninstall -y matplotlib
 "$PIP" install matplotlib
+
 
 echo "Installing bottlechest"
 echo "======================"
