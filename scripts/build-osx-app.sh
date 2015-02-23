@@ -114,8 +114,8 @@ cp -f "/opt/X11/lib/libfreetype.6.dylib" "$TEMPLATE/Contents/Frameworks"
 cp -f "/opt/X11/lib/libpng15.15.dylib" "$TEMPLATE/Contents/Frameworks"
 cp -f "/opt/local/lib/libxrl.7.dylib" "$TEMPLATE/Contents/Frameworks"
 
-cp -f "/opt/X11/lib/libpng15.15.dylib" "$TEMPLATE/Contents/Frameworks"
-cp -f "/opt/local/lib/libxrl.7.dylib" "$TEMPLATE/Contents/Frameworks"
+#cp -f "/opt/X11/lib/libpng15.15.dylib" "$TEMPLATE/Contents/Frameworks"
+#cp -f "/opt/local/lib/libxrl.7.dylib" "$TEMPLATE/Contents/Frameworks"
 
 
 cp -f "/opt/local/Library/Frameworks/Python.framework/Versions/3.4/lib/python3.4/site-packages/orangeqt.so" "$SITE_PACKAGES"
