@@ -115,9 +115,9 @@ cp -f "/opt/X11/lib/libpng15.15.dylib" "$TEMPLATE/Contents/Frameworks"
 cp -f "/opt/local/lib/libxrl.7.dylib" "$TEMPLATE/Contents/Frameworks"
 cp -f "/opt/local/lib/libgcc/libquadmath.0.dylib" "$TEMPLATE/Contents/Frameworks"
 
-cp -f "/scisoft/xop2.4/extensions/shadowvui/shadow3/libshadow3.so" "$TEMPLATE/Contents/Frameworks"
-cp -f "/scisoft/xop2.4/extensions/shadowvui/shadow3/libshadow3c.so" "$TEMPLATE/Contents/Frameworks"
-cp -f "/scisoft/xop2.4/extensions/shadowvui/shadow3/libshadow3c++.so" "$TEMPLATE/Contents/Frameworks"
+cp -f "/Users/labx/Documents/workspace/shadow3/libshadow3.so" "$TEMPLATE/Contents/Frameworks"
+cp -f "/Users/labx/Documents/workspace/shadow3/libshadow3c.so" "$TEMPLATE/Contents/Frameworks"
+#cp -f "/scisoft/xop2.4/extensions/shadowvui/shadow3/libshadow3c++.so" "$TEMPLATE/Contents/Frameworks"
 
 
 cp -f "/opt/local/Library/Frameworks/Python.framework/Versions/3.4/lib/python3.4/site-packages/orangeqt.so" "$SITE_PACKAGES"
