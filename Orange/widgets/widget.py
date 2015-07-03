@@ -18,8 +18,6 @@ from Orange.widgets.gui import ControlledAttributesDict, notify_changed
 from Orange.widgets.settings import SettingsHandler
 from Orange.widgets.utils import vartype
 
-# ADDED BY LUCA REBUFFI 2015/07/03
-from Orange.canvas.gui.toolbox import _ToolBoxScrollArea
 
 class WidgetMetaClass(type(QDialog)):
     """Meta class for widgets. If the class definition does not have a
@@ -192,7 +190,7 @@ class OWWidget(QDialog, metaclass=WidgetMetaClass):
 #                                          sizePolicy=QSizePolicy(QSizePolicy.Expanding,
 #                                                                 QSizePolicy.Expanding),
 #                                          margin=0)
-            scrollarea = _ToolBoxScrollArea()
+            scrollarea = QScrollArea()
             self.topWidgetPart.layout().addWidget(scrollarea)
             self.mainArea = gui.widgetBox(self.topWidgetPart,
                                           orientation="vertical",
@@ -212,7 +210,7 @@ class OWWidget(QDialog, metaclass=WidgetMetaClass):
 #                                             orientation="vertical", margin=4)
 
         if self.want_control_area:
-            scrollarea = _ToolBoxScrollArea()
+            scrollarea = QScrollArea()
             self.leftWidgetPart.layout().addWidget(scrollarea)
             self.controlArea = gui.widgetBox(
                 self.leftWidgetPart, orientation="vertical", margin=4, addToLayout=False)
