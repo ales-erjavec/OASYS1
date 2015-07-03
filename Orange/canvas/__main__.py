@@ -12,26 +12,27 @@ import optparse
 import pickle
 import shlex
 import shutil
+import signal
 
 import pkg_resources
 
-from PyQt4.QtGui import QFont, QColor, QDialog
+from PyQt4.QtGui import QFont, QColor
 from PyQt4.QtCore import Qt, QDir
 
-from Orange import canvas
-from Orange.canvas.application.application import CanvasApplication
-from Orange.canvas.application.canvasmain import CanvasMainWindow
-from Orange.canvas.application.outputview import TextStream, ExceptHook
+import OrangeCanvas as orangecanvas
+from OrangeCanvas.application.application import CanvasApplication
+from OrangeCanvas.application.canvasmain import CanvasMainWindow
+from OrangeCanvas.application.outputview import TextStream, ExceptHook
 
-from Orange.canvas.gui.splashscreen import SplashScreen
-from Orange.canvas.config import cache_dir
-from Orange.canvas import config
-from Orange.canvas.utils.redirect import redirect_stdout, redirect_stderr
-from Orange.canvas.utils.qtcompat import QSettings
+from OrangeCanvas.gui.splashscreen import SplashScreen
+from OrangeCanvas.utils.redirect import redirect_stdout, redirect_stderr
+from OrangeCanvas.utils.qtcompat import QSettings
+from OrangeCanvas import config
 
-from Orange.canvas.registry import qt
-from Orange.canvas.registry import WidgetRegistry, MenuRegistry, set_global_registry
-from Orange.canvas.registry import cache
+from OrangeCanvas.registry import cache, qt
+from OrangeCanvas.registry import WidgetRegistry, set_global_registry
+
+from . import conf
 
 log = logging.getLogger(__name__)
 
@@ -44,9 +45,8 @@ def running_in_ipython():
         return False
 
 
-if "PYCHARM_HOSTED" in os.environ:
-    import signal
-    signal.signal(signal.SIGINT, signal.SIG_DFL)
+# Allow termination with CTRL + C
+signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 
 def fix_osx_10_9_private_font():
@@ -64,14 +64,6 @@ def fix_osx_10_9_private_font():
             pass
 
 
-def fix_osx_spacing(app):
-    if sys.platform == "darwin":
-        app.setStyleSheet("""
-            QCheckBox, QRadioButton { padding-top: 2px; padding-bottom: 1px; vertical-align: bottom;}
-            QCheckBoxLabel { padding:20px;}
-            """)
-
-
 def fix_win_pythonw_std_stream():
     """
     On windows when running without a console (using pythonw.exe) the
@@ -81,9 +73,9 @@ def fix_win_pythonw_std_stream():
     """
     if sys.platform == "win32" and \
             os.path.basename(sys.executable) == "pythonw.exe":
-        if sys.stdout.fileno() < 0:
+        if sys.stdout is not None and sys.stdout.fileno() < 0:
             sys.stdout = open(os.devnull, "wb")
-        if sys.stderr.fileno() < 0:
+        if sys.stdout is not None and sys.stderr.fileno() < 0:
             sys.stderr = open(os.devnull, "wb")
 
 
@@ -145,7 +137,7 @@ def main(argv=None):
     # File handler should always be at least INFO level so we need
     # the application root level to be at least at INFO.
     root_level = min(levels[options.log_level], logging.INFO)
-    rootlogger = logging.getLogger(canvas.__name__)
+    rootlogger = logging.getLogger(orangecanvas.__name__)
     rootlogger.setLevel(root_level)
 
     # Standard output stream handler at the requested level
@@ -153,7 +145,8 @@ def main(argv=None):
     stream_hander.setLevel(level=levels[options.log_level])
     rootlogger.addHandler(stream_hander)
 
-    log.info("Starting 'Orange Canvas' application.")
+    config.set_default(conf.oasysconf)
+    log.info("Starting 'OASYS' application.")
 
     qt_argv = argv[:1]
 
@@ -171,7 +164,6 @@ def main(argv=None):
 
     log.debug("Starting CanvasApplicaiton with argv = %r.", qt_argv)
     app = CanvasApplication(qt_argv)
-    fix_osx_spacing(app)
 
     # NOTE: config.init() must be called after the QApplication constructor
     config.init()
@@ -212,7 +204,7 @@ def main(argv=None):
                 # no extension
                 stylesheet = os.path.extsep.join([stylesheet, "qss"])
 
-            pkg_name = canvas.__name__
+            pkg_name = orangecanvas.__name__
             resource = "styles/" + stylesheet
 
             if pkg_resources.resource_exists(pkg_name, resource):
@@ -239,7 +231,7 @@ def main(argv=None):
                 log.info("%r style sheet not found.", stylesheet)
 
     # Add the default canvas_icons search path
-    dirpath = os.path.abspath(os.path.dirname(canvas.__file__))
+    dirpath = os.path.abspath(os.path.dirname(orangecanvas.__file__))
     QDir.addSearchPath("canvas_icons", os.path.join(dirpath, "icons"))
 
     canvas_window = CanvasMainWindow()
@@ -253,16 +245,11 @@ def main(argv=None):
     else:
         reg_cache = None
 
-    widget_discovery = qt.QtWidgetDiscovery(menu_registry=MenuRegistry(), cached_descriptions=reg_cache)
-
     widget_registry = qt.QtWidgetRegistry()
 
-    widget_discovery.found_category.connect(
-        widget_registry.register_category
-    )
-    widget_discovery.found_widget.connect(
-        widget_registry.register_widget
-    )
+    widget_discovery = config.widget_discovery(
+        widget_registry, cached_descriptions=reg_cache)
+    menu_registry = conf.menu_registry()
 
     want_splash = \
         settings.value("startup/show-splash-screen", True, type=bool) and \
@@ -277,27 +264,31 @@ def main(argv=None):
         def show_message(message):
             splash_screen.showMessage(message, color=color)
 
-        widget_discovery.discovery_start.connect(splash_screen.show)
-        widget_discovery.discovery_process.connect(show_message)
-        widget_discovery.discovery_finished.connect(splash_screen.hide)
+        widget_registry.category_added.connect(show_message)
 
     log.info("Running widget discovery process.")
 
-    cache_filename = os.path.join(cache_dir(), "widget-registry.pck")
+    cache_filename = os.path.join(config.cache_dir(), "widget-registry.pck")
     if options.no_discovery:
         widget_registry = pickle.load(open(cache_filename, "rb"))
         widget_registry = qt.QtWidgetRegistry(widget_registry)
     else:
+        if want_splash:
+            splash_screen.show()
         widget_discovery.run(config.widgets_entry_points())
+        if want_splash:
+            splash_screen.hide()
+            splash_screen.deleteLater()
+
         # Store cached descriptions
         cache.save_registry_cache(widget_discovery.cached_descriptions)
-        pickle.dump(WidgetRegistry(widget_registry),
-                     open(cache_filename, "wb"))
+        with open(cache_filename, "wb") as f:
+            pickle.dump(WidgetRegistry(widget_registry), f)
 
     set_global_registry(widget_registry)
 
     canvas_window.set_widget_registry(widget_registry)
-    canvas_window.set_menu_registry(widget_discovery.menu_registry)
+    canvas_window.set_menu_registry(menu_registry)
     canvas_window.show()
     canvas_window.raise_()
 
@@ -344,8 +335,9 @@ def main(argv=None):
     if stdout_redirect:
         stdout = TextStream()
         stdout.stream.connect(output_view.write)
-        # also connect to original fd
-        stdout.stream.connect(sys.stdout.write)
+        if sys.stdout is not None:
+            # also connect to original fd
+            stdout.stream.connect(sys.stdout.write)
     else:
         stdout = sys.stdout
 
@@ -353,8 +345,9 @@ def main(argv=None):
         error_writer = output_view.formated(color=Qt.red)
         stderr = TextStream()
         stderr.stream.connect(error_writer.write)
-        # also connect to original fd
-        stderr.stream.connect(sys.stderr.write)
+        if sys.stderr is not None:
+            # also connect to original fd
+            stderr.stream.connect(sys.stderr.write)
     else:
         stderr = sys.stderr
 
