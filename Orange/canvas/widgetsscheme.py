@@ -33,7 +33,7 @@ from PyQt4.QtCore import pyqtSignal as Signal, pyqtProperty as Property
 
 from OrangeCanvas.scheme.signalmanager import \
     SignalManager, compress_signals, can_enable_dynamic
-from OrangeCanvas.scheme import Scheme, SchemeNode, SchemeLink, events, errors
+from OrangeCanvas.scheme import Scheme, SchemeNode, SchemeLink, events, errors, readwrite
 from OrangeCanvas.scheme.node import UserMessage
 from OrangeCanvas.scheme.link import compatible_channels
 from OrangeCanvas.utils import name_lookup, check_type
@@ -210,6 +210,28 @@ class WidgetsScheme(Scheme):
                 changed = True
         log.debug("Scheme node properties sync (changed: %s)", changed)
         return changed
+
+    def save_to(self, stream, pretty=True, pickle_fallback=False):
+        """
+        Reimplemented from Scheme.save_to.
+        """
+        if isinstance(stream, str):
+            stream = open(stream, "wb")
+
+        self.sync_node_properties()
+
+        tree = readwrite.scheme_to_etree(self, pickle_fallback=pickle_fallback)
+        root = tree.getroot()
+        root.set("working_directory", self.working_directory or "")
+
+        if pretty:
+            readwrite.indent(tree.getroot(), 0)
+
+        if sys.version_info < (2, 7):
+            # in Python 2.6 the write does not have xml_declaration parameter.
+            tree.write(stream, encoding="utf-8")
+        else:
+            tree.write(stream, encoding="utf-8", xml_declaration=True)
 
 
 class WidgetManager(QObject):
