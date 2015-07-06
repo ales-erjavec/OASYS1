@@ -21,7 +21,6 @@ from PyQt4.QtCore import Qt, QDir
 
 import OrangeCanvas as orangecanvas
 from OrangeCanvas.application.application import CanvasApplication
-from OrangeCanvas.application.canvasmain import CanvasMainWindow
 from OrangeCanvas.application.outputview import TextStream, ExceptHook
 
 from OrangeCanvas.gui.splashscreen import SplashScreen
@@ -32,6 +31,7 @@ from OrangeCanvas import config
 from OrangeCanvas.registry import cache, qt
 from OrangeCanvas.registry import WidgetRegistry, set_global_registry
 
+from Orange.canvas.mainwindow import OASYSMainWindow
 from . import conf
 
 log = logging.getLogger(__name__)
@@ -234,7 +234,7 @@ def main(argv=None):
     dirpath = os.path.abspath(os.path.dirname(orangecanvas.__file__))
     QDir.addSearchPath("canvas_icons", os.path.join(dirpath, "icons"))
 
-    canvas_window = CanvasMainWindow()
+    canvas_window = OASYSMainWindow()
     canvas_window.setWindowIcon(config.application_icon())
 
     if stylesheet_string is not None:
