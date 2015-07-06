@@ -3,16 +3,70 @@ import io
 import logging
 from xml.etree import ElementTree
 
-from PyQt4.QtGui import QMenu, QAction, QMessageBox, QFileDialog
-from PyQt4.QtCore import QSettings
+from PyQt4.QtGui import (
+    QWidget, QMenu, QAction, QKeySequence, QDialog, QMessageBox, QFileDialog,
+    QHBoxLayout, QLineEdit, QPushButton
+)
+from PyQt4.QtCore import Qt, QSettings
 
 from OrangeCanvas.scheme import readwrite
-from OrangeCanvas.application import canvasmain
+from OrangeCanvas.document import commands
+from OrangeCanvas.application import canvasmain, welcomedialog, schemeinfo
 from OrangeCanvas.gui.utils import (
     message_critical, message_warning, message_question, message_information
 )
 
 from . import widgetsscheme
+
+
+class OASYSSchemeInfoDialog(schemeinfo.SchemeInfoDialog):
+    def __init__(self, parent=None, **kwargs):
+        super().__init__(parent, **kwargs)
+        # Insert a 'Working Directory' row in the editor form.
+        layout = self.editor.layout()
+
+        self.working_dir_edit = QWidget(self)
+        self.working_dir_edit.setLayout(QHBoxLayout())
+        self.working_dir_edit.layout().setContentsMargins(0, 0, 0, 0)
+
+        settings = QSettings()
+        self.working_dir_line = QLineEdit(self)
+        self.working_dir_line.setReadOnly(True)
+
+        cur_wd = (settings.value("output/default-working-directory",
+                                 "", type=str) or
+                  os.path.expanduser("~/Oasys"))
+
+        self.working_dir_line.setText(cur_wd)
+        pb = QPushButton("Change ...")
+        pb.clicked.connect(self.__change_working_directory)
+
+        self.working_dir_edit.layout().addWidget(self.working_dir_line)
+        self.working_dir_edit.layout().addWidget(pb)
+
+        layout.insertRow(
+            2, self.tr("Working directory"), self.working_dir_edit)
+
+    def setScheme(self, scheme):
+        super().setScheme(scheme)
+        self.working_dir_line.setText(scheme.working_directory)
+
+    def __change_working_directory(self):
+        cur_wd = self.working_dir_line.text()
+        new_wd = QFileDialog.getExistingDirectory(
+            self, self.tr("Set working directory"), cur_wd,
+        )
+        if new_wd:
+            self.working_dir_line.setText(new_wd)
+
+    def title(self):
+        self.editor.title()
+
+    def description(self):
+        self.editor.description()
+
+    def workingDirectory(self):
+        return self.working_dir_line.text()
 
 
 class OASYSMainWindow(canvasmain.CanvasMainWindow):
@@ -62,11 +116,15 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
             else:
                 log.info("Replacement of not existing Working Directory "
                          "'%s' aborted by user", workdir)
-                message_information
+                message_information(
+                    "Working directory not set by user:\n\n"
+                    "project load aborted",
+                    parent=self)
                 return None
         else:
             ret = message_question(
                 "Working directory set to:\n\n" + workdir,
+                "Working Directory",
                 informative_text="Do you want to change it?",
                 buttons=QMessageBox.Yes | QMessageBox.No,
                 default_button=QMessageBox.No,
@@ -85,7 +143,8 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                              "'%s' aborted by user.", workdir)
                     message_information(
                         "Working directory not set by user:\n\n"
-                        "project load aborted")
+                        "project load aborted",
+                        parent=self)
                     return None
 
         # now start the actual load with a valid working directory
@@ -117,9 +176,125 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                      "of the widgets/links in the "
                      "workflow."
                 ),
-                details="\n".join(map(repr, errors))
+                details="\n".join(map(repr, errors)),
+                parent=self
             )
         return new_scheme
+
+    def welcome_dialog(self):
+        """
+        Show a modal welcome dialog for OASYS.
+
+        Reimplemented from `CanvasMainWindow`.
+        """
+
+        dialog = welcomedialog.WelcomeDialog(self)
+        dialog.setWindowTitle(self.tr("Welcome to OASYS"))
+
+        def new_scheme():
+            if self.new_scheme() == QDialog.Accepted:
+                dialog.accept()
+
+        def open_scheme():
+            if self.open_scheme() == QDialog.Accepted:
+                dialog.accept()
+
+        def open_recent():
+            if self.recent_scheme() == QDialog.Accepted:
+                dialog.accept()
+
+        def tutorial():
+            if self.tutorial_scheme() == QDialog.Accepted:
+                dialog.accept()
+
+        new_action = \
+            QAction(self.tr("New"), dialog,
+                    toolTip=self.tr("Open a new workflow."),
+                    triggered=new_scheme,
+                    shortcut=QKeySequence.New,
+                    icon=canvasmain.canvas_icons("New.svg")
+                    )
+
+        open_action = \
+            QAction(self.tr("Open"), dialog,
+                    objectName="welcome-action-open",
+                    toolTip=self.tr("Open a workflow."),
+                    triggered=open_scheme,
+                    shortcut=QKeySequence.Open,
+                    icon=canvasmain.canvas_icons("Open.svg")
+                    )
+
+        recent_action = \
+            QAction(self.tr("Recent"), dialog,
+                    objectName="welcome-recent-action",
+                    toolTip=self.tr("Browse and open a recent workflow."),
+                    triggered=open_recent,
+                    shortcut=QKeySequence(Qt.ControlModifier | \
+                                          (Qt.ShiftModifier | Qt.Key_R)),
+                    icon=canvasmain.canvas_icons("Recent.svg")
+                    )
+
+        tutorials_action = \
+            QAction(self.tr("Tutorial"), dialog,
+                    objectName="welcome-tutorial-action",
+                    toolTip=self.tr("Browse tutorial workflows."),
+                    triggered=tutorial,
+                    icon=canvasmain.canvas_icons("Tutorials.svg")
+                    )
+
+        bottom_row = [self.get_started_action, tutorials_action,
+                      self.documentation_action]
+
+        self.new_action.triggered.connect(dialog.accept)
+        top_row = [new_action, open_action, recent_action]
+
+        dialog.addRow(top_row, background="light-grass")
+        dialog.addRow(bottom_row, background="light-orange")
+
+        # Find and hide the welcome dialogs bottom bar. It contains the
+        # Show at startup" check box and we ALWAYS want the Welcome Dialog
+        # to show.
+        bottombar = dialog.findChild(QWidget, name='bottom-bar')
+        if bottombar is not None:
+            bottombar.hide()
+        status = dialog.exec_()
+
+        dialog.deleteLater()
+
+        return status
+
+    def scheme_properties_dialog(self):
+        """Return an empty `SchemeInfo` dialog instance.
+        """
+        dialog = OASYSSchemeInfoDialog(self)
+
+        dialog.setWindowTitle(self.tr("Workflow Info"))
+        dialog.setFixedSize(725, 450)
+        return dialog
+
+    def show_scheme_properties(self):
+        """Show current scheme properties.
+        """
+        current_doc = self.current_document()
+        scheme = current_doc.scheme()
+        dlg = self.scheme_properties_dialog()
+        dlg.setAutoCommit(False)
+        dlg.setScheme(scheme)
+        status = dlg.exec_()
+
+        if status == QDialog.Accepted:
+            stack = current_doc.undoStack()
+            scheme = current_doc.scheme()
+            stack.beginMacro(self.tr("Change Info"))
+            current_doc.setTitle(dlg.title())
+            current_doc.setDescription(dlg.description())
+            stack.push(
+                commands.SetAttrCommand(
+                    scheme, "working_directory", dlg.working_directory)
+            )
+            stack.endMacro()
+
+        return status
 
     def set_menu_registry(self, menu_registry):
         self.menu_registry = menu_registry
