@@ -5,18 +5,56 @@ from xml.etree import ElementTree
 
 from PyQt4.QtGui import (
     QWidget, QMenu, QAction, QKeySequence, QDialog, QMessageBox, QFileDialog,
-    QHBoxLayout, QLineEdit, QPushButton
+    QHBoxLayout, QLineEdit, QPushButton, QCheckBox, QVBoxLayout, QLabel
 )
 from PyQt4.QtCore import Qt, QSettings
 
 from OrangeCanvas.scheme import readwrite
 from OrangeCanvas.document import commands
-from OrangeCanvas.application import canvasmain, welcomedialog, schemeinfo
+from OrangeCanvas.application import (
+    canvasmain, welcomedialog, schemeinfo, settings
+)
 from OrangeCanvas.gui.utils import (
     message_critical, message_warning, message_question, message_information
 )
 
 from . import widgetsscheme
+
+
+class OASYSUserSettings(settings.UserSettingsDialog):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # find an hide the "Show welcome screen" check box
+        showwelcome = self.findChild(QCheckBox, name="show-welcome-screen")
+        if showwelcome is not None:
+            showwelcome.hide()
+
+        outputtab = self.widget(1)
+
+        box = QWidget(self, objectName="working-directory-container")
+        layout = QVBoxLayout()
+        self.default_wd_label = QLabel(
+            QSettings().value("output/default-working-directory",
+                              "", type=str))
+        pb = QPushButton("Change ...")
+        pb.clicked.connect(self.change_working_directory)
+
+        layout.addWidget(self.default_wd_label)
+        layout.addWidget(pb)
+        box.setLayout(layout)
+        outputtab.layout().insertRow(
+            0, self.tr("Default working directory"), box)
+
+    def change_working_directory(self):
+        cur_wd = QSettings().value("output/default-working-directory",
+                                   os.path.expanduser("~/Oasys"), type=str)
+        new_wd = QFileDialog.getExistingDirectory(
+            self, "Set working directory", cur_wd
+        )
+        if new_wd:
+            QSettings().setValue("output/default-working-directory", new_wd)
+            self.default_wd_label.setText(new_wd)
 
 
 class OASYSSchemeInfoDialog(schemeinfo.SchemeInfoDialog):
@@ -290,11 +328,18 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
             current_doc.setDescription(dlg.description())
             stack.push(
                 commands.SetAttrCommand(
-                    scheme, "working_directory", dlg.working_directory)
+                    scheme, "working_directory", dlg.workingDirectory())
             )
             stack.endMacro()
 
         return status
+
+    def open_canvas_settings(self):
+        dlg = OASYSUserSettings(self)
+        dlg.setWindowTitle(self.tr("Preferences"))
+        if dlg.exec_() == 0:
+            # AAAAAAAAAAAAA!
+            self._CanvasMainWindow__update_from_settings()
 
     def set_menu_registry(self, menu_registry):
         self.menu_registry = menu_registry

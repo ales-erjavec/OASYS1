@@ -18,6 +18,12 @@ ADDON_PYPI_SEARCH_SPEC = {"keywords": "oasys"}
 #: Entry points by which add-ons register with pkg_resources.
 ADDONS_ENTRY = "orangecontrib"
 
+# Add a default for our extra default-working-dir setting.
+config.spec += [
+    config.config_slot("output/default-working-dir", str, "",
+                       "Default working directory")
+]
+
 
 class oasysconf(config.default):
     OrganizationDomain = ""
