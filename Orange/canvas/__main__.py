@@ -111,7 +111,7 @@ def main(argv=None):
                       help="Do not redirect stdout/err to canvas output view.")
     parser.add_option("--style",
                       help="QStyle to use",
-                      type="str", default=None)
+                      type="str", default="plastique")
     parser.add_option("--stylesheet",
                       help="Application level CSS style sheet to use",
                       type="str", default="orange.qss")
@@ -150,8 +150,8 @@ def main(argv=None):
 
     qt_argv = argv[:1]
 
-    if options.style is not None:
-        qt_argv += ["-style", options.style]
+#     if options.style is not None:
+    qt_argv += ["-style", options.style]
 
     if options.qt is not None:
         qt_argv += shlex.split(options.qt)
