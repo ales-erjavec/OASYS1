@@ -3,6 +3,8 @@ import logging
 
 import pkg_resources
 
+from PyQt4.QtGui import QPixmap, QFont, QFontMetrics, QColor, QPainter
+from PyQt4.QtCore import Qt, QCoreApplication, QPoint, QRect
 from OrangeCanvas import config
 
 from . import discovery, widgetsscheme
@@ -21,6 +23,32 @@ class oasysconf(config.default):
     OrganizationDomain = ""
     ApplicationName = "OASYS"
     ApplicationVersion = "1.0"
+
+    @staticmethod
+    def splash_screen():
+        path = pkg_resources.resource_filename(
+            __name__, "icons/orange-splash-screen.png")
+        pm = QPixmap(path)
+
+        version = QCoreApplication.applicationVersion()
+        size = 21 if len(version) < 5 else 16
+        font = QFont("Helvetica")
+        font.setPixelSize(size)
+        font.setBold(True)
+        font.setItalic(True)
+        font.setLetterSpacing(QFont.AbsoluteSpacing, 2)
+        metrics = QFontMetrics(font)
+        br = metrics.boundingRect(version).adjusted(-5, 0, 5, 0)
+        br.moveCenter(QPoint(436, 224))
+
+        p = QPainter(pm)
+        p.setRenderHint(QPainter.Antialiasing)
+        p.setRenderHint(QPainter.TextAntialiasing)
+        p.setFont(font)
+        p.setPen(QColor("#231F20"))
+        p.drawText(br, Qt.AlignCenter, version)
+        p.end()
+        return pm, QRect(88, 193, 200, 20)
 
     @staticmethod
     def widgets_entry_points():
