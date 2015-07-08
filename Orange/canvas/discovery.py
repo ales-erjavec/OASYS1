@@ -138,23 +138,20 @@ class WidgetDiscovery(discovery.WidgetDiscovery):
 
             try:
                 if isinstance(point, types.ModuleType):
-                    if "MENU" in point.__dict__:
-                        self.process_menu_package(point)
+                    if hasattr(point, "__path__"):
+                        # Entry point is a package (a widget category)
+                        self.process_category_package(
+                            point,
+                            name=entry_point.name,
+                            distribution=entry_point.dist
+                        )
                     else:
-                        if hasattr(point, "__path__"):
-                            # Entry point is a package (a widget category)
-                            self.process_category_package(
-                                point,
-                                name=entry_point.name,
-                                distribution=entry_point.dist
-                            )
-                        else:
-                            # Entry point is a module (a single widget)
-                            self.process_widget_module(
-                                point,
-                                name=entry_point.name,
-                                distribution=entry_point.dist
-                            )
+                        # Entry point is a module (a single widget)
+                        self.process_widget_module(
+                            point,
+                            name=entry_point.name,
+                            distribution=entry_point.dist
+                        )
                 elif isinstance(point, (types.FunctionType, types.MethodType)):
                     # Entry point is a callable loader function
                     self.process_loader(point)
@@ -166,29 +163,6 @@ class WidgetDiscovery(discovery.WidgetDiscovery):
             except Exception:
                 log.error("An exception occurred while processing %r.",
                           entry_point, exc_info=True)
-
-    def process_menu_package(self, package):
-
-        package = discovery.asmodule(package)
-
-        for path in package.__path__:
-            for _, mod_name, ispkg in pkgutil.iter_modules([path]):
-                if ispkg:
-                    continue
-
-                name = package.__name__ + "." + mod_name
-                menu_module = discovery.asmodule(name)
-
-                if self.menu_registry:
-                    for name, menu_class in inspect.getmembers(menu_module):
-                        if inspect.isclass(menu_class):
-                            if issubclass(menu_class, OMenu) and not name=="OMenu":
-                                try:
-                                    self.menu_registry.addMenu(menu_class())
-                                except Exception as e:
-                                    print("Error creating menu instance from " + str(menu_class))
-                                    print(e)
-                                    continue
 
     def widget_description(self, module, widget_name=None, category_name=None,
                            distribution=None):
@@ -224,6 +198,7 @@ def omenus_from_package(package):
             try:
                 menu_module = discovery.asmodule(name)
             except ImportError:
+                log.error("Error importing '%s'", name, exc_info=True)
                 return
 
             for name, menu_class in inspect.getmembers(menu_module):
@@ -231,6 +206,6 @@ def omenus_from_package(package):
                         issubclass(menu_class, OMenu) and not name == "OMenu":
                     try:
                         yield menu_class()
-                    except Exception as e:
-                        print("Error creating menu instance from " + str(menu_class))
-                        print(e)
+                    except Exception:
+                        log.error("Error creating menu instance from '%s'",
+                                  menu_class, exc_info=True)
