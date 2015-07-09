@@ -89,11 +89,12 @@ The following variables are exposed as top level module members
 """
 
 
-from .. import config
 import os, sys
 import configparser
 import pkg_resources
 from pkg_resources import working_set
+
+from orangecanvas import config
 
 import Orange
 
