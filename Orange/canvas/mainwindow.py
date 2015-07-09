@@ -5,7 +5,8 @@ from xml.etree import ElementTree
 
 from PyQt4.QtGui import (
     QWidget, QMenu, QAction, QKeySequence, QDialog, QMessageBox, QFileDialog,
-    QHBoxLayout, QLineEdit, QPushButton, QCheckBox, QVBoxLayout, QLabel
+    QHBoxLayout, QLineEdit, QPushButton, QCheckBox, QVBoxLayout, QLabel,
+    QFormLayout
 )
 from PyQt4.QtCore import Qt, QSettings
 
@@ -84,6 +85,12 @@ class OASYSSchemeInfoDialog(schemeinfo.SchemeInfoDialog):
 
         layout.insertRow(
             2, self.tr("Working directory"), self.working_dir_edit)
+
+        # Fix the widget tab order.
+        item = layout.itemAt(1, QFormLayout.FieldRole)
+        if item.widget() is not None:
+            QWidget.setTabOrder(item.widget(), self.working_dir_line)
+            QWidget.setTabOrder(self.working_dir_line, pb)
 
     def setScheme(self, scheme):
         super().setScheme(scheme)
