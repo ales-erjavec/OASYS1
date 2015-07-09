@@ -58,9 +58,7 @@ class oasysconf(config.default):
 
     @staticmethod
     def widgets_entry_points():
-        ep_menu_iter = pkg_resources.iter_entry_points(MENU_ENTRY)
-        ep_iter = pkg_resources.iter_entry_points(WIDGETS_ENTRY)
-        return itertools.chain(ep_menu_iter, ep_iter)
+        return pkg_resources.iter_entry_points(WIDGETS_ENTRY)
 
     @staticmethod
     def addon_entry_points():
