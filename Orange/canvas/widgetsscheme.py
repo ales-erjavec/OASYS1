@@ -60,6 +60,7 @@ class WidgetsScheme(Scheme):
                  working_directory=None):
 
         Scheme.__init__(self, parent, title, description)
+        self.set_loop_flags(Scheme.AllowLoops)
         settings = QSettings()
 
         self.__working_directory = (
@@ -73,97 +74,6 @@ class WidgetsScheme(Scheme):
         self.signal_manager = WidgetsSignalManager(self)
         self.widget_manager = WidgetManager()
         self.widget_manager.set_scheme(self)
-
-    def check_connect(self, link):
-        """
-        Reimplemented to allow cycles.
-
-        Check if the `link` can be added to the scheme and raise an
-        appropriate exception.
-
-        Can raise:
-            - :class:`TypeError` if `link` is not an instance of
-              :class:`.SchemeLink`
-            - :class:`.IncompatibleChannelTypeError` if the channel types are
-              not compatible
-            - :class:`.SinkChannelError` if a sink channel has a `Single` flag
-              specification and the channel is already connected.
-            - :class:`.DuplicatedLinkError` if a `link` duplicates an already
-              present link.
-
-        """
-        check_type(link, SchemeLink)
-
-        if not self.compatible_channels(link):
-            raise errors.IncompatibleChannelTypeError(
-                    "Cannot connect %r to %r." \
-                    % (link.source_channel.type, link.sink_channel.type)
-                )
-
-        links = self.find_links(source_node=link.source_node,
-                                source_channel=link.source_channel,
-                                sink_node=link.sink_node,
-                                sink_channel=link.sink_channel)
-
-        if links:
-            raise errors.DuplicatedLinkError(
-                    "A link from %r (%r) -> %r (%r) already exists" \
-                    % (link.source_node.title, link.source_channel.name,
-                       link.sink_node.title, link.sink_channel.name)
-                )
-
-        if link.sink_channel.single:
-            links = self.find_links(sink_node=link.sink_node,
-                                    sink_channel=link.sink_channel)
-            if links:
-                raise errors.SinkChannelError(
-                        "%r is already connected." % link.sink_channel.name
-                    )
-
-    def propose_links(self, source_node, sink_node):
-        """
-        Reimplemented to allow cycles.
-
-        Return a list of ordered (:class:`OutputSignal`,
-        :class:`InputSignal`, weight) tuples that could be added to
-        the scheme between `source_node` and `sink_node`.
-
-        .. note:: This can depend on the links already in the scheme.
-
-        """
-        if source_node is sink_node:
-            # Self connections are not possible.
-            return []
-
-        outputs = source_node.output_channels()
-        inputs = sink_node.input_channels()
-
-        # Get existing links to sink channels that are Single.
-        links = self.find_links(None, None, sink_node)
-        already_connected_sinks = [link.sink_channel for link in links \
-                                   if link.sink_channel.single]
-
-        def weight(out_c, in_c):
-            if out_c.explicit or in_c.explicit:
-                # Zero weight for explicit links
-                weight = 0
-            else:
-                check = [not out_c.dynamic,  # Dynamic signals are last
-                         in_c not in already_connected_sinks,
-                         bool(in_c.default),
-                         bool(out_c.default)
-                         ]
-                weights = [2 ** i for i in range(len(check), 0, -1)]
-                weight = sum([w for w, c in zip(weights, check) if c])
-            return weight
-
-        proposed_links = []
-        for out_c in outputs:
-            for in_c in inputs:
-                if compatible_channels(out_c, in_c):
-                    proposed_links.append((out_c, in_c, weight(out_c, in_c)))
-
-        return sorted(proposed_links, key=itemgetter(-1), reverse=True)
 
     def set_working_directory(self, working_directory):
         """
