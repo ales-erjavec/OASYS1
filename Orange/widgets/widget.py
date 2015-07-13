@@ -10,7 +10,7 @@ from PyQt4.QtGui import QDialog, QPixmap, QLabel, QVBoxLayout, QSizePolicy, \
                         qApp, QFrame, QStatusBar, QHBoxLayout, QIcon, QTabWidget, QScrollArea, QStyle,\
                         QApplication
 
-from OrangeCanvas.registry import description as widget_description
+from orangecanvas.registry import description as widget_description
 
 from Orange.canvas.utils import environ
 from Orange.widgets import settings, gui
@@ -28,7 +28,7 @@ class WidgetMetaClass(type(QDialog)):
 
     #noinspection PyMethodParameters
     def __new__(mcs, name, bases, dict):
-        from OrangeCanvas.registry.description import (
+        from orangecanvas.registry.description import (
             input_channel_from_args, output_channel_from_args)
 
         cls = type.__new__(mcs, name, bases, dict)

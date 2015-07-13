@@ -19,17 +19,17 @@ import pkg_resources
 from PyQt4.QtGui import QFont, QColor
 from PyQt4.QtCore import Qt, QDir
 
-import OrangeCanvas as orangecanvas
-from OrangeCanvas.application.application import CanvasApplication
-from OrangeCanvas.application.outputview import TextStream, ExceptHook
+import orangecanvas
+from orangecanvas.application.application import CanvasApplication
+from orangecanvas.application.outputview import TextStream, ExceptHook
 
-from OrangeCanvas.gui.splashscreen import SplashScreen
-from OrangeCanvas.utils.redirect import redirect_stdout, redirect_stderr
-from OrangeCanvas.utils.qtcompat import QSettings
-from OrangeCanvas import config
+from orangecanvas.gui.splashscreen import SplashScreen
+from orangecanvas.utils.redirect import redirect_stdout, redirect_stderr
+from orangecanvas.utils.qtcompat import QSettings
+from orangecanvas import config
 
-from OrangeCanvas.registry import cache, qt
-from OrangeCanvas.registry import WidgetRegistry, set_global_registry
+from orangecanvas.registry import cache, qt
+from orangecanvas.registry import WidgetRegistry, set_global_registry
 
 from Orange.canvas.mainwindow import OASYSMainWindow
 from . import conf

@@ -10,12 +10,12 @@ from PyQt4.QtGui import (
 )
 from PyQt4.QtCore import Qt, QSettings
 
-from OrangeCanvas.scheme import readwrite
-from OrangeCanvas.document import commands
-from OrangeCanvas.application import (
+from orangecanvas.scheme import readwrite
+from orangecanvas.document import commands
+from orangecanvas.application import (
     canvasmain, welcomedialog, schemeinfo, settings
 )
-from OrangeCanvas.gui.utils import (
+from orangecanvas.gui.utils import (
     message_critical, message_warning, message_question, message_information
 )
 

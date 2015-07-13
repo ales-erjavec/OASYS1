@@ -31,13 +31,13 @@ from PyQt4.QtGui import (
 from PyQt4.QtCore import Qt, QObject, QCoreApplication, QTimer, QEvent, QSettings
 from PyQt4.QtCore import pyqtSignal as Signal, pyqtProperty as Property
 
-from OrangeCanvas.scheme.signalmanager import \
+from orangecanvas.scheme.signalmanager import \
     SignalManager, compress_signals, can_enable_dynamic
-from OrangeCanvas.scheme import Scheme, SchemeNode, SchemeLink, events, errors, readwrite
-from OrangeCanvas.scheme.node import UserMessage
-from OrangeCanvas.scheme.link import compatible_channels
-from OrangeCanvas.utils import name_lookup, check_type
-from OrangeCanvas.resources import icon_loader
+from orangecanvas.scheme import Scheme, SchemeNode, SchemeLink, events, errors, readwrite
+from orangecanvas.scheme.node import UserMessage
+from orangecanvas.scheme.link import compatible_channels
+from orangecanvas.utils import name_lookup, check_type
+from orangecanvas.resources import icon_loader
 
 log = logging.getLogger(__name__)
 

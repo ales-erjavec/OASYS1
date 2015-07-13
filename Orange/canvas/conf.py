@@ -5,7 +5,7 @@ import pkg_resources
 
 from PyQt4.QtGui import QPixmap, QFont, QFontMetrics, QColor, QPainter
 from PyQt4.QtCore import Qt, QCoreApplication, QPoint, QRect
-from OrangeCanvas import config
+from orangecanvas import config
 
 from . import discovery, widgetsscheme
 

@@ -5,8 +5,8 @@ import logging
 
 import pkg_resources
 
-from OrangeCanvas.registry import WidgetDescription
-from OrangeCanvas.registry import discovery
+from orangecanvas.registry import WidgetDescription
+from orangecanvas.registry import discovery
 
 from Orange.widgets.widget import WidgetMetaClass
 from Orange.menus.menu import OMenu
