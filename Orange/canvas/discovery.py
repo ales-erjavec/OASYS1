@@ -8,7 +8,6 @@ import pkg_resources
 from orangecanvas.registry import WidgetDescription
 from orangecanvas.registry import discovery
 
-from Orange.widgets.widget import WidgetMetaClass
 from Orange.menus.menu import OMenu
 
 log = logging.getLogger(__name__)
@@ -42,6 +41,8 @@ def widget_desc_from_module(module):
         as a string (qualified import name).
 
     """
+    from Orange.widgets.widget import WidgetMetaClass
+
     if isinstance(module, str):
         module = __import__(module, fromlist=[""])
 
