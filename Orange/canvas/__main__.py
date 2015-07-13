@@ -136,14 +136,18 @@ def main(argv=None):
 
     # File handler should always be at least INFO level so we need
     # the application root level to be at least at INFO.
+
     root_level = min(levels[options.log_level], logging.INFO)
     rootlogger = logging.getLogger(orangecanvas.__name__)
     rootlogger.setLevel(root_level)
+    oasyslogger = logging.getLogger("Orange")
+    oasyslogger.setLevel(root_level)
 
     # Standard output stream handler at the requested level
-    stream_hander = logging.StreamHandler()
-    stream_hander.setLevel(level=levels[options.log_level])
-    rootlogger.addHandler(stream_hander)
+    stream_handler = logging.StreamHandler()
+    stream_handler.setLevel(level=levels[options.log_level])
+    rootlogger.addHandler(stream_handler)
+    oasyslogger.addHandler(stream_handler)
 
     config.set_default(conf.oasysconf)
     log.info("Starting 'OASYS' application.")
