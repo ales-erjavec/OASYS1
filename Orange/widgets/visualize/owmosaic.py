@@ -15,14 +15,13 @@ from PyQt4.QtGui import (QGraphicsRectItem, QGraphicsView, QColor,
 
 from Orange.widgets.settings import (Setting, DomainContextHandler,
                                      ContextSetting)
-from Orange.canvas.utils import environ
 from Orange.classification import Fitter
 from Orange.data import Table, Variable, filter, DiscreteVariable, ContinuousVariable
 from Orange.data.discretization import DiscretizeTable
 from Orange.data.sql.table import SqlTable, LARGE_TABLE, DEFAULT_SAMPLE_TIME
 from Orange.feature.discretization import EqualFreq
 from Orange.statistics.distribution import get_distribution
-from Orange.widgets import gui
+from Orange.widgets import gui, environ
 from Orange.widgets.settings import DomainContextHandler
 from Orange.widgets.utils import getHtmlCompatibleString
 from Orange.widgets.utils.colorpalette import ColorPaletteDlg, DefaultRGBColors

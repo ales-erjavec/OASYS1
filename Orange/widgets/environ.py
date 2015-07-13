@@ -106,9 +106,7 @@ def _get_default_env():
     version_display = "Orange %s" % version
     orange_no_deprecated_members = "False"
 
-    install_dir = os.path.dirname(os.path.abspath(__file__)) # Orange/canvas/utils
-    install_dir = os.path.dirname(install_dir)  # Orange/canvas
-    install_dir = os.path.dirname(install_dir)  # Orange/
+    install_dir = os.path.dirname(os.path.abspath(Orange.__file__))
 
     doc_install_dir = os.path.join(install_dir, "doc")
     dataset_install_dir = os.path.join(install_dir, "doc", "datasets")
@@ -143,10 +141,9 @@ def _get_default_env():
     buffer_dir = config.cache_dir()
 
     shadow_working_directory="/Users/labx/Desktop/Orange3_Test/Shadow"
-
     return locals()
 
-_ALL_ENV_OPTIONS = ["version", "version_display", "is_canvas_installed",
+_ALL_ENV_OPTIONS = ["version", "version_display",
                     "orange_no_deprecated_members"]
 
 _ALL_DIR_OPTIONS = ["install_dir", "canvas_install_dir",
@@ -209,15 +206,10 @@ parser = _configure_env()
 for dirname in _ALL_DIR_OPTIONS:
     globals()[dirname] = get_platform_option("directories", dirname)
 
-
-if not os.path.isdir(widget_install_dir) or not os.path.isdir(widget_install_dir):
+if not os.path.isdir(widget_install_dir):
     # Canvas and widgets are not installed
     canvas_install_dir = None
     widget_install_dir = None
-    widget_settings_dir = None
-    is_canvas_installed = False
-else:
-    is_canvas_installed = True
 
 if not os.path.isdir(icons_install_dir):
     icons_install_dir = ""

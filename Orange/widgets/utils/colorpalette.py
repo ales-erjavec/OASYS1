@@ -7,8 +7,7 @@ from PyQt4 import QtCore
 from PyQt4.QtGui import *
 from PyQt4.QtCore import Qt, QSize
 
-from Orange.canvas.utils import environ
-from Orange.widgets import gui
+from Orange.widgets import gui, environ
 from Orange.widgets.utils import colorbrewer
 
 DefaultRGBColors = [

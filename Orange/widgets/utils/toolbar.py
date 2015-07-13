@@ -3,7 +3,7 @@ import os.path
 from PyQt4.QtCore import SIGNAL, Qt
 from PyQt4.QtGui import QToolButton, QGroupBox, QIcon, QHBoxLayout
 
-from Orange.canvas.utils import environ
+from Orange.widgets import environ
 from Orange.widgets.settings import Setting
 
 SPACE = 0

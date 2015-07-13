@@ -2,8 +2,7 @@ import os
 
 from PyQt4.QtGui import QListWidget, QIcon, QSizePolicy
 
-from Orange.canvas.utils import environ
-from Orange.widgets import gui
+from Orange.widgets import gui, environ
 from Orange.widgets.settings import ContextSetting
 from Orange.widgets.widget import OWWidget
 from Orange.widgets.utils import vartype
