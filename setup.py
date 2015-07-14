@@ -5,24 +5,23 @@ import os
 import sys
 import subprocess
 
-NAME = 'Orange'
+NAME = 'OASYS'
 
 VERSION = '1.0'
 ISRELEASED = False
 
-DESCRIPTION = 'Shadow, Ray-tracing simulation software'
+DESCRIPTION = 'OrAnge SYnchrotron Suite'
 README_FILE = os.path.join(os.path.dirname(__file__), 'README.txt')
 LONG_DESCRIPTION = open(README_FILE).read()
 AUTHOR = 'Luca Rebuffi, Manuel Sanchez del Rio and Bioinformatics Laboratory, FRI UL'
 AUTHOR_EMAIL = 'luca.rebuffi@elettra.eu'
-URL = 'http://orange.biolab.si/'
-DOWNLOAD_URL = 'https://bitbucket.org/biolab/orange/downloads'
+URL = 'https://github.com/lucarebuffi/OASYS1'
+DOWNLOAD_URL = 'https://github.com/lucarebuffi/OASYS1'
 LICENSE = 'GPLv3'
 
 KEYWORDS = (
-    'data mining',
-    'machine learning',
-    'artificial intelligence',
+    'ray tracing',
+    'simulation',
 )
 
 CLASSIFIERS = (
@@ -30,13 +29,11 @@ CLASSIFIERS = (
     'Environment :: X11 Applications :: Qt',
     'Environment :: Console',
     'Environment :: Plugins',
-    'Programming Language :: Python',
-    'Framework :: Orange',
+    'Programming Language :: Python 3',
     'License :: OSI Approved :: '
     'GNU General Public License v3 or later (GPLv3+)',
     'Operating System :: POSIX',
     'Operating System :: Microsoft :: Windows',
-    'Topic :: Scientific/Engineering :: Artificial Intelligence',
     'Topic :: Scientific/Engineering :: Visualization',
     'Topic :: Software Development :: Libraries :: Python Modules',
     'Intended Audience :: Education',
@@ -56,6 +53,10 @@ INSTALL_REQUIRES = (
 if sys.version_info < (3, 4):
     INSTALL_REQUIRES = INSTALL_REQUIRES + ("singledispatch",)
 
+SETUP_REQUIRES = (
+    'setuptools',
+)
+
 if len({'develop', 'release', 'bdist_egg', 'bdist_rpm', 'bdist_wininst',
         'install_egg_info', 'build_sphinx', 'egg_info', 'easy_install',
         'upload', 'test'}.intersection(sys.argv)) > 0:
@@ -63,8 +64,8 @@ if len({'develop', 'release', 'bdist_egg', 'bdist_rpm', 'bdist_wininst',
     extra_setuptools_args = dict(
         zip_safe=False,  # the package can run out of an .egg file
         include_package_data=True,
-        test_suite='Orange.tests.test_suite',
-        install_requires=INSTALL_REQUIRES
+        install_requires=INSTALL_REQUIRES,
+        setup_requires=SETUP_REQUIRES,
     )
 else:
     extra_setuptools_args = dict()
@@ -124,7 +125,7 @@ if not release:
         GIT_REVISION = "Unknown"
 
     if not ISRELEASED:
-        FULLVERSION += '.dev-' + GIT_REVISION[:7]
+        FULLVERSION += '.dev0+' + GIT_REVISION[:7]
 
     a = open(filename, 'w')
     try:
@@ -161,18 +162,7 @@ def configuration(parent_package='', top_path=None):
 PACKAGES = [
     "Orange",
     "Orange.canvas",
-    "Orange.canvas.application",
-    "Orange.canvas.application.tutorials",
-    "Orange.canvas.canvas",
-    "Orange.canvas.canvas.items",
-    "Orange.canvas.document",
-    "Orange.canvas.gui",
-    "Orange.canvas.help",
-    "Orange.canvas.preview",
-    "Orange.canvas.registry",
-    "Orange.canvas.scheme",
     "Orange.canvas.styles",
-    "Orange.canvas.utils",
     "Orange.classification",
     "Orange.clustering",
     "Orange.data",
@@ -201,7 +191,6 @@ PACKAGE_DATA = {
     "Orange": ["datasets/*.{}".format(ext) for ext in ["tab", "csv", "basket"]],
     "Orange.canvas": ["icons/*.png", "icons/*.svg"],
     "Orange.canvas.styles": ["*.qss", "orange/*.svg"],
-    "Orange.canvas.application.tutorials": ["*.ows"],
     "Orange.widgets": ["icons/*.png", "icons/*.svg"],
     "Orange.widgets.data": ["icons/*.svg", "icons/paintdata/*.png", "icons/paintdata/*.svg"],
     "Orange.widgets.visualize": ["icons/*.svg"],
@@ -211,6 +200,7 @@ PACKAGE_DATA = {
     "Orange.widgets.unsupervised": ["icons/*.svg"],
     "Orange.widgets.plot": ["*.fs", "*.gs", "*.vs"],
     "Orange.widgets.plot.primitives": ["*.obj"],
+
 }
 
 
