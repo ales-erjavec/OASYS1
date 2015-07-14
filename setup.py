@@ -49,7 +49,8 @@ INSTALL_REQUIRES = (
     'numpy',
     'scipy',
     'bottlechest',
-    "sqlparse"
+    "sqlparse",
+    "orange-canvas-core>=0.0,<0.1"
 )
 
 if sys.version_info < (3, 4):
