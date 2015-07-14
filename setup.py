@@ -163,44 +163,15 @@ PACKAGES = [
     "Orange",
     "Orange.canvas",
     "Orange.canvas.styles",
-    "Orange.classification",
-    "Orange.clustering",
-    "Orange.data",
-    "Orange.data.sql",
-    "Orange.distance",
-    "Orange.evaluation",
-    "Orange.feature",
     "Orange.menus",
-    "Orange.misc",
-    "Orange.regression",
-    "Orange.statistics",
-    "Orange.testing",
     "Orange.widgets",
-    "Orange.widgets.data",
-    "Orange.widgets.visualize",
-    "Orange.widgets.classify",
-    "Orange.widgets.regression",
-    "Orange.widgets.evaluate",
-    "Orange.widgets.unsupervised",
     "Orange.widgets.utils",
-    "Orange.widgets.utils.plot",
-    "Orange.widgets.utils.plot.primitives"
 ]
 
 PACKAGE_DATA = {
-    "Orange": ["datasets/*.{}".format(ext) for ext in ["tab", "csv", "basket"]],
     "Orange.canvas": ["icons/*.png", "icons/*.svg"],
     "Orange.canvas.styles": ["*.qss", "orange/*.svg"],
     "Orange.widgets": ["icons/*.png", "icons/*.svg"],
-    "Orange.widgets.data": ["icons/*.svg", "icons/paintdata/*.png", "icons/paintdata/*.svg"],
-    "Orange.widgets.visualize": ["icons/*.svg"],
-    "Orange.widgets.classify": ["icons/*.svg"],
-    "Orange.widgets.regression": ["icons/*.svg"],
-    "Orange.widgets.evaluate": ["icons/*.svg"],
-    "Orange.widgets.unsupervised": ["icons/*.svg"],
-    "Orange.widgets.plot": ["*.fs", "*.gs", "*.vs"],
-    "Orange.widgets.plot.primitives": ["*.obj"],
-
 }
 
 
