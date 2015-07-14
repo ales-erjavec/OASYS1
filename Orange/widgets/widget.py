@@ -15,7 +15,6 @@ from orangecanvas.registry import description as widget_description
 from Orange.widgets import settings, gui, environ
 from Orange.widgets.gui import ControlledAttributesDict, notify_changed
 from Orange.widgets.settings import SettingsHandler
-from Orange.widgets.utils import vartype
 
 
 class WidgetMetaClass(type(QDialog)):

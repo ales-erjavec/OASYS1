@@ -6,8 +6,8 @@ import pickle
 import warnings
 
 from Orange.widgets import environ
-from Orange.data import DiscreteVariable, Domain, Variable, ContinuousVariable
-from Orange.widgets.utils import vartype
+# from Orange.data import DiscreteVariable, Domain, Variable, ContinuousVariable
+# from Orange.widgets.utils import vartype
 
 __all__ = ["Setting", "SettingsHandler",
            "ContextSetting", "ContextHandler",

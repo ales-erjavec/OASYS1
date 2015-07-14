@@ -3,9 +3,10 @@ import os
 import re
 from PyQt4 import QtGui, QtCore
 from PyQt4.QtCore import Qt, pyqtSignal as Signal
+
 from Orange.widgets.utils import getdeepattr
-from Orange.data import ContinuousVariable, StringVariable, DiscreteVariable, Variable
-from Orange.widgets.utils import vartype
+# from Orange.data import ContinuousVariable, StringVariable, DiscreteVariable, Variable
+# from Orange.widgets.utils import vartype
 from Orange.widgets.utils.constants import CONTROLLED_ATTRIBUTES, ATTRIBUTE_CONTROLLERS
 
 YesNo = NoYes = ("No", "Yes")
