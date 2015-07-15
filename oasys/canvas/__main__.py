@@ -31,7 +31,7 @@ from orangecanvas import config
 from orangecanvas.registry import cache, qt
 from orangecanvas.registry import WidgetRegistry, set_global_registry
 
-from Orange.canvas.mainwindow import OASYSMainWindow
+from oasys.canvas.mainwindow import OASYSMainWindow
 from . import conf
 
 log = logging.getLogger(__name__)

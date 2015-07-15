@@ -5,7 +5,7 @@ import itertools
 import pickle
 import warnings
 
-from Orange.widgets import environ
+from oasys.widgets import environ
 # from Orange.data import DiscreteVariable, Domain, Variable, ContinuousVariable
 # from Orange.widgets.utils import vartype
 

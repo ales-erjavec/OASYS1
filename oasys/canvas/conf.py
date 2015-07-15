@@ -70,12 +70,7 @@ class oasysconf(config.default):
 
     @staticmethod
     def tutorials_entry_points():
-        default_ep = pkg_resources.EntryPoint(
-            "Orange", "Orange.canvas.application.tutorials",
-            dist=pkg_resources.get_distribution("Orange"))
-
-        return itertools.chain(
-            (default_ep,), pkg_resources.iter_entry_points(""))
+        return pkg_resources.iter_entry_points("oasys.tutorials")
 
     widget_discovery = discovery.WidgetDiscovery
     workflow_constructor = widgetsscheme.WidgetsScheme
@@ -83,7 +78,7 @@ class oasysconf(config.default):
 
 def omenus():
     """
-    Return an iterator of Orange.menu.OMenu instances registered
+    Return an iterator of oasys.menu.OMenu instances registered
     by 'orange.menu' pkg_resources entry point.
     """
     log = logging.getLogger(__name__)
