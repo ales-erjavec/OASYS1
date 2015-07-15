@@ -2,8 +2,14 @@
 
 import imp
 import os
-import sys
 import subprocess
+
+try:
+    from setuptools import setup
+except ImportError:
+    import ez_setup
+    ez_setup.use_setuptools()
+    from setuptools import setup
 
 NAME = 'OASYS'
 
@@ -43,32 +49,12 @@ CLASSIFIERS = (
 
 INSTALL_REQUIRES = (
     'setuptools',
-    'numpy',
-    'scipy',
-    'bottlechest',
-    "sqlparse",
     "orange-canvas-core>=0.0,<0.1"
 )
-
-if sys.version_info < (3, 4):
-    INSTALL_REQUIRES = INSTALL_REQUIRES + ("singledispatch",)
 
 SETUP_REQUIRES = (
     'setuptools',
 )
-
-if len({'develop', 'release', 'bdist_egg', 'bdist_rpm', 'bdist_wininst',
-        'install_egg_info', 'build_sphinx', 'egg_info', 'easy_install',
-        'upload', 'test'}.intersection(sys.argv)) > 0:
-    import setuptools
-    extra_setuptools_args = dict(
-        zip_safe=False,  # the package can run out of an .egg file
-        include_package_data=True,
-        install_requires=INSTALL_REQUIRES,
-        setup_requires=SETUP_REQUIRES,
-    )
-else:
-    extra_setuptools_args = dict()
 
 
 # Return the git revision as a string
@@ -88,7 +74,7 @@ def git_version():
         env['LANGUAGE'] = 'C'
         env['LANG'] = 'C'
         env['LC_ALL'] = 'C'
-        out = subprocess.Popen(cmd, stdout = subprocess.PIPE, env=env).communicate()[0]
+        out = subprocess.Popen(cmd, stdout=subprocess.PIPE, env=env).communicate()[0]
         return out
 
     try:
@@ -100,10 +86,10 @@ def git_version():
     return GIT_REVISION
 
 
-def write_version_py(filename='Orange/version.py'):
+def write_version_py(filename='oasys/version.py'):
     # Copied from numpy setup.py
     cnt = """
-# THIS FILE IS GENERATED FROM ORANGE SETUP.PY
+# THIS FILE IS GENERATED FROM OASYS SETUP.PY
 short_version = '%(version)s'
 version = '%(version)s'
 full_version = '%(full_version)s'
@@ -117,9 +103,9 @@ if not release:
     FULLVERSION = VERSION
     if os.path.exists('.git'):
         GIT_REVISION = git_version()
-    elif os.path.exists('Orange/version.py'):
+    elif os.path.exists('oasys/version.py'):
         # must be a source distribution, use existing version file
-        version = imp.load_source("Orange.version", "Orange/version.py")
+        version = imp.load_source("oasys.version", "oasys/version.py")
         GIT_REVISION = version.git_revision
     else:
         GIT_REVISION = "Unknown"
@@ -136,50 +122,28 @@ if not release:
     finally:
         a.close()
 
-from numpy.distutils.core import setup
-
-def configuration(parent_package='', top_path=None):
-    if os.path.exists('MANIFEST'):
-        os.remove('MANIFEST')
-
-    from numpy.distutils.misc_util import Configuration
-    config = Configuration(None, parent_package, top_path)
-
-    # Avoid non-useful msg:
-    # "Ignoring attempt to set 'name' (from ... "
-    config.set_options(ignore_setup_xxx_py=True,
-                       assume_default_configuration=True,
-                       delegate_options_to_subpackages=True,
-                       quiet=True)
-
-    config.add_subpackage('Orange')
-
-    config.get_version('Orange/version.py')  # sets config.version
-
-    return config
-
 
 PACKAGES = [
-    "Orange",
-    "Orange.canvas",
-    "Orange.canvas.styles",
-    "Orange.menus",
-    "Orange.widgets",
-    "Orange.widgets.utils",
+    "oasys",
+    "oasys.canvas",
+    "oasys.canvas.styles",
+    "oasys.menus",
+    "oasys.widgets",
+    "oasys.widgets.utils",
 ]
 
 PACKAGE_DATA = {
-    "Orange.canvas": ["icons/*.png", "icons/*.svg"],
-    "Orange.canvas.styles": ["*.qss", "orange/*.svg"],
-    "Orange.widgets": ["icons/*.png", "icons/*.svg"],
+    "oasys.canvas": ["icons/*.png", "icons/*.svg"],
+    "oasys.canvas.styles": ["*.qss", "orange/*.svg"],
+    "oasys.widgets": ["icons/*.png", "icons/*.svg"],
 }
 
 
 def setup_package():
     write_version_py()
     setup(
-        configuration=configuration,
         name=NAME,
+        version=VERSION,
         description=DESCRIPTION,
         long_description=LONG_DESCRIPTION,
         author=AUTHOR,
@@ -191,7 +155,11 @@ def setup_package():
         classifiers=CLASSIFIERS,
         packages=PACKAGES,
         package_data=PACKAGE_DATA,
-        **extra_setuptools_args
+        # extra setuptools args
+        zip_safe=False,  # the package can run out of an .egg file
+        include_package_data=True,
+        install_requires=INSTALL_REQUIRES,
+        setup_requires=SETUP_REQUIRES,
     )
 
 if __name__ == '__main__':
