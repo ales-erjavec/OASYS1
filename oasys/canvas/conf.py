@@ -10,13 +10,13 @@ from orangecanvas import config
 from . import discovery, widgetsscheme
 
 
-WIDGETS_ENTRY = "orange.widgets"
-MENU_ENTRY = "orange.menu"
+WIDGETS_ENTRY = "oasys.widgets"
+MENU_ENTRY = "oasys.menus"
 
 #: Parameters for searching add-on packages in PyPi using xmlrpc api.
 ADDON_PYPI_SEARCH_SPEC = {"keywords": "oasys"}
 #: Entry points by which add-ons register with pkg_resources.
-ADDONS_ENTRY = "orangecontrib"
+ADDONS_ENTRY = "oasys.addons"
 
 # Add a default for our extra default-working-dir setting.
 config.spec += [
