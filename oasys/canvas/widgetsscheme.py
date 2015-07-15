@@ -81,6 +81,7 @@ class WidgetsScheme(Scheme):
         """
         if self.__working_directory != working_directory:
             self.__working_directory = working_directory
+            self.working_directory_changed.emit(working_directory)
 
     def working_directory(self):
         """
@@ -218,6 +219,7 @@ class WidgetManager(QObject):
         )
         scheme.node_added.connect(self.add_widget_for_node)
         scheme.node_removed.connect(self.remove_widget_for_node)
+        scheme.working_directory_changed.connect(self.__wd_changed)
         scheme.installEventFilter(self)
 
     def scheme(self):
@@ -356,7 +358,8 @@ class WidgetManager(QObject):
         self.__widget_processing_state[widget] = 0
 
         widget.__init__()
-        widget.setWorkingDirectory(self.scheme().working_directory)
+        if hasattr(widget, "setWorkingDirectory"):
+            widget.setWorkingDirectory(self.scheme().working_directory)
         widget.setCaption(node.title)
         widget.widgetInfo = desc
 
@@ -592,6 +595,12 @@ class WidgetManager(QObject):
             self.__delay_delete.remove(widget)
             widget.deleteLater()
             del self.__widget_processing_state[widget]
+
+    def __wd_changed(self, workdir):
+        for node in self.scheme.nodes:
+            w = self.widget_for_node(node)
+            if hasattr(w, "setWorkingDirectory"):
+                w.setWorkingDirectory(workdir)
 
 
 def user_message_from_state(widget, message_type, message_id, message_value):
