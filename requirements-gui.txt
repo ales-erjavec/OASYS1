@@ -1,2 +1,0 @@
-pyqtgraph>=0.9.8
-qt-graph-helpers>=0.1.3
