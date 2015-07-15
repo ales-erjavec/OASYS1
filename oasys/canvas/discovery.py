@@ -99,71 +99,7 @@ def widget_desc_from_module(module):
 class WidgetDiscovery(discovery.WidgetDiscovery):
     """
     OASYS widget discovery.
-
-    Extends basic widget discovery with menu bar action discovery.
     """
-    def __init__(self, registry=None, menu_registry=None,
-                 cached_descriptions=None):
-        super().__init__(registry, cached_descriptions=cached_descriptions)
-        self.menu_registry = menu_registry
-
-    def run(self, entry_points_iter):
-        """
-        Run the widget discovery process from an entry point iterator
-        (yielding :class:`pkg_resources.EntryPoint` instances).
-
-        As a convenience, if `entry_points_iter` is a string it will be used
-        to retrieve the iterator using `pkg_resources.iter_entry_points`.
-
-        """
-
-        if isinstance(entry_points_iter, str):
-            entry_points_iter = \
-                pkg_resources.iter_entry_points(entry_points_iter)
-
-        for entry_point in entry_points_iter:
-            try:
-                point = entry_point.load()
-            except pkg_resources.DistributionNotFound:
-                log.error("Could not load '%s' (unsatisfied dependencies).",
-                          entry_point, exc_info=True)
-                continue
-            except ImportError:
-                log.error("An ImportError occurred while loading "
-                          "entry point '%s'", entry_point, exc_info=True)
-                continue
-            except Exception:
-                log.error("An exception occurred while loading "
-                          "entry point '%s'", entry_point, exc_info=True)
-                continue
-
-            try:
-                if isinstance(point, types.ModuleType):
-                    if hasattr(point, "__path__"):
-                        # Entry point is a package (a widget category)
-                        self.process_category_package(
-                            point,
-                            name=entry_point.name,
-                            distribution=entry_point.dist
-                        )
-                    else:
-                        # Entry point is a module (a single widget)
-                        self.process_widget_module(
-                            point,
-                            name=entry_point.name,
-                            distribution=entry_point.dist
-                        )
-                elif isinstance(point, (types.FunctionType, types.MethodType)):
-                    # Entry point is a callable loader function
-                    self.process_loader(point)
-                elif isinstance(point, (list, tuple)):
-                    # An iterator yielding Category/WidgetDescriptor instances.
-                    self.process_iter(point)
-                else:
-                    log.error("Cannot handle entry point %r", point)
-            except Exception:
-                log.error("An exception occurred while processing %r.",
-                          entry_point, exc_info=True)
 
     def widget_description(self, module, widget_name=None, category_name=None,
                            distribution=None):
