@@ -25,7 +25,7 @@ access to the installed PyQt4.
 
 To start OASYS from the command line, run::
 
-     python3 -m Orange.canvas
+     python3 -m oasys.canvas
 
 The OASYS does not itself come with any widget components. Use the
 'Options->Add-ons' menu entry to install the desired widget set.
