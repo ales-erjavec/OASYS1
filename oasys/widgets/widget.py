@@ -95,7 +95,6 @@ class OWWidget(widget.OWWidget, metaclass=_WhyWhyWhy):
         for shower in getattr(self, "showers", []):
             shower()
 
-blocking = widget.blocking
 
 # Pull signal definition constants to oasys widget namespace.
 Default = widget.Default
