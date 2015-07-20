@@ -597,7 +597,7 @@ class WidgetManager(QObject):
             del self.__widget_processing_state[widget]
 
     def __wd_changed(self, workdir):
-        for node in self.scheme.nodes:
+        for node in self.scheme().nodes:
             w = self.widget_for_node(node)
             if hasattr(w, "setWorkingDirectory"):
                 w.setWorkingDirectory(workdir)
