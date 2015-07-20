@@ -49,6 +49,7 @@ CLASSIFIERS = (
 
 INSTALL_REQUIRES = (
     'setuptools',
+    "Orange>=3",
     "orange-canvas-core>=0.0,<0.1"
 )
 
@@ -129,7 +130,6 @@ PACKAGES = [
     "oasys.canvas.styles",
     "oasys.menus",
     "oasys.widgets",
-    "oasys.widgets.utils",
 ]
 
 PACKAGE_DATA = {
