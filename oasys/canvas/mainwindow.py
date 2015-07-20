@@ -120,8 +120,38 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
 
         self.menu_registry = None
 
+    def new_scheme(self):
+        """
+        Reimplemented from `CanvasMainWindow.new_scheme`.
+
+        Create a new empty workflow scheme.
+
+        Return QDialog.Rejected if the user canceled the operation and
+        QDialog.Accepted otherwise.
+        """
+        document = self.current_document()
+        if document.isModifiedStrict():
+            # Ask for save changes
+            if self.ask_save_changes() == QDialog.Rejected:
+                return QDialog.Rejected
+
+        new_scheme = widgetsscheme.WidgetsScheme(parent=self)
+
+        status = self.show_scheme_properties_for(
+            new_scheme, self.tr("New Workflow")
+        )
+
+        if status == QDialog.Rejected:
+            return QDialog.Rejected
+
+        self.set_new_scheme(new_scheme)
+
+        return QDialog.Accepted
+
     def new_scheme_from(self, filename):
         """
+        Reimplemented from `CanvasMainWindow.new_scheme_from`.
+
         Create and return a new :class:`WidgetsScheme` from `filename`.
 
         Return `None` if an error occurs or the user aborts the process.
@@ -339,6 +369,23 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
             )
             stack.endMacro()
 
+        return status
+
+    def show_scheme_properties_for(self, scheme, window_title=None):
+        """
+        Reimplemented from `CanvasMainWindow.show_properties_for`
+
+        Show scheme properties for `scheme` with `window_title (if None
+        a default 'Scheme Info' title will be used.
+        """
+        dialog = self.scheme_properties_dialog()
+        if window_title is not None:
+            dialog.setWindowTitle(window_title)
+        dialog.setScheme(scheme)
+        status = dialog.exec_()
+        if status == QDialog.Accepted:
+            scheme.working_directory = dialog.workingDirectory()
+        dialog.deleteLater()
         return status
 
     def open_canvas_settings(self):
