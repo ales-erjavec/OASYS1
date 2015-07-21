@@ -1,6 +1,6 @@
 from PyQt4.QtGui import QScrollArea
 
-from Orange.widgets import widget, settings, gui
+from orangewidget import widget, settings, gui
 
 
 def layout_insert(layout, widget, before):
@@ -13,25 +13,7 @@ def layout_insert(layout, widget, before):
     layout.insertWidget(i, widget, )
 
 
-class _WhyWhyWhy(widget.WidgetMetaClass):
-    def __new__(cls, name, bases, clsdict):
-        clsdict = clsdict.copy()
-        if "inputs" in clsdict:
-            inputs = [widget.InputSignal(**spec)
-                      if isinstance(spec, dict) else spec
-                      for spec in clsdict["inputs"]]
-            clsdict["inputs"] = inputs
-
-        if "outputs" in clsdict:
-            outputs = [widget.OutputSignal(**spec)
-                       if isinstance(spec, dict) else spec
-                       for spec in clsdict["outputs"]]
-            clsdict["outputs"] = outputs
-
-        return widget.WidgetMetaClass.__new__(cls, name, bases, clsdict)
-
-
-class OWWidget(widget.OWWidget, metaclass=_WhyWhyWhy):
+class OWWidget(widget.OWWidget):
 
     def insertLayout(self):
         """

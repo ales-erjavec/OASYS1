@@ -1,10 +1,11 @@
-import itertools
 import logging
 
 import pkg_resources
 
 from PyQt4.QtGui import QPixmap, QFont, QFontMetrics, QColor, QPainter
 from PyQt4.QtCore import Qt, QCoreApplication, QPoint, QRect
+
+from orangewidget.canvas import config as owconfig
 from orangecanvas import config
 
 from . import discovery, widgetsscheme
@@ -25,7 +26,7 @@ config.spec += [
 ]
 
 
-class oasysconf(config.default):
+class oasysconf(owconfig.orangeconfig):
     OrganizationDomain = ""
     ApplicationName = "OASYS"
     ApplicationVersion = "1.0"
@@ -72,8 +73,7 @@ class oasysconf(config.default):
     def tutorials_entry_points():
         return pkg_resources.iter_entry_points("oasys.tutorials")
 
-    widget_discovery = discovery.WidgetDiscovery
-    workflow_constructor = widgetsscheme.WidgetsScheme
+    workflow_constructor = widgetsscheme.OASYSWidgetsScheme
 
 
 def omenus():

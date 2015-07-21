@@ -135,7 +135,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
             if self.ask_save_changes() == QDialog.Rejected:
                 return QDialog.Rejected
 
-        new_scheme = widgetsscheme.WidgetsScheme(parent=self)
+        new_scheme = widgetsscheme.OASYSWidgetsScheme(parent=self)
 
         status = self.show_scheme_properties_for(
             new_scheme, self.tr("New Workflow")
@@ -225,7 +225,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         # now start the actual load with a valid working directory
         log.info("Changing current work dir to '%s'", workdir)
         os.chdir(workdir)
-        new_scheme = widgetsscheme.WidgetsScheme(parent=self)
+        new_scheme = widgetsscheme.OASYSWidgetsScheme(parent=self)
         new_scheme.working_directory = workdir
         errors = []
         contents.seek(0)

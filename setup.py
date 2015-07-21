@@ -49,8 +49,8 @@ CLASSIFIERS = (
 
 INSTALL_REQUIRES = (
     'setuptools',
-    "Orange>=3",
-    "orange-canvas-core>=0.0,<0.1"
+    'orange-canvas-core>=0.0,<0.1',
+    'orange-widget-core>=0.0,<0.1',
 )
 
 SETUP_REQUIRES = (
