@@ -1,9 +1,8 @@
-import itertools
 import logging
 
 import pkg_resources
 
-from PyQt4.QtGui import QPixmap, QFont, QFontMetrics, QColor, QPainter
+from PyQt4.QtGui import QPixmap, QFont, QFontMetrics, QColor, QPainter, QIcon
 from PyQt4.QtCore import Qt, QCoreApplication, QPoint, QRect
 from orangecanvas import config
 
@@ -33,7 +32,7 @@ class oasysconf(config.default):
     @staticmethod
     def splash_screen():
         path = pkg_resources.resource_filename(
-            __name__, "icons/orange-splash-screen.png")
+            __name__, "icons/oasys-splash-screen.png")
         pm = QPixmap(path)
 
         version = QCoreApplication.applicationVersion()
@@ -55,6 +54,16 @@ class oasysconf(config.default):
         p.drawText(br, Qt.AlignCenter, version)
         p.end()
         return pm, QRect(88, 193, 200, 20)
+
+    @staticmethod
+    def application_icon():
+        """
+        Return the main application icon.
+        """
+        path = pkg_resources.resource_filename(
+            __name__, "icons/oasys.png"
+        )
+        return QIcon(path)
 
     @staticmethod
     def widgets_entry_points():
