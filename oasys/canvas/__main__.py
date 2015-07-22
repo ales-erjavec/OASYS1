@@ -140,7 +140,7 @@ def main(argv=None):
     root_level = min(levels[options.log_level], logging.INFO)
     rootlogger = logging.getLogger(orangecanvas.__name__)
     rootlogger.setLevel(root_level)
-    oasyslogger = logging.getLogger("Orange")
+    oasyslogger = logging.getLogger("oasys")
     oasyslogger.setLevel(root_level)
 
     # Standard output stream handler at the requested level

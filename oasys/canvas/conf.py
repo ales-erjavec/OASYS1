@@ -86,9 +86,11 @@ def omenus():
         try:
             menu = ep.load()
         except pkg_resources.ResolutionError:
-            log.info("Error loading a 'orange.menu' entry point.", exc_info=True)
+            log.info("Error loading a '%s' entry point.", MENU_ENTRY,
+                     exc_info=True)
         except Exception:
-            log.exception("Error loading a 'orange.menu' entry point.")
+            log.exception("Error loading a '%s' entry point.",
+                          MENU_ENTRY)
         else:
             if "MENU" in menu.__dict__:
                 yield from discovery.omenus_from_package(menu)
