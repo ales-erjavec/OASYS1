@@ -21,8 +21,10 @@ README_FILE = os.path.join(os.path.dirname(__file__), 'README.txt')
 LONG_DESCRIPTION = open(README_FILE).read()
 AUTHOR = 'Luca Rebuffi, Manuel Sanchez del Rio and Bioinformatics Laboratory, FRI UL'
 AUTHOR_EMAIL = 'luca.rebuffi@elettra.eu'
-URL = 'https://github.com/lucarebuffi/OASYS1'
-DOWNLOAD_URL = 'https://github.com/lucarebuffi/OASYS1'
+URL = 'https://github.com/ales-erjavec/OASYS1'
+DOWNLOAD_URL = 'https://github.com/ales-erjavec/OASYS1'
+MAINTAINER = 'Bioinformatics Laboratory, FRI UL'
+MAINTAINER_EMAIL = 'contact@orange.biolab.si'
 LICENSE = 'GPLv3'
 
 KEYWORDS = (
@@ -31,11 +33,11 @@ KEYWORDS = (
 )
 
 CLASSIFIERS = (
-    'Development Status :: 1 - Beta',
+    'Development Status :: 1 - Planning',
     'Environment :: X11 Applications :: Qt',
     'Environment :: Console',
     'Environment :: Plugins',
-    'Programming Language :: Python 3',
+    'Programming Language :: Python :: 3',
     'License :: OSI Approved :: '
     'GNU General Public License v3 or later (GPLv3+)',
     'Operating System :: POSIX',
@@ -148,6 +150,8 @@ def setup_package():
         long_description=LONG_DESCRIPTION,
         author=AUTHOR,
         author_email=AUTHOR_EMAIL,
+        maintainer=MAINTAINER,
+        maintainer_email=MAINTAINER_EMAIL,
         url=URL,
         download_url=DOWNLOAD_URL,
         license=LICENSE,
