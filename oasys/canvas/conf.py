@@ -4,6 +4,8 @@ import pkg_resources
 
 from PyQt4.QtGui import QPixmap, QFont, QFontMetrics, QColor, QPainter, QIcon
 from PyQt4.QtCore import Qt, QCoreApplication, QPoint, QRect
+
+from orangewidget.canvas import config as owconfig
 from orangecanvas import config
 
 from . import discovery, widgetsscheme
@@ -24,7 +26,7 @@ config.spec += [
 ]
 
 
-class oasysconf(config.default):
+class oasysconf(owconfig.orangeconfig):
     OrganizationDomain = ""
     ApplicationName = "OASYS"
     ApplicationVersion = "1.0"
@@ -81,8 +83,7 @@ class oasysconf(config.default):
     def tutorials_entry_points():
         return pkg_resources.iter_entry_points("oasys.tutorials")
 
-    widget_discovery = discovery.WidgetDiscovery
-    workflow_constructor = widgetsscheme.WidgetsScheme
+    workflow_constructor = widgetsscheme.OASYSWidgetsScheme
 
 
 def omenus():
@@ -95,9 +96,11 @@ def omenus():
         try:
             menu = ep.load()
         except pkg_resources.ResolutionError:
-            log.info("Error loading a 'orange.menu' entry point.", exc_info=True)
+            log.info("Error loading a '%s' entry point.", MENU_ENTRY,
+                     exc_info=True)
         except Exception:
-            log.exception("Error loading a 'orange.menu' entry point.")
+            log.exception("Error loading a '%s' entry point.",
+                          MENU_ENTRY)
         else:
             if "MENU" in menu.__dict__:
                 yield from discovery.omenus_from_package(menu)
