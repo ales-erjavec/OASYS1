@@ -22,7 +22,9 @@ ADDONS_ENTRY = "oasys.addons"
 # Add a default for our extra default-working-dir setting.
 config.spec += [
     config.config_slot("output/default-working-dir", str, "",
-                       "Default working directory")
+                       "Default working directory"),
+    config.config_slot("oasys/addon-update-check-period", int, 1,
+                       "Check for updates every (in days)")
 ]
 
 
