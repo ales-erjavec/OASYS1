@@ -1,27 +1,31 @@
 OASYS
 ======
 
-OrAnge SYnchrotron Suite
+OASYS (OrAnge SYnchrotron Suite) is a graphical environment
+for optic simulation software used in synchrotron facilities,
+based on Orange 3.
+
+OASYS package requires Python 3.3 or newer.
+
 
 Installing
 ----------
 
-This version of Orange requires Python 3.3 or newer. To build it, run::
+OASYS is pip installable (<https://pip.pypa.io/>), simply run::
 
-    python setup.py develop
+    pip install oasys
 
-inside a virtual environment.
+to install it.
 
-Installation of Scipy and is sometimes challenging because of their
-non-python dependencies that have to be installed manually.
+OASYS requires PyQt, which is not pip-installable in Python 3. You
+have to download and install it system-wide. If you are installing
+in to a virtual environment make sure it is created with the
+`--system-site-packages` so it will have access to the installed
+PyQt4.
+
 
 Starting OASYS
 --------------
-
-OASYS requires PyQt, which is not pip-installable in Python 3. You
-have to download and install it system-wide. Make sure that the virtual
-environment for orange is created with --system-site-packages, so it will have
-access to the installed PyQt4.
 
 To start OASYS from the command line, run::
 
