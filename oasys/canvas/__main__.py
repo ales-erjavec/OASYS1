@@ -13,10 +13,11 @@ import pickle
 import shlex
 import shutil
 import signal
+import itertools, concurrent
 
 import pkg_resources
 
-from PyQt4.QtGui import QFont, QColor
+from PyQt4.QtGui import QFont, QColor, QMessageBox
 from PyQt4.QtCore import Qt, QDir
 
 import orangecanvas
@@ -30,6 +31,9 @@ from orangecanvas import config
 
 from orangecanvas.registry import cache, qt
 from orangecanvas.registry import WidgetRegistry, set_global_registry
+
+
+import orangecanvas.application.addons as addons
 
 from oasys.canvas.mainwindow import OASYSMainWindow
 from . import conf
@@ -310,6 +314,17 @@ def main(argv=None):
 
     close_app = False
     if want_welcome and not args and not open_requests:
+        ###################################################
+        #
+        # ADDED BY LUCA REBUFFI: TEMPORARY VERSION OF
+        # ADD-ONS AUTOMATIC UPDATE PROCEDURE
+        #
+        ###################################################
+        if check_updatable_addons():
+            if ConfirmDialog.confirmed(parent=canvas_window, message="One or more Add-ons has a newer version.\nBegin the update procedure?"):
+                canvas_window.open_addons()
+        ###################################################
+
         if not canvas_window.welcome_dialog():
             log.info("Welcome screen cancelled; closing application")
             close_app = True
@@ -380,6 +395,45 @@ def main(argv=None):
     del app
     return status
 
+###################################################
+#
+# ADDED BY LUCA REBUFFI: TEMPORARY VERSION OF
+# ADD-ONS AUTOMATIC UPDATE PROCEDURE
+#
+###################################################
+def check_updatable_addons():
+        packages = addons.list_pypi_addons()
+        installed = addons.list_installed_addons()
+
+        dists = {dist.project_name: dist for dist in installed}
+        packages = {pkg.name: pkg for pkg in packages}
+
+        project_names = addons.unique(
+            itertools.chain(packages.keys(), dists.keys())
+        )
+
+        for name in project_names:
+            if name in dists and name in packages:
+                item = addons.Installed(packages[name], dists[name])
+                if addons.is_updatable(item): return True
+
+        return False
+
+class ConfirmDialog(QMessageBox):
+    def __init__(self, parent = None, message=""):
+        super(ConfirmDialog, self).__init__(parent)
+
+        self.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        self.setIcon(QMessageBox.Question)
+        self.setText(message)
+        self.setMinimumWidth(500)
+
+    @classmethod
+    def confirmed(cls, parent=None, message="Confirm Action?"):
+        return ConfirmDialog(parent, message).exec_() == QMessageBox.Yes
+###################################################
+###################################################
+###################################################
 
 if __name__ == "__main__":
     sys.exit(main())
