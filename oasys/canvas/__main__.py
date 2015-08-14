@@ -402,23 +402,20 @@ def main(argv=None):
 #
 ###################################################
 def check_updatable_addons():
-        try:
-            packages = addons.list_pypi_addons()
-            installed = addons.list_installed_addons()
+        packages = addons.list_pypi_addons()
+        installed = addons.list_installed_addons()
 
-            dists = {dist.project_name: dist for dist in installed}
-            packages = {pkg.name: pkg for pkg in packages}
+        dists = {dist.project_name: dist for dist in installed}
+        packages = {pkg.name: pkg for pkg in packages}
 
-            project_names = addons.unique(
-                itertools.chain(packages.keys(), dists.keys())
-            )
+        project_names = addons.unique(
+            itertools.chain(packages.keys(), dists.keys())
+        )
 
-            for name in project_names:
-                if name in dists and name in packages:
-                    item = addons.Installed(packages[name], dists[name])
-                    if addons.is_updatable(item): return True
-        except:
-            pass
+        for name in project_names:
+            if name in dists and name in packages:
+                item = addons.Installed(packages[name], dists[name])
+                if addons.is_updatable(item): return True
 
         return False
 
