@@ -11,7 +11,7 @@ OASYS package requires Python 3.3 or newer.
 Installing
 ----------
 
-OASYS is pip installable (<https://pip.pypa.io/>), simply run::
+OASYS is pip installable (https://pip.pypa.io/), simply run::
 
     pip install oasys
 
