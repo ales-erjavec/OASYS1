@@ -18,7 +18,6 @@ from PyQt4.QtCore import Qt, QSettings
 from PyQt4.QtCore import pyqtSlot as Slot
 
 from orangecanvas.scheme import readwrite
-from orangecanvas.document import commands
 from orangecanvas.application import (
     canvasmain, welcomedialog, schemeinfo, settings, addons
 )
@@ -284,7 +283,9 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
             return QDialog.Rejected
 
         self.set_new_scheme(new_scheme)
-
+        self._log.info("Changing current work dir to '%s'",
+                       new_scheme.working_directory)
+        os.chdir(new_scheme.working_directory)
         return QDialog.Accepted
 
     def new_scheme_from(self, filename):
@@ -537,10 +538,6 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
             stack.beginMacro(self.tr("Change Info"))
             current_doc.setTitle(dlg.title())
             current_doc.setDescription(dlg.description())
-            stack.push(
-                commands.SetAttrCommand(
-                    scheme, "working_directory", dlg.workingDirectory())
-            )
             stack.endMacro()
 
         return status
