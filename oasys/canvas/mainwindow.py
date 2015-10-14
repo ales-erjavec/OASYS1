@@ -113,10 +113,10 @@ class OASYSSchemeInfoDialog(schemeinfo.SchemeInfoDialog):
             self.working_dir_line.setText(new_wd)
 
     def title(self):
-        self.editor.title()
+        return self.editor.title()
 
     def description(self):
-        self.editor.description()
+        return self.editor.description()
 
     def workingDirectory(self):
         return self.working_dir_line.text()
