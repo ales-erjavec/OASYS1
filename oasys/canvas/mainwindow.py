@@ -578,19 +578,23 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                 sub_menus = menu_instance.getSubMenuNamesList()
 
                 for index in range(0, len(sub_menus)):
-                    custom_action = \
-                        QAction(sub_menus[index], self,
-                                objectName=sub_menus[index].lower() + "-action",
-                                toolTip=self.tr(sub_menus[index]),
-                                )
+                    if menu_instance.isSeparator(sub_menus[index]):
+                        custom_menu.addSeparator()
+                    else:
+                        custom_action = \
+                            QAction(sub_menus[index], self,
+                                    objectName=sub_menus[index].lower() + "-action",
+                                    toolTip=self.tr(sub_menus[index]),
+                                    )
 
-                    custom_action.triggered.connect(getattr(menu_instance, 'executeAction_' + str(index+1)))
+                        custom_action.triggered.connect(getattr(menu_instance, 'executeAction_' + str(index+1)))
 
-                    custom_menu.addAction(custom_action)
+                        custom_menu.addAction(custom_action)
 
                 self.menuBar().addMenu(custom_menu)
-            except Exception:
+            except Exception as exception:
                 print("Error in creating Customized Menu: " + str(menu_instance))
+                print(str(exception.args[0]))
                 continue
 
     def closeEvent(self, event):
