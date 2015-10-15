@@ -538,6 +538,9 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
             stack.beginMacro(self.tr("Change Info"))
             current_doc.setTitle(dlg.title())
             current_doc.setDescription(dlg.description())
+            scheme.working_directory = dlg.workingDirectory()
+            os.chdir(scheme.working_directory)
+
             stack.endMacro()
 
         return status
@@ -554,8 +557,11 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
             dialog.setWindowTitle(window_title)
         dialog.setScheme(scheme)
         status = dialog.exec_()
+
         if status == QDialog.Accepted:
             scheme.working_directory = dialog.workingDirectory()
+            os.chdir(scheme.working_directory)
+
         dialog.deleteLater()
         return status
 
