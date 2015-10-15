@@ -1,7 +1,10 @@
 __author__ = 'labx'
 __menu__="just for discovery"
 
+SEPARATOR = "OMENU_SEPARATOR"
+
 class OMenu():
+
     canvas_main_window=None
     name = None
     sub_menu_names = []
@@ -14,6 +17,12 @@ class OMenu():
 
     def addSubMenu(self, name):
         self.sub_menu_names.append(name)
+
+    def addSeparator(self):
+        self.sub_menu_names.append(SEPARATOR)
+
+    def isSeparator(self, name):
+        return name == SEPARATOR
 
     def getSubMenuNamesList(self):
         return self.sub_menu_names
