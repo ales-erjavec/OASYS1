@@ -1,25 +1,33 @@
 import os
 import io
+import pickle
+import tempfile
 import logging
+import concurrent.futures
 from xml.etree import ElementTree
+from contextlib import contextmanager
+from datetime import datetime, timedelta
+import pkg_resources
 
 from PyQt4.QtGui import (
     QWidget, QMenu, QAction, QKeySequence, QDialog, QMessageBox, QFileDialog,
     QHBoxLayout, QLineEdit, QPushButton, QCheckBox, QVBoxLayout, QLabel,
-    QFormLayout
+    QFormLayout, QIcon
 )
 from PyQt4.QtCore import Qt, QSettings
+from PyQt4.QtCore import pyqtSlot as Slot
 
 from orangecanvas.scheme import readwrite
-from orangecanvas.document import commands
 from orangecanvas.application import (
-    canvasmain, welcomedialog, schemeinfo, settings
+    canvasmain, welcomedialog, schemeinfo, settings, addons
 )
 from orangecanvas.gui.utils import (
     message_critical, message_warning, message_question, message_information
 )
+from orangecanvas import config
 
 from . import widgetsscheme
+from .conf import oasysconf
 
 
 class OASYSUserSettings(settings.UserSettingsDialog):
@@ -105,13 +113,88 @@ class OASYSSchemeInfoDialog(schemeinfo.SchemeInfoDialog):
             self.working_dir_line.setText(new_wd)
 
     def title(self):
-        self.editor.title()
+        return self.editor.title()
 
     def description(self):
-        self.editor.description()
+        return self.editor.description()
 
     def workingDirectory(self):
         return self.working_dir_line.text()
+
+
+def addons_cache_dir():
+    cachedir = os.path.join(config.cache_dir(), "addons-cache")
+    os.makedirs(cachedir, exist_ok=True)
+    return cachedir
+
+
+def addons_cache_path():
+    cachedir = addons_cache_dir()
+    cachename = "items-cache.pickle"
+    return os.path.join(cachedir, cachename)
+
+
+def _mktemp(dir, prefix, suffix=None, delete=False):
+    return tempfile.NamedTemporaryFile(
+        prefix=prefix, suffix=suffix, dir=dir, delete=False)
+
+
+@contextmanager
+def atomicupdate(filepath):
+    dirname, basename = os.path.split(filepath)
+
+    if not basename:
+        raise ValueError("must name a file")
+
+    basename, ext = os.path.splitext(basename)
+
+    f = _mktemp(dirname, prefix=basename + "-", suffix=ext, delete=False)
+    tempfilename = f.name
+
+    try:
+        stat = os.stat(filepath)
+    except FileNotFoundError:
+        os.chmod(tempfilename, 0o644)
+    else:
+        # Copy user, group and access flags
+        os.chown(tempfilename, stat.st_uid, stat.st_gid)
+        os.chmod(tempfilename, stat.st_mode)
+
+    try:
+        yield f
+    except BaseException:
+        f.close()
+        os.remove(tempfilename)
+        raise
+    else:
+        f.close()
+
+    try:
+        os.replace(tempfilename, filepath)
+    except OSError:
+        os.remove(tempfilename)
+        raise
+
+
+def store_pypi_packages(items):
+    with atomicupdate(addons_cache_path()) as f:
+        pickle.dump(items, f)
+
+
+def load_pypi_packages():
+    try:
+        with open(addons_cache_path(), "rb") as f:
+            try:
+                items = pickle.load(f)
+            except Exception:
+                items = []
+    except OSError:
+        items = []
+    return items
+
+
+def resource_path(path):
+    return pkg_resources.resource_filename(__name__, path)
 
 
 class OASYSMainWindow(canvasmain.CanvasMainWindow):
@@ -119,6 +202,61 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         super().__init__(parent, **kwargs)
 
         self.menu_registry = None
+
+        settings = QSettings()
+        updateperiod = settings.value(
+            "oasys/addon-update-check-period", defaultValue=1, type=int)
+        try:
+            timestamp = os.stat(addons_cache_path()).st_mtime
+        except OSError:
+            timestamp = 0
+
+        lastdelta = datetime.now() - datetime.fromtimestamp(timestamp)
+        self._log = logging.getLogger(__name__)
+        self._log.info("Time from last update %s (%s)", lastdelta, timestamp)
+        check = updateperiod >= 0 and \
+                abs(lastdelta) > timedelta(days=updateperiod)
+
+        self.__executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        self.__pypi_addons_f = None
+        self.__pypi_addons = None
+        self.__updatable = 0
+
+        if check:
+            f = self.__executor.submit(
+                addons.pypi_search,
+                oasysconf.addon_pypi_search_spec(),
+                timeout=10
+            )
+            f.add_done_callback(
+                addons.method_queued(self.__set_pypi_addons_f, (object,)))
+            self.__pypi_addons_f = f
+        else:
+            try:
+                items = load_pypi_packages()
+            except Exception:
+                pass
+            else:
+                self.__set_pypi_addons(items)
+
+    @Slot(object)
+    def __set_pypi_addons_f(self, f):
+        if f.exception():
+            err = f.exception()
+            self._log.error("Error querying PyPi",
+                            exc_info=(type(err), err, None))
+        else:
+            self.__set_pypi_addons(f.result())
+            store_pypi_packages(self.__pypi_addons)
+
+    def __set_pypi_addons(self, items):
+            self.__pypi_addons = items
+            self._log.debug("Got pypi packages: %r", self.__pypi_addons)
+            items = addons.installable_items(
+                self.__pypi_addons,
+                [ep.dist for ep in oasysconf.addon_entry_points()])
+
+            self.__updatable = sum(addons.is_updatable(item) for item in items)
 
     def new_scheme(self):
         """
@@ -145,7 +283,9 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
             return QDialog.Rejected
 
         self.set_new_scheme(new_scheme)
-
+        self._log.info("Changing current work dir to '%s'",
+                       new_scheme.working_directory)
+        os.chdir(new_scheme.working_directory)
         return QDialog.Accepted
 
     def new_scheme_from(self, filename):
@@ -317,8 +457,42 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                     icon=canvasmain.canvas_icons("Tutorials.svg")
                     )
 
+        icon = resource_path("icons/Install.svg")
+
+        addons_action = \
+            QAction(self.tr("Add-ons"), dialog,
+                    objectName="welcome-addons-action",
+                    toolTip=self.tr("Install add-ons"),
+                    triggered=self.open_addons,
+                    icon=QIcon(icon),
+                    )
+
+        if self.__updatable:
+            addons_action.setText("Update Now")
+            addons_action.setToolTip("Update or install new add-ons")
+            addons_action.setIcon(QIcon(resource_path("icons/Update.svg")))
+
+            mbox = QMessageBox(
+                dialog,
+                icon=QMessageBox.Information,
+                text="{} add-on{} {} a newer version.\n"
+                     "Would you like to update now?"
+                     .format("One" if self.__updatable == 1 else self.__updatable,
+                             "s" if self.__updatable > 1 else "",
+                             "has" if self.__updatable == 1 else "have"),
+                standardButtons=QMessageBox.Ok | QMessageBox.No,
+            )
+            mbox.setWindowFlags(Qt.Sheet | Qt.MSWindowsFixedSizeDialogHint)
+            mbox.setModal(True)
+            dialog.show()
+            mbox.show()
+            mbox.finished.connect(
+                lambda r:
+                    self.open_addons() if r == QMessageBox.Ok else None
+            )
+
         bottom_row = [self.get_started_action, tutorials_action,
-                      self.documentation_action]
+                      self.documentation_action, addons_action]
 
         self.new_action.triggered.connect(dialog.accept)
         top_row = [new_action, open_action, recent_action]
@@ -332,6 +506,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         bottombar = dialog.findChild(QWidget, name='bottom-bar')
         if bottombar is not None:
             bottombar.hide()
+
         status = dialog.exec_()
 
         dialog.deleteLater()
@@ -361,15 +536,8 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
             stack = current_doc.undoStack()
             scheme = current_doc.scheme()
             stack.beginMacro(self.tr("Change Info"))
-
-            print("TITLE: " + str(dlg.title()))
-
             current_doc.setTitle(dlg.title())
             current_doc.setDescription(dlg.description())
-            stack.push(
-                commands.SetAttrCommand(
-                    scheme, "working_directory", dlg.workingDirectory())
-            )
             stack.endMacro()
 
         return status
@@ -388,7 +556,6 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         status = dialog.exec_()
         if status == QDialog.Accepted:
             scheme.working_directory = dialog.workingDirectory()
-            os.chdir(scheme.working_directory)
         dialog.deleteLater()
         return status
 
@@ -429,3 +596,10 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                 print("Error in creating Customized Menu: " + str(menu_instance))
                 print(str(exception.args[0]))
                 continue
+
+    def closeEvent(self, event):
+        super().closeEvent(event)
+        if event.isAccepted():
+            if self.__pypi_addons_f is not None:
+                self.__pypi_addons_f.cancel()
+            self.__executor.shutdown(wait=True)
