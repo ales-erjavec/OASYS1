@@ -578,9 +578,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         for menu_instance in self.menu_registry.menus():
             try:
                 menu_instance.setCanvasMainWindow(self)
-
                 custom_menu = QMenu(menu_instance.name, self)
-
                 sub_menus = menu_instance.getSubMenuNamesList()
 
                 for index in range(0, len(sub_menus)):
@@ -592,9 +590,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                                     objectName=sub_menus[index].lower() + "-action",
                                     toolTip=self.tr(sub_menus[index]),
                                     )
-
                         custom_action.triggered.connect(getattr(menu_instance, 'executeAction_' + str(index+1)))
-
                         custom_menu.addAction(custom_action)
 
                 self.menuBar().addMenu(custom_menu)

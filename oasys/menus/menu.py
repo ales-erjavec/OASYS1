@@ -5,12 +5,10 @@ SEPARATOR = "OMENU_SEPARATOR"
 
 class OMenu():
 
-    canvas_main_window=None
-    name = None
-    sub_menu_names = []
-
     def __init__(self, name="NewMenu"):
         self.name = name
+        self.canvas_main_window=None
+        self.sub_menu_names = []
 
     def setCanvasMainWindow(self, canvas_main_window):
         self.canvas_main_window = canvas_main_window
