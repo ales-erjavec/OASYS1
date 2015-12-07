@@ -13,7 +13,7 @@ except ImportError:
 
 NAME = 'OASYS'
 
-VERSION = '0.1.8'
+VERSION = '0.1.9'
 ISRELEASED = False
 
 DESCRIPTION = 'OrAnge SYnchrotron Suite'
@@ -132,14 +132,20 @@ PACKAGES = [
     "oasys.canvas.styles",
     "oasys.menus",
     "oasys.widgets",
+    "oasys.widgets.tools",
 ]
 
 PACKAGE_DATA = {
     "oasys.canvas": ["icons/*.png", "icons/*.svg"],
     "oasys.canvas.styles": ["*.qss", "orange/*.svg"],
-    "oasys.widgets": ["icons/*.png", "icons/*.svg"],
+    "oasys.widgets.tools": ["icons/*.png", "icons/*.svg"],
 }
 
+ENTRY_POINTS = {
+    'oasys.widgets' : (
+        "Oasys Tools = oasys.widgets.tools",
+    )
+}
 
 def setup_package():
     write_version_py()
@@ -159,6 +165,7 @@ def setup_package():
         classifiers=CLASSIFIERS,
         packages=PACKAGES,
         package_data=PACKAGE_DATA,
+        entry_points = ENTRY_POINTS,
         # extra setuptools args
         zip_safe=False,  # the package can run out of an .egg file
         include_package_data=True,
