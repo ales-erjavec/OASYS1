@@ -32,7 +32,7 @@ from orangecanvas.registry import cache, qt
 from orangecanvas.registry import WidgetRegistry, set_global_registry
 
 from oasys.canvas.mainwindow import OASYSMainWindow
-from . import conf
+from oasys.canvas import conf
 
 log = logging.getLogger(__name__)
 
@@ -309,6 +309,11 @@ def main(argv=None):
     app.fileOpenRequest.connect(canvas_window.open_scheme_file)
 
     close_app = False
+
+    if open_requests:
+        if "pydevd.py" in str(open_requests[0].path()): # PyCharm Debugger on
+            open_requests = []
+
     if want_welcome and not args and not open_requests:
         if not canvas_window.welcome_dialog():
             log.info("Welcome screen cancelled; closing application")
