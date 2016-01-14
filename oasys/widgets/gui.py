@@ -1,9 +1,25 @@
-import os
+import os, sys
 
 from PyQt4.QtCore import Qt
-from PyQt4.QtGui import QFileDialog, QMessageBox
+from PyQt4.QtGui import QFileDialog, QMessageBox, QLineEdit, QLabel
 
 from orangewidget import gui
+
+# ----------------------------------
+# Default fonts
+def widgetLabel(widget, label="", labelWidth=None, **misc):
+    lbl = QLabel(label, widget)
+    if labelWidth:
+        lbl.setFixedSize(labelWidth, lbl.sizeHint().height())
+    gui.miscellanea(lbl, None, widget, **misc)
+
+    font = lbl.font()
+    #font.setPointSize(11)
+    lbl.setFont(font)
+
+    return lbl
+
+gui.widgetLabel = widgetLabel
 
 def lineEdit(widget, master, value, label=None, labelWidth=None,
          orientation='vertical', box=None, callback=None,
@@ -11,13 +27,13 @@ def lineEdit(widget, master, value, label=None, labelWidth=None,
          callbackOnType=False, focusInCallback=None,
          enterPlaceholder=False, **misc):
 
-    lEdit = gui.lineEdit(widget, master, value, label, labelWidth, orientation, box, callback, valueType, validator, controlWidth, callbackOnType, focusInCallback, enterPlaceholder, **misc)
+    ledit = gui.lineEdit(widget, master, value, label, labelWidth, orientation, box, callback, valueType, validator, controlWidth, callbackOnType, focusInCallback, enterPlaceholder, **misc)
 
     if value:
         if (valueType != str):
-            lEdit.setAlignment(Qt.AlignRight)
+            ledit.setAlignment(Qt.AlignRight)
 
-    return lEdit
+    return ledit
 
 def widgetBox(widget, box=None, orientation='vertical', margin=None, spacing=4, height=None, width=None, **misc):
 
