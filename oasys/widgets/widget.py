@@ -46,6 +46,29 @@ class OWWidget(widget.OWWidget):
     def setWorkingDirectory(self, directory):
         self.working_directory = directory
 
+        self.after_change_wd()
+
+    def setUnits(self, units):
+        self.units = units
+
+        if self.units == 0:
+            self.units_label = "m"
+            self.units_to_cm = 0.1
+        elif self.units == 1:
+            self.units_label = "cm"
+            self.units_to_cm = 1.0
+        elif self.units == 2:
+            self.units_label = "mm"
+            self.units_to_cm = 10.0
+
+        self.after_change_units()
+
+    def after_change_wd(self):
+        pass
+
+    def after_change_units(self):
+        pass
+
     def __setattr__(self, name, value):
         super().__setattr__(name, value)
 

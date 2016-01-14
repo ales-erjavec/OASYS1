@@ -9,10 +9,11 @@ from contextlib import contextmanager
 from datetime import datetime, timedelta
 import pkg_resources
 
+from PyQt4 import QtCore
 from PyQt4.QtGui import (
     QWidget, QMenu, QAction, QKeySequence, QDialog, QMessageBox, QFileDialog,
     QHBoxLayout, QLineEdit, QPushButton, QCheckBox, QVBoxLayout, QLabel,
-    QFormLayout, QIcon
+    QFormLayout, QIcon, QComboBox, QGridLayout
 )
 from PyQt4.QtCore import Qt, QSettings
 from PyQt4.QtCore import pyqtSlot as Slot
@@ -39,6 +40,7 @@ class OASYSUserSettings(settings.UserSettingsDialog):
         if showwelcome is not None:
             showwelcome.hide()
 
+        generaltab = self.widget(0)
         outputtab = self.widget(1)
 
         box = QWidget(self, objectName="working-directory-container")
@@ -52,8 +54,30 @@ class OASYSUserSettings(settings.UserSettingsDialog):
         layout.addWidget(self.default_wd_label)
         layout.addWidget(pb)
         box.setLayout(layout)
+
+        box2 = QWidget(self, objectName="units-container")
+
+        layout2 = QVBoxLayout()
+        layout2.setContentsMargins(0, 0, 0, 0)
+        self.combo_units = QComboBox()
+        self.combo_units.addItems([self.tr("m"),
+                              self.tr("cm"),
+                              self.tr("mm")])
+
+        self.combo_units.setCurrentIndex(QSettings().value("output/default-units", 1, int))
+        self.combo_units.currentIndexChanged.connect(self.change_units)
+
+        layout2.addWidget(self.combo_units)
+        box2.setLayout(layout2)
+
+        generaltab.layout().insertRow(
+            0, self.tr("Default Units"), box2)
+
         outputtab.layout().insertRow(
             0, self.tr("Default working directory"), box)
+
+    def change_units(self):
+        QSettings().setValue("output/default-units", self.combo_units.currentIndex())
 
     def change_working_directory(self):
         cur_wd = QSettings().value("output/default-working-directory",
@@ -65,9 +89,8 @@ class OASYSUserSettings(settings.UserSettingsDialog):
             QSettings().setValue("output/default-working-directory", new_wd)
             self.default_wd_label.setText(new_wd)
 
-
 class OASYSSchemeInfoDialog(schemeinfo.SchemeInfoDialog):
-    def __init__(self, parent=None, **kwargs):
+    def __init__(self, parent=None, existing_scheme=False, **kwargs):
         super().__init__(parent, **kwargs)
         # Insert a 'Working Directory' row in the editor form.
         layout = self.editor.layout()
@@ -77,6 +100,7 @@ class OASYSSchemeInfoDialog(schemeinfo.SchemeInfoDialog):
         self.working_dir_edit.layout().setContentsMargins(0, 0, 0, 0)
 
         settings = QSettings()
+
         self.working_dir_line = QLineEdit(self)
         self.working_dir_line.setReadOnly(True)
 
@@ -94,15 +118,46 @@ class OASYSSchemeInfoDialog(schemeinfo.SchemeInfoDialog):
         layout.insertRow(
             2, self.tr("Working directory"), self.working_dir_edit)
 
+
+        self.units_edit = QWidget(self)
+        self.units_edit.setLayout(QGridLayout())
+        self.units_edit.layout().setContentsMargins(0, 0, 0, 0)
+
+
+        self.combo_units = QComboBox()
+        self.combo_units.addItems([self.tr("m"),
+                                   self.tr("cm"),
+                                   self.tr("mm")])
+
+        self.combo_units.setEnabled(not existing_scheme)
+
+        label = QLabel("")
+
+        richText = "<html><head><meta name=\"qrichtext\" content=\"1\" /></head>" + \
+                       "<body style=\" white-space: pre-wrap; " + \
+                       "font-size:9pt; font-weight:400; font-style:normal; text-decoration:none;\">" + \
+                       "<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; " +\
+                       "margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:12pt;\">Units in use in the Scheme   </p>" "</body></html>"
+
+        label.setText(richText)
+
+        self.units_edit.layout().addWidget(label, 0, 0)
+        self.units_edit.layout().addWidget(self.combo_units, 0, 1, Qt.AlignRight)
+
+        layout.insertRow(
+            2, self.tr("Units"), self.units_edit)
+
         # Fix the widget tab order.
         item = layout.itemAt(1, QFormLayout.FieldRole)
         if item.widget() is not None:
-            QWidget.setTabOrder(item.widget(), self.working_dir_line)
+            QWidget.setTabOrder(item.widget(), self.combo_units)
+            QWidget.setTabOrder(self.combo_units, self.working_dir_line)
             QWidget.setTabOrder(self.working_dir_line, pb)
 
     def setScheme(self, scheme):
         super().setScheme(scheme)
         self.working_dir_line.setText(scheme.working_directory)
+        self.combo_units.setCurrentIndex(scheme.units)
 
     def __change_working_directory(self):
         cur_wd = self.working_dir_line.text()
@@ -120,6 +175,9 @@ class OASYSSchemeInfoDialog(schemeinfo.SchemeInfoDialog):
 
     def workingDirectory(self):
         return self.working_dir_line.text()
+
+    def units(self):
+        return self.combo_units.currentIndex()
 
 
 def addons_cache_dir():
@@ -300,11 +358,14 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         default_workdir = QSettings().value(
             "output/default-working-directory",
             os.path.expanduser("~/Oasys"), type=str)
+        default_units = QSettings().value(
+            "output/default-units", 1, type=int)
 
         contents = io.BytesIO(open(filename, "rb").read())
         doc = ElementTree.parse(contents)
         root = doc.getroot()
         workdir = root.get("working_directory")
+        units = int(root.get("units"))
         title = root.get("title", "untitled")
         # First parse the contents into intermediate representation
         # to catch format errors early (will be re-parsed later).
@@ -319,6 +380,9 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                  exc_info=True,
                  parent=self)
             return None
+
+        if not units:
+            units = default_units
 
         # ensure we have a valid working directory either default or
         # stored.
@@ -365,8 +429,10 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         # now start the actual load with a valid working directory
         log.info("Changing current work dir to '%s'", workdir)
         os.chdir(workdir)
+
         new_scheme = widgetsscheme.OASYSWidgetsScheme(parent=self)
         new_scheme.working_directory = workdir
+        new_scheme.units = units
         errors = []
         contents.seek(0)
         try:
@@ -513,10 +579,10 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
 
         return status
 
-    def scheme_properties_dialog(self):
+    def scheme_properties_dialog(self, existing_scheme=False):
         """Return an empty `SchemeInfo` dialog instance.
         """
-        dialog = OASYSSchemeInfoDialog(self)
+        dialog = OASYSSchemeInfoDialog(self, existing_scheme)
 
         dialog.setWindowTitle(self.tr("Workflow Info"))
         dialog.setFixedSize(725, 450)
@@ -527,18 +593,19 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         """
         current_doc = self.current_document()
         scheme = current_doc.scheme()
-        dlg = self.scheme_properties_dialog()
-        dlg.setAutoCommit(False)
-        dlg.setScheme(scheme)
-        status = dlg.exec_()
+        dialog = self.scheme_properties_dialog(existing_scheme=True)
+        dialog.setAutoCommit(False)
+        dialog.setScheme(scheme)
+        status = dialog.exec_()
 
         if status == QDialog.Accepted:
             stack = current_doc.undoStack()
             scheme = current_doc.scheme()
             stack.beginMacro(self.tr("Change Info"))
-            current_doc.setTitle(dlg.title())
-            current_doc.setDescription(dlg.description())
-            scheme.working_directory = dlg.workingDirectory()
+            current_doc.setTitle(dialog.title())
+            current_doc.setDescription(dialog.description())
+            scheme.working_directory = dialog.workingDirectory()
+            scheme.units = dialog.units()
             os.chdir(scheme.working_directory)
 
             stack.endMacro()
@@ -552,7 +619,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         Show scheme properties for `scheme` with `window_title (if None
         a default 'Scheme Info' title will be used.
         """
-        dialog = self.scheme_properties_dialog()
+        dialog = self.scheme_properties_dialog(existing_scheme=False)
         if window_title is not None:
             dialog.setWindowTitle(window_title)
         dialog.setScheme(scheme)
@@ -560,6 +627,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
 
         if status == QDialog.Accepted:
             scheme.working_directory = dialog.workingDirectory()
+            scheme.units = dialog.units()
             os.chdir(scheme.working_directory)
 
         dialog.deleteLater()
