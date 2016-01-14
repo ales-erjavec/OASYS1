@@ -365,7 +365,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         doc = ElementTree.parse(contents)
         root = doc.getroot()
         workdir = root.get("working_directory")
-        units = int(root.get("units"))
+        units = int(root.get("units") or 1)
         title = root.get("title", "untitled")
         # First parse the contents into intermediate representation
         # to catch format errors early (will be re-parsed later).
