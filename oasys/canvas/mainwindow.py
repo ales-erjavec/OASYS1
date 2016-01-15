@@ -9,7 +9,6 @@ from contextlib import contextmanager
 from datetime import datetime, timedelta
 import pkg_resources
 
-from PyQt4 import QtCore
 from PyQt4.QtGui import (
     QWidget, QMenu, QAction, QKeySequence, QDialog, QMessageBox, QFileDialog,
     QHBoxLayout, QLineEdit, QPushButton, QCheckBox, QVBoxLayout, QLabel,
@@ -157,7 +156,7 @@ class OASYSSchemeInfoDialog(schemeinfo.SchemeInfoDialog):
     def setScheme(self, scheme):
         super().setScheme(scheme)
         self.working_dir_line.setText(scheme.working_directory)
-        self.combo_units.setCurrentIndex(scheme.units)
+        self.combo_units.setCurrentIndex(scheme.workspace_units)
 
     def __change_working_directory(self):
         cur_wd = self.working_dir_line.text()
@@ -176,7 +175,7 @@ class OASYSSchemeInfoDialog(schemeinfo.SchemeInfoDialog):
     def workingDirectory(self):
         return self.working_dir_line.text()
 
-    def units(self):
+    def workspaceUnits(self):
         return self.combo_units.currentIndex()
 
 
@@ -365,7 +364,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         doc = ElementTree.parse(contents)
         root = doc.getroot()
         workdir = root.get("working_directory")
-        units = int(root.get("units") or 1)
+        units = int(root.get("workspace_units") or 1)
         title = root.get("title", "untitled")
         # First parse the contents into intermediate representation
         # to catch format errors early (will be re-parsed later).
@@ -432,7 +431,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
 
         new_scheme = widgetsscheme.OASYSWidgetsScheme(parent=self)
         new_scheme.working_directory = workdir
-        new_scheme.units = units
+        new_scheme.workspace_units = units
         errors = []
         contents.seek(0)
         try:
@@ -605,7 +604,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
             current_doc.setTitle(dialog.title())
             current_doc.setDescription(dialog.description())
             scheme.working_directory = dialog.workingDirectory()
-            scheme.units = dialog.units()
+            scheme.workspace_units = dialog.workspaceUnits()
             os.chdir(scheme.working_directory)
 
             stack.endMacro()
@@ -627,7 +626,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
 
         if status == QDialog.Accepted:
             scheme.working_directory = dialog.workingDirectory()
-            scheme.units = dialog.units()
+            scheme.workspace_units = dialog.workspaceUnits()
             os.chdir(scheme.working_directory)
 
         dialog.deleteLater()
