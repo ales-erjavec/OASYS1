@@ -53,13 +53,13 @@ class OWWidget(widget.OWWidget):
 
         if self.workspace_units == 0:
             self.workspace_units_label = "m"
-            self.workspace_units_to_cm = 0.01
+            self.workspace_units_to_cm = 100.0
         elif self.workspace_units == 1:
             self.workspace_units_label = "cm"
             self.workspace_units_to_cm = 1.0
         elif self.workspace_units == 2:
             self.workspace_units_label = "mm"
-            self.workspace_units_to_cm = 10.0
+            self.workspace_units_to_cm = 0.1
 
         self.after_change_workspace_units()
 
