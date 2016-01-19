@@ -1,7 +1,6 @@
 from PyQt4.QtGui import QScrollArea
 
-from orangewidget import widget, settings, gui
-
+from orangewidget import widget
 
 def layout_insert(layout, widget, before):
     for i in range(layout.count()):
@@ -11,7 +10,6 @@ def layout_insert(layout, widget, before):
     else:
         raise ValueError("{} is not in layout".format(widget))
     layout.insertWidget(i, widget, )
-
 
 class OWWidget(widget.OWWidget):
 
