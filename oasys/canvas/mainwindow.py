@@ -364,7 +364,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         doc = ElementTree.parse(contents)
         root = doc.getroot()
         workdir = root.get("working_directory")
-        units = int(root.get("workspace_units") or 1)
+        units = int(root.get("workspace_units") or default_units)
         title = root.get("title", "untitled")
         # First parse the contents into intermediate representation
         # to catch format errors early (will be re-parsed later).
@@ -379,9 +379,6 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                  exc_info=True,
                  parent=self)
             return None
-
-        if not units:
-            units = default_units
 
         # ensure we have a valid working directory either default or
         # stored.
