@@ -1,7 +1,7 @@
 import os, sys
 
 from PyQt4.QtCore import Qt, QCoreApplication
-from PyQt4.QtGui import QFileDialog, QMessageBox, QLineEdit, QLabel
+from PyQt4.QtGui import QWidget, QGridLayout, QFileDialog, QMessageBox, QLabel, QComboBox
 
 from orangewidget import gui as orange_gui
 
@@ -107,3 +107,46 @@ class ConfirmDialog(QMessageBox):
     @classmethod
     def confirmed(cls, parent=None, message="Confirm Action?", title="Confirm Action"):
         return ConfirmDialog(parent, message, title).exec_() == QMessageBox.Ok
+
+class OptionDialog(QMessageBox):
+
+    selection = 0
+
+    def __init__(self, parent, message, title, options, default):
+        super(OptionDialog, self).__init__(parent)
+
+        self.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+        self.setIcon(QMessageBox.Question)
+        self.setText(message)
+        self.setWindowTitle(title)
+
+        self.selection = default
+
+        box = QWidget()
+        box.setLayout(QGridLayout())
+        box.setFixedHeight(40)
+
+        box_combo = QWidget()
+        combo = QComboBox(box_combo)
+        combo.setEditable(False)
+        combo.box = box_combo
+        for item in options:
+            combo.addItem(str(item))
+        combo.setCurrentIndex(default)
+        combo.currentIndexChanged.connect(self.set_selection)
+
+        box.layout().addWidget(QLabel("Select Option"), 0, 0, 1, 1)
+        box.layout().addWidget(box_combo, 0, 1, 1, 1)
+
+        self.layout().addWidget(box, 1, 1, 1, 2)
+
+    def set_selection(self, index):
+        self.selection = index
+
+    @classmethod
+    def get_option(cls, parent=None, message="Select Option", title="Select Option", option=["No", "Yes"], default=0):
+        dlg = OptionDialog(parent, message, title, option, default)
+        if dlg.exec_() == QMessageBox.Ok:
+            return dlg.selection
+        else:
+            return None

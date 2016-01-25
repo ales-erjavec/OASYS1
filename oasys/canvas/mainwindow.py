@@ -26,6 +26,8 @@ from orangecanvas.gui.utils import (
 )
 from orangecanvas import config
 
+from oasys.widgets.gui import OptionDialog
+
 from . import widgetsscheme
 from .conf import oasysconf
 
@@ -364,7 +366,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         doc = ElementTree.parse(contents)
         root = doc.getroot()
         workdir = root.get("working_directory")
-        units = int(root.get("workspace_units") or default_units)
+        workunits = root.get("workspace_units")
         title = root.get("title", "untitled")
         # First parse the contents into intermediate representation
         # to catch format errors early (will be re-parsed later).
@@ -384,7 +386,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         # stored.
         if not workdir or not os.path.isdir(workdir):
             new_workdir = QFileDialog.getExistingDirectory(
-                self, "Set working directory for project '%s'" % title,
+                self, "Set working directory for project '%s'" % (title or "untitled"),
                 default_workdir)
             if new_workdir:
                 workdir = new_workdir
@@ -407,7 +409,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
 
             if ret == QMessageBox.Yes:
                 new_wd = QFileDialog.getExistingDirectory(
-                    self, "Set working directory for project '%s'" % title,
+                    self, "Set working directory for project '%s'" % (title or "untitled"),
                     default_workdir)
                 if new_wd:
                     workdir = new_wd
@@ -426,9 +428,57 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         log.info("Changing current work dir to '%s'", workdir)
         os.chdir(workdir)
 
+        # ensure we have a valid working directory either default or
+        # stored.
+        if not workunits:
+            new_units = OptionDialog.get_option(self,
+                                                "Set user's units for project '%s'" % (title or "untitled"),
+                                                "Set user's units",
+                                                ["m", "cm", "mm"], default_units)
+            if new_units:
+                workunits = new_units
+            else:
+                log.info("Replacement of not existing User's Units "
+                         "'%s' aborted by user", "")
+                message_information(
+                    "Project units not set by user:\n\n"
+                    "project load aborted",
+                    parent=self)
+                return None
+        else:
+            workunits = int(workunits)
+            ret = message_question(
+                "User's units set to: " + self.getWorkspaceUnitsLabel(workunits),
+                "User's Units",
+                informative_text="Do you want to change it?",
+                buttons=QMessageBox.Yes | QMessageBox.No,
+                default_button=QMessageBox.No,
+                parent=self)
+
+            if ret == QMessageBox.Yes:
+                new_units = OptionDialog.get_option(self,
+                                                    "Set user's units for project '%s'" % (title or "untitled"),
+                                                    "Set user's units",
+                                                    ["m", "cm", "mm"], workunits)
+                if new_units:
+                    workunits = new_units
+
+                    message_information(
+                        "Project new units set by user: " + self.getWorkspaceUnitsLabel(workunits) + \
+                        "\n\nWarning: values relating to the previous units are not converted",
+                        parent=self)
+                else:
+                    log.info("Replacement of not existing User's Units "
+                             "'%s' aborted by user", "")
+                    message_information(
+                        "Project units not set by user:\n\n"
+                        "project load aborted",
+                        parent=self)
+                    return None
+
         new_scheme = widgetsscheme.OASYSWidgetsScheme(parent=self)
         new_scheme.working_directory = workdir
-        new_scheme.workspace_units = units
+        new_scheme.workspace_units = workunits
         errors = []
         contents.seek(0)
         try:
@@ -457,6 +507,16 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                 parent=self
             )
         return new_scheme
+
+    def getWorkspaceUnitsLabel(self, units):
+        if units == 0:
+            return "m"
+        elif units == 1:
+            return "cm"
+        elif units == 2:
+            return "mm"
+        else:
+            return None
 
     def welcome_dialog(self):
         """
