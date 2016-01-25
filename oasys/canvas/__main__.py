@@ -169,13 +169,6 @@ def main(argv=None):
     log.debug("Starting CanvasApplicaiton with argv = %r.", qt_argv)
     app = CanvasApplication(qt_argv)
 
-    # ----------------------------------
-    # Default fonts
-
-    font = app.font()
-    #font.setPointSize(11)
-    app.setFont(font)
-
     # NOTE: config.init() must be called after the QApplication constructor
     config.init()
 

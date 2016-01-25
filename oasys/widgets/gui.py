@@ -1,9 +1,12 @@
 import os, sys
 
-from PyQt4.QtCore import Qt
+from PyQt4.QtCore import Qt, QCoreApplication
 from PyQt4.QtGui import QFileDialog, QMessageBox, QLineEdit, QLabel
 
-from orangewidget import gui
+from orangewidget import gui as orange_gui
+
+current_module = sys.modules[__name__]
+gui_point_size=12
 
 # ----------------------------------
 # Default fonts
@@ -11,15 +14,26 @@ def widgetLabel(widget, label="", labelWidth=None, **misc):
     lbl = QLabel(label, widget)
     if labelWidth:
         lbl.setFixedSize(labelWidth, lbl.sizeHint().height())
-    gui.miscellanea(lbl, None, widget, **misc)
+    orange_gui.miscellanea(lbl, None, widget, **misc)
 
     font = lbl.font()
-    #font.setPointSize(11)
+    font.setPointSize(current_module.gui_point_size)
     lbl.setFont(font)
 
     return lbl
 
-gui.widgetLabel = widgetLabel
+def set_font_size(point_size=12):
+    current_module.gui_point_size = point_size
+
+    qapp = QCoreApplication.instance()
+
+    # change application font
+    font = qapp.font()
+    font.setPointSize(current_module.gui_point_size)
+    qapp.setFont(font)
+
+    # change orange gui label font
+    orange_gui.widgetLabel = widgetLabel
 
 def lineEdit(widget, master, value, label=None, labelWidth=None,
          orientation='vertical', box=None, callback=None,
@@ -27,7 +41,7 @@ def lineEdit(widget, master, value, label=None, labelWidth=None,
          callbackOnType=False, focusInCallback=None,
          enterPlaceholder=False, **misc):
 
-    ledit = gui.lineEdit(widget, master, value, label, labelWidth, orientation, box, callback, valueType, validator, controlWidth, callbackOnType, focusInCallback, enterPlaceholder, **misc)
+    ledit = orange_gui.lineEdit(widget, master, value, label, labelWidth, orientation, box, callback, valueType, validator, controlWidth, callbackOnType, focusInCallback, enterPlaceholder, **misc)
 
     if value:
         if (valueType != str):
@@ -37,7 +51,7 @@ def lineEdit(widget, master, value, label=None, labelWidth=None,
 
 def widgetBox(widget, box=None, orientation='vertical', margin=None, spacing=4, height=None, width=None, **misc):
 
-    box = gui.widgetBox(widget, box, orientation, margin, spacing, **misc)
+    box = orange_gui.widgetBox(widget, box, orientation, margin, spacing, **misc)
     box.layout().setAlignment(Qt.AlignTop)
 
     if not height is None:
@@ -48,7 +62,7 @@ def widgetBox(widget, box=None, orientation='vertical', margin=None, spacing=4, 
     return box
 
 def tabWidget(widget, height=None, width=None):
-    tabWidget = gui.tabWidget(widget)
+    tabWidget = orange_gui.tabWidget(widget)
 
     if not height is None:
         tabWidget.setFixedHeight(height)
@@ -59,7 +73,7 @@ def tabWidget(widget, height=None, width=None):
 
 def createTabPage(tabWidget, name, widgetToAdd=None, canScroll=False, height=None, width=None):
 
-    tab = gui.createTabPage(tabWidget, name, widgetToAdd, canScroll)
+    tab = orange_gui.createTabPage(tabWidget, name, widgetToAdd, canScroll)
     tab.layout().setAlignment(Qt.AlignTop)
 
     if not height is None:
