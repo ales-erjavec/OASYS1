@@ -13,11 +13,13 @@ import pickle
 import shlex
 import shutil
 import signal
+import time
 
 import pkg_resources
 
+from PyQt4 import QtCore
 from PyQt4.QtGui import QFont, QColor
-from PyQt4.QtCore import Qt, QDir
+from PyQt4.QtCore import Qt, QDir, QThread, QObject
 
 import orangecanvas
 from orangecanvas.application.application import CanvasApplication
@@ -293,8 +295,20 @@ def main(argv=None):
 
     canvas_window.set_widget_registry(widget_registry)
     canvas_window.set_menu_registry(menu_registry)
+
+    # automatic save
+
+    automatic_saver_thread = QThread()
+    automatic_saver = SaveWorkspaceObj(canvas_window, )
+    automatic_saver.moveToThread(automatic_saver_thread)
+    automatic_saver.finished.connect(automatic_saver_thread.quit)
+    automatic_saver_thread.started.connect(automatic_saver.long_running)
+    automatic_saver_thread.finished.connect(app.exit)
+    automatic_saver_thread.start()
+
     canvas_window.show()
     canvas_window.raise_()
+
 
     want_welcome = True or \
         settings.value("startup/show-welcome-screen", True, type=bool) \
@@ -384,6 +398,39 @@ def main(argv=None):
 
     del app
     return status
+
+class SaveWorkspaceObj(QObject):
+    finished = QtCore.pyqtSignal()
+
+    def __init__(self, canvas_window):
+       QObject.__init__(self)
+       self.canvas_window = canvas_window
+
+    def long_running(self):
+            while True:
+                minutes = self.get_minutes(QSettings().value("output/automatic-save-minutes", 0, type=int))
+
+                if minutes == 0:
+                    time.sleep(10) # in order to not waste CPU
+                else:
+                    time.sleep(60*minutes)
+                    self.canvas_window.automatic_save.emit()
+
+            self.finished.emit()
+
+    def get_minutes(self, minutes_index):
+        if minutes_index == 0:
+            return 0
+        elif minutes_index == 1:
+            return 5
+        elif minutes_index == 2:
+            return 10
+        elif minutes_index == 3:
+            return 30
+        elif minutes_index == 4:
+            return 60
+        else:
+            return 0
 
 
 if __name__ == "__main__":

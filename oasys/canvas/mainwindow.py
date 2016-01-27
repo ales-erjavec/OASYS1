@@ -16,6 +16,7 @@ from PyQt4.QtGui import (
 )
 from PyQt4.QtCore import Qt, QSettings
 from PyQt4.QtCore import pyqtSlot as Slot
+from PyQt4.QtCore import pyqtSignal as pyqtSignal
 
 from orangecanvas.scheme import readwrite
 from orangecanvas.application import (
@@ -71,12 +72,36 @@ class OASYSUserSettings(settings.UserSettingsDialog):
         layout2.addWidget(self.combo_units)
         box2.setLayout(layout2)
 
+
+        box3 = QWidget(self, objectName="automatic-save-container")
+
+        layout3 = QVBoxLayout()
+        layout3.setContentsMargins(0, 0, 0, 0)
+        self.combo_automatic_save = QComboBox()
+        self.combo_automatic_save.addItems([self.tr("Never"),
+                                  self.tr("5 min"),
+                                  self.tr("10 min"),
+                                  self.tr("30 min"),
+                                  self.tr("60 min")])
+
+        self.combo_automatic_save.setCurrentIndex(QSettings().value("output/automatic-save-minutes", 0, int))
+        self.combo_automatic_save.currentIndexChanged.connect(self.change_automatic_save)
+
+        layout3.addWidget(self.combo_automatic_save)
+        box3.setLayout(layout3)
+
         generaltab.layout().insertRow(
             0, self.tr("Default Units"), box2)
+
+        generaltab.layout().insertRow(
+            0, self.tr("Automatically save every"), box3)
 
         outputtab.layout().insertRow(
             0, self.tr("Default working directory"), box)
 
+    def change_automatic_save(self):
+        QSettings().setValue("output/automatic-save-minutes", self.combo_automatic_save.currentIndex())
+        
     def change_units(self):
         QSettings().setValue("output/default-units", self.combo_units.currentIndex())
 
@@ -257,6 +282,9 @@ def resource_path(path):
 
 
 class OASYSMainWindow(canvasmain.CanvasMainWindow):
+
+    automatic_save = pyqtSignal()
+
     def __init__(self, parent=None, **kwargs):
         super().__init__(parent, **kwargs)
 
@@ -298,6 +326,10 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
             else:
                 self.__set_pypi_addons(items)
 
+        self.automatic_save.connect(self.automatic_save_scheme)
+
+        #self.menu
+
     @Slot(object)
     def __set_pypi_addons_f(self, f):
         if f.exception():
@@ -316,6 +348,30 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                 [ep.dist for ep in oasysconf.addon_entry_points()])
 
             self.__updatable = sum(addons.is_updatable(item) for item in items)
+
+    def automatic_save_scheme(self):
+        """Save the current scheme. If the scheme does not have an associated
+        path then prompt the user to select a scheme file. Return
+        QDialog.Accepted if the scheme was successfully saved and
+        QDialog.Rejected if the user canceled the file selection.
+
+        """
+        document = self.current_document()
+        curr_scheme = document.scheme()
+        path = document.path()
+
+        temporary_file_name = "automatic_save_" + str(id(self)) + ".ows~"
+
+        if path and self.check_can_save(document, path + "~"):
+            if self.save_scheme_to(curr_scheme, path + "~"):
+                if os.path.exists(temporary_file_name):
+                    os.remove(temporary_file_name)
+
+                return QDialog.Accepted
+            else:
+                return QDialog.Rejected
+        else:
+            return self.save_scheme_to(curr_scheme, temporary_file_name)
 
     def new_scheme(self):
         """
