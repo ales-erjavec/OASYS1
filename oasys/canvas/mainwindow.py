@@ -328,8 +328,6 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
 
         self.automatic_save.connect(self.automatic_save_scheme)
 
-        #self.menu
-
     @Slot(object)
     def __set_pypi_addons_f(self, f):
         if f.exception():
