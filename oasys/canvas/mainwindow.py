@@ -484,12 +484,12 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
 
         # ensure we have a valid working directory either default or
         # stored.
-        if not workunits:
+        if workunits is None:
             new_units = OptionDialog.get_option(self,
                                                 "Set user's units for project '%s'" % (title or "untitled"),
                                                 "Set user's units",
                                                 ["m", "cm", "mm"], default_units)
-            if new_units:
+            if not new_units is None:
                 workunits = new_units
             else:
                 log.info("Replacement of not existing User's Units "
@@ -514,7 +514,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                                                     "Set user's units for project '%s'" % (title or "untitled"),
                                                     "Set user's units",
                                                     ["m", "cm", "mm"], workunits)
-                if new_units:
+                if not new_units is None:
                     workunits = new_units
 
                     message_information(
@@ -522,7 +522,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                         "\n\nWarning: values relating to the previous units are not converted",
                         parent=self)
                 else:
-                    log.info("Replacement of not existing User's Units "
+                    log.info("Replacement of existing User's Units "
                              "'%s' aborted by user", "")
                     message_information(
                         "Project units not set by user:\n\n"
