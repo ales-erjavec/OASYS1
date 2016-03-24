@@ -756,22 +756,59 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         for menu_instance in self.menu_registry.menus():
             try:
                 menu_instance.setCanvasMainWindow(self)
+
                 custom_menu = QMenu(menu_instance.name, self)
                 sub_menus = menu_instance.getSubMenuNamesList()
 
+                is_open_container = False
+                container_menu = None
+                action_index = 0
+
                 for index in range(0, len(sub_menus)):
-                    if menu_instance.isSeparator(sub_menus[index]):
-                        custom_menu.addSeparator()
+                    if is_open_container:
+                        if menu_instance.isSeparator(sub_menus[index]):
+                            if container_menu is None: raise Exception("Container Menu has not been defined")
+
+                            container_menu.addSeparator()
+                        elif menu_instance.isOpenContainer(sub_menus[index]):
+                            raise Exception("Container has already been opened: Open Container Operation is inconsistent")
+                        elif menu_instance.isCloseContainer(sub_menus[index]):
+                            is_open_container = False
+                            container_menu = None
+                        else:
+                            if container_menu is None:
+                                container_menu = QMenu(sub_menus[index], self)
+
+                                custom_menu.addMenu(container_menu)
+                            else:
+                                action_index = action_index + 1
+                                custom_action = \
+                                    QAction(sub_menus[index], self,
+                                            objectName=sub_menus[index].lower() + "-action",
+                                            toolTip=self.tr(sub_menus[index]),
+                                            )
+                                custom_action.triggered.connect(getattr(menu_instance, 'executeAction_' + str(action_index)))
+                                container_menu.addAction(custom_action)
                     else:
-                        custom_action = \
-                            QAction(sub_menus[index], self,
-                                    objectName=sub_menus[index].lower() + "-action",
-                                    toolTip=self.tr(sub_menus[index]),
-                                    )
-                        custom_action.triggered.connect(getattr(menu_instance, 'executeAction_' + str(index+1)))
-                        custom_menu.addAction(custom_action)
+                        if menu_instance.isSeparator(sub_menus[index]):
+                            custom_menu.addSeparator()
+                        elif menu_instance.isOpenContainer(sub_menus[index]):
+                            is_open_container = True
+                        elif menu_instance.isCloseContainer(sub_menus[index]):
+                            raise Exception("Container has not been opened: Close Container Operation is inconsistent")
+                        else:
+                            action_index = action_index + 1
+                            custom_action = \
+                                QAction(sub_menus[index], self,
+                                        objectName=sub_menus[index].lower() + "-action",
+                                        toolTip=self.tr(sub_menus[index]),
+                                        )
+                            custom_action.triggered.connect(getattr(menu_instance, 'executeAction_' + str(action_index)))
+                            custom_menu.addAction(custom_action)
 
                 self.menuBar().addMenu(custom_menu)
+
+
             except Exception as exception:
                 print("Error in creating Customized Menu: " + str(menu_instance))
                 print(str(exception.args[0]))
