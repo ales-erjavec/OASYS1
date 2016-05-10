@@ -20,7 +20,7 @@ from PyQt4.QtCore import pyqtSignal as pyqtSignal
 
 from orangecanvas.scheme import readwrite
 from orangecanvas.application import (
-    canvasmain, welcomedialog, schemeinfo, settings, addons
+    canvasmain, welcomedialog, schemeinfo, settings #, addons
 )
 from orangecanvas.gui.utils import (
     message_critical, message_warning, message_question, message_information
@@ -28,6 +28,7 @@ from orangecanvas.gui.utils import (
 from orangecanvas import config
 
 from oasys.widgets.gui import OptionDialog
+import oasys.application.addons as addons
 
 from . import widgetsscheme
 from .conf import oasysconf
@@ -813,6 +814,49 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                 print("Error in creating Customized Menu: " + str(menu_instance))
                 print(str(exception.args[0]))
                 continue
+
+    def open_addons(self):
+        """Open the add-on manager dialog.
+        """
+        if not hasattr(self, "__f_pypi_addons") or self.__f_pypi_addons is None:
+            self.__f_pypi_addons = self.__executor.submit(
+                addons.pypi_search,
+                oasysconf.addon_pypi_search_spec(),
+                timeout=20,
+            )
+
+        dlg = addons.AddonManagerDialog(
+            self, windowTitle=self.tr("Add-ons"), modal=True)
+        dlg.setAttribute(Qt.WA_DeleteOnClose)
+
+        if not hasattr(self, "__addon_items") or self.__addon_items is not None:
+            pypi_distributions = self.__f_pypi_addons.result()
+            installed = [ep.dist for ep in config.default.addon_entry_points()]
+            items = addons.installable_items(pypi_distributions, installed)
+            self.__addon_items = items
+            dlg.setItems(items)
+        else:
+            # Use the dialog's own progress dialog
+            progress = dlg.progressDialog()
+            dlg.show()
+            progress.show()
+            progress.setLabelText(
+                self.tr("Retrieving package list")
+            )
+            self.__f_pypi_addons.add_done_callback(
+                addons.method_queued(self.__on_pypi_search_done, (object,))
+            )
+            close_dialog = addons.method_queued(dlg.close, ())
+
+            self.__f_pypi_addons.add_done_callback(
+                lambda f:
+                    close_dialog() if f.exception() else None)
+
+            self.__p_addon_items_available.connect(progress.hide)
+            self.__p_addon_items_available.connect(dlg.setItems)
+
+        return dlg.exec_()
+
 
     def closeEvent(self, event):
         super().closeEvent(event)
