@@ -21,10 +21,10 @@ README_FILE = os.path.join(os.path.dirname(__file__), 'README.txt')
 LONG_DESCRIPTION = open(README_FILE).read()
 AUTHOR = 'Luca Rebuffi, Manuel Sanchez del Rio and Bioinformatics Laboratory, FRI UL'
 AUTHOR_EMAIL = 'luca.rebuffi@elettra.eu'
-URL = 'https://github.com/ales-erjavec/OASYS1'
-DOWNLOAD_URL = 'https://github.com/ales-erjavec/OASYS1'
-MAINTAINER = 'Bioinformatics Laboratory, FRI UL'
-MAINTAINER_EMAIL = 'contact@orange.biolab.si'
+URL = 'https://github.com/lucarebuffi/OASYS1'
+DOWNLOAD_URL = 'https://github.com/lucarebuffi/OASYS1'
+MAINTAINER = 'Luca Rebuffi, Elettra-Sincrotrone Trieste S.C.p.A.'
+MAINTAINER_EMAIL = 'luca.rebuffi@elettra.eu'
 LICENSE = 'GPLv3'
 
 KEYWORDS = (
