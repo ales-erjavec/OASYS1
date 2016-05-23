@@ -3,6 +3,7 @@ import io
 import pickle
 import tempfile
 import logging
+import six
 import concurrent.futures
 from xml.etree import ElementTree
 from contextlib import contextmanager
@@ -12,7 +13,7 @@ import pkg_resources
 from PyQt4.QtGui import (
     QWidget, QMenu, QAction, QKeySequence, QDialog, QMessageBox, QFileDialog,
     QHBoxLayout, QLineEdit, QPushButton, QCheckBox, QVBoxLayout, QLabel,
-    QFormLayout, QIcon, QComboBox, QGridLayout
+    QFormLayout, QIcon, QComboBox, QGridLayout, QDesktopServices
 )
 from PyQt4.QtCore import Qt, QSettings
 from PyQt4.QtCore import pyqtSlot as Slot
@@ -328,6 +329,18 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                 self.__set_pypi_addons(items)
 
         self.automatic_save.connect(self.automatic_save_scheme)
+
+        self.open_action_on_new_window = \
+            QAction(self.tr("Open on a New Window"), self,
+                    objectName="action-open-new-window",
+                    toolTip=self.tr("Open a workflow on a new window."),
+                    triggered=self.open_scheme_on_new_window,
+                    icon=canvasmain.canvas_icons("Open.svg")
+                    )
+
+        file_menu = self.menuBar().children()[1]
+        file_menu.insertAction(file_menu.actions()[2], self.open_action_on_new_window)
+
 
     @Slot(object)
     def __set_pypi_addons_f(self, f):
@@ -691,6 +704,70 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         dialog.deleteLater()
 
         return status
+
+    def open_scheme_on_new_window(self):
+        """Open a new scheme. Return QDialog.Rejected if the user canceled
+        the operation and QDialog.Accepted otherwise.
+
+        """
+        document = self.current_document()
+        if document.isModifiedStrict():
+            if self.ask_save_changes() == QDialog.Rejected:
+                return QDialog.Rejected
+
+        if self.last_scheme_dir is None:
+            # Get user 'Documents' folder
+            start_dir = QDesktopServices.storageLocation(
+                            QDesktopServices.DocumentsLocation)
+        else:
+            start_dir = self.last_scheme_dir
+
+        # TODO: Use a dialog instance and use 'addSidebarUrls' to
+        # set one or more extra sidebar locations where Schemes are stored.
+        # Also use setHistory
+        filename = QFileDialog.getOpenFileName(
+            self, self.tr("Open Orange Workflow File"),
+            start_dir, self.tr("Orange Workflow (*.ows)"),
+        )
+
+        if filename:
+            return self.load_scheme_on_window(filename, self.instantiate_window())
+        else:
+            return QDialog.Rejected
+
+    def instantiate_window(self):
+        window = OASYSMainWindow()
+        window.setStyleSheet(self.styleSheet())
+        window.setWindowIcon(self.windowIcon())
+        window.set_widget_registry(self.widget_registry)
+        window.set_menu_registry(self.menu_registry)
+        window.show()
+
+        return window
+
+    def load_scheme_on_window(self, filename, window):
+        """Load a scheme from a file (`filename`) into the current
+        document updates the recent scheme list and the loaded scheme path
+        property.
+
+        """
+        filename = six.text_type(filename)
+        dirname = os.path.dirname(filename)
+
+        window.last_scheme_dir = dirname
+
+        new_scheme = window.new_scheme_from(filename)
+        if new_scheme is not None:
+            window.set_new_scheme(new_scheme)
+
+            scheme_doc_widget = window.current_document()
+            scheme_doc_widget.setPath(filename)
+
+            window.add_recent_scheme(new_scheme.title, filename)
+            return QDialog.Accepted
+        else:
+            return QDialog.Rejected
+
 
     def scheme_properties_dialog(self, existing_scheme=False):
         """Return an empty `SchemeInfo` dialog instance.
