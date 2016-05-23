@@ -596,8 +596,10 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                 dialog.accept()
 
         def tutorial():
-            if self.tutorial_scheme() == QDialog.Accepted:
-                dialog.accept()
+            import webbrowser
+            webbrowser.open("https://github.com/srio/ShadowOui-Tutorial")
+            #if self.tutorial_scheme() == QDialog.Accepted:
+            #    dialog.accept()
 
         new_action = \
             QAction(self.tr("New"), dialog,
