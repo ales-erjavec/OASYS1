@@ -754,6 +754,10 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         window.set_widget_registry(self.widget_registry)
         window.set_menu_registry(self.menu_registry)
         window.show()
+        window.setGeometry(self.geometry().left() + 10,
+                           self.geometry().top() + 10,
+                           self.geometry().width(),
+                           self.geometry().height())
 
         return window
 
