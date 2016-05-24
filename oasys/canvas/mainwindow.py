@@ -13,9 +13,9 @@ import pkg_resources
 from PyQt4.QtGui import (
     QWidget, QMenu, QAction, QKeySequence, QDialog, QMessageBox, QFileDialog,
     QHBoxLayout, QLineEdit, QPushButton, QCheckBox, QVBoxLayout, QLabel,
-    QFormLayout, QIcon, QComboBox, QGridLayout, QDesktopServices
+    QFormLayout, QIcon, QComboBox, QGridLayout, QDesktopServices, QApplication
 )
-from PyQt4.QtCore import Qt, QSettings
+from PyQt4.QtCore import Qt, QSettings, QEvent
 from PyQt4.QtCore import pyqtSlot as Slot
 from PyQt4.QtCore import pyqtSignal as pyqtSignal
 
@@ -289,7 +289,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
 
     def __init__(self, parent=None, **kwargs):
         super().__init__(parent, **kwargs)
-
+        self.is_main = True
         self.menu_registry = None
 
         settings = QSettings()
@@ -330,6 +330,14 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
 
         self.automatic_save.connect(self.automatic_save_scheme)
 
+        self.new_action_on_new_window = \
+            QAction(self.tr("New on a New Window"), self,
+                    objectName="action-new-new-window",
+                    toolTip=self.tr("Open a new workflow on a new window."),
+                    triggered=self.new_scheme_on_new_window,
+                    icon=canvasmain.canvas_icons("New.svg")
+                    )
+
         self.open_action_on_new_window = \
             QAction(self.tr("Open on a New Window"), self,
                     objectName="action-open-new-window",
@@ -340,7 +348,10 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
 
         file_menu = self.menuBar().children()[1]
         file_menu.insertAction(file_menu.actions()[2], self.open_action_on_new_window)
+        file_menu.insertAction(file_menu.actions()[1], self.new_action_on_new_window)
 
+    def set_secondary(self):
+        self.is_main = False
 
     @Slot(object)
     def __set_pypi_addons_f(self, f):
@@ -737,6 +748,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
 
     def instantiate_window(self):
         window = OASYSMainWindow()
+        window.set_secondary()
         window.setStyleSheet(self.styleSheet())
         window.setWindowIcon(self.windowIcon())
         window.set_widget_registry(self.widget_registry)
@@ -767,6 +779,38 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
             return QDialog.Accepted
         else:
             return QDialog.Rejected
+
+
+    def new_scheme_on_new_window(self):
+        """New scheme. Return QDialog.Rejected if the user canceled
+        the operation and QDialog.Accepted otherwise.
+
+        """
+        window = self.instantiate_window()
+
+        document = window.current_document()
+        if document.isModifiedStrict():
+            # Ask for save changes
+            if window.ask_save_changes() == QDialog.Rejected:
+                return QDialog.Rejected
+
+        new_scheme = config.workflow_constructor(parent=self)
+
+        settings = QSettings()
+        show = settings.value("schemeinfo/show-at-new-scheme", True,
+                              type=bool)
+
+        if show:
+            status = window.show_scheme_properties_for(
+                new_scheme, self.tr("New Workflow")
+            )
+
+            if status == QDialog.Rejected:
+                return QDialog.Rejected
+
+        window.set_new_scheme(new_scheme)
+
+        return QDialog.Accepted
 
 
     def scheme_properties_dialog(self, existing_scheme=False):
@@ -936,10 +980,59 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
 
         return dlg.exec_()
 
+    def closeSecondaryEvent(self, event):
+        """Close the main window.
+        """
+        document = self.current_document()
+        if document.isModifiedStrict():
+            if self.ask_save_changes() == QDialog.Rejected:
+                # Reject the event
+                event.ignore()
+                return
+
+        old_scheme = document.scheme()
+
+        # Set an empty scheme to clear the document
+        document.setScheme(config.workflow_constructor(parent=self))
+
+        QApplication.sendEvent(old_scheme, QEvent(QEvent.Close))
+
+        old_scheme.deleteLater()
+
+        config.save_config()
+
+        geometry = self.saveGeometry()
+        state = self.saveState(version=self.SETTINGS_VERSION)
+        settings = QSettings()
+        settings.beginGroup("mainwindow")
+        settings.setValue("geometry", geometry)
+        settings.setValue("state", state)
+        settings.setValue("canvasdock/expanded",
+                          self.dock_widget.expanded())
+        settings.setValue("scheme-margins-enabled",
+                          self.scheme_margins_enabled)
+
+        settings.setValue("last-scheme-dir", self.last_scheme_dir)
+        settings.setValue("widgettoolbox/state",
+                          self.widgets_tool_box.saveState())
+
+        settings.setValue("quick-help/visible",
+                          self.canvas_tool_dock.quickHelpVisible())
+
+        settings.endGroup()
+
+        event.accept()
+
 
     def closeEvent(self, event):
-        super().closeEvent(event)
-        if event.isAccepted():
-            if self.__pypi_addons_f is not None:
-                self.__pypi_addons_f.cancel()
-            self.__executor.shutdown(wait=True)
+        if self.is_main:
+            super().closeEvent(event)
+            if event.isAccepted():
+                if self.__pypi_addons_f is not None:
+                    self.__pypi_addons_f.cancel()
+                self.__executor.shutdown(wait=True)
+        else:
+            self.closeSecondaryEvent(event)
+            if event.isAccepted():
+                if self.__pypi_addons_f is not None:
+                    self.__pypi_addons_f.cancel()
