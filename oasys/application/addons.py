@@ -474,8 +474,6 @@ class SafeTransport(xmlrpc.client.SafeTransport):
         return conn
 
 def pypi_search(spec, timeout=socket._GLOBAL_DEFAULT_TIMEOUT):
-    print("qui")
-
     """
     Search package distributions available on PyPi using PyPiXMLRPC.
     """
