@@ -20,15 +20,21 @@ def checkStrictlyPositiveNumber(value, field_name):
 
     return value
 
-def checkStrictlyPositiveAngle(value, field_name):
+def checkAngle(value, field_name):
     value = checkNumber(value, field_name)
-    if value <= 0 or value >= 360: raise Exception(field_name + " should be > 0 and < 360 deg")
+    if value < -360 or value > 360: raise Exception(field_name + " should be >= -360 and <= 360 deg")
 
     return value
 
 def checkPositiveAngle(value, field_name):
     value = checkNumber(value, field_name)
     if value < 0 or value > 360: raise Exception(field_name + " should be >= 0 and <= 360 deg")
+
+    return value
+
+def checkStrictlyPositiveAngle(value, field_name):
+    value = checkNumber(value, field_name)
+    if value <= 0 or value >= 360: raise Exception(field_name + " should be > 0 and < 360 deg")
 
     return value
 

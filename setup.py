@@ -13,7 +13,7 @@ except ImportError:
 
 NAME = 'OASYS'
 
-VERSION = '0.1.17'
+VERSION = '0.1.18'
 ISRELEASED = False
 
 DESCRIPTION = 'OrAnge SYnchrotron Suite'
