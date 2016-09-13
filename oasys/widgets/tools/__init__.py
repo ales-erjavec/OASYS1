@@ -15,7 +15,7 @@ NAME = "Tools"
 
 DESCRIPTION = "Widgets for Common Tools."
 
-BACKGROUND = "#FFFFFF"
+BACKGROUND = "#FAAC58"
 
 ICON = "icons/tools.png"
 
