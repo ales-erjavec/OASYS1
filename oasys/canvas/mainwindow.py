@@ -346,10 +346,8 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                     triggered=self.open_scheme_on_new_window,
                     icon=canvasmain.canvas_icons("Open.svg")
                     )
-        if sys.platform == "darwin":
-            file_menu = self.menuBar().children()[1]
-        else:
-            file_menu = self.menuBar().children()[2]
+
+        file_menu = self.menuBar().children()[-1]
 
         file_menu.insertAction(file_menu.actions()[2], self.open_action_on_new_window)
         file_menu.insertAction(file_menu.actions()[1], self.new_action_on_new_window)
