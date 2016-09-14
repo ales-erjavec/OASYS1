@@ -481,7 +481,8 @@ def pypi_search(spec, timeout=socket._GLOBAL_DEFAULT_TIMEOUT):
         "https://pypi.python.org/pypi",
         transport=SafeTransport(timeout=timeout)
     )
- 
+
+    '''
     addons = pypi.user_packages(spec["owner"])
 
     multicall = xmlrpc.client.MultiCall(pypi)
@@ -510,6 +511,34 @@ def pypi_search(spec, timeout=socket._GLOBAL_DEFAULT_TIMEOUT):
                                             release["summary"], release["description"],
                                             release["package_url"],
                                             urls)
+            )
+    '''
+
+    addons = pypi.search(spec)
+
+    multicall = xmlrpc.client.MultiCall(pypi)
+    for addon in addons:
+        name, version = addon["name"], addon["version"]
+        multicall.release_data(name, version)
+        multicall.release_urls(name, version)
+
+    results = list(multicall())
+    release_data = results[::2]
+    release_urls = results[1::2]
+    packages = []
+    for release, urls in zip(release_data, release_urls):
+        if release and urls:
+            # ignore releases without actual source/wheel/egg files,
+            # or with empty metadata (deleted from PyPi?).
+            urls = [ReleaseUrl(url["filename"], url["url"],
+                               url["size"], url["python_version"],
+                               url["packagetype"])
+                    for url in urls]
+            packages.append(
+                Installable(release["name"], release["version"],
+                            release["summary"], release["description"],
+                            release["package_url"],
+                            urls)
             )
 
     return packages
