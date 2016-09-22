@@ -44,6 +44,21 @@ def checkEmptyString(string, field_name):
 
     return string
 
+def checkGreaterThan(number1, number2, field_name1, field_name_2):
+    if number1 <= number2: raise Exception(field_name1 + " should be greater than " + field_name_2)
+
+def checkGreaterOrEqualThan(number1, number2, field_name1, field_name_2):
+    if number1 < number2: raise Exception(field_name1 + " should be greater or equal than " + field_name_2)
+
+def checkLessThan(number1, number2, field_name1, field_name_2):
+    if number1 >= number2: raise Exception(field_name1 + " should be less than " + field_name_2)
+
+def checkLessOrEqualThan(number1, number2, field_name1, field_name_2):
+    if number1 > number2: raise Exception(field_name1 + " should be less or equal than " + field_name_2)
+
+def checkEqualTo(number1, number2, field_name1, field_name_2):
+    if number1 != number2: raise Exception(field_name1 + " should be equal to " + field_name_2)
+
 def checkFileName(fileName):
     if fileName is None: raise Exception("File name is Empty")
     if fileName.strip() == "": raise Exception("File name is Empty")
