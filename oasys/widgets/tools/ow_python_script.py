@@ -352,7 +352,16 @@ class OWPythonScript(widget.OWWidget):
     icon = "icons/python_script.png"
     priority = 1
 
-    inputs = [("in_object", object, "setObject")]
+    inputs = [("in_object_1", object, "setObject1"),
+              ("in_object_2", object, "setObject2"),
+              ("in_object_3", object, "setObject3"),
+              ("in_object_4", object, "setObject4"),
+              ("in_object_5", object, "setObject5"),
+              ("in_object_6", object, "setObject6"),
+              ("in_object_7", object, "setObject7"),
+              ("in_object_8", object, "setObject8"),
+              ("in_object_9", object, "setObject9"),
+              ("in_object_10", object, "setObject10")]
 
     outputs = [("out_object", object, widget.Dynamic)]
 
@@ -369,7 +378,16 @@ class OWPythonScript(widget.OWWidget):
         self.in_distance = None
         self.in_learner = None
         self.in_classifier = None
-        self.in_object = None
+        self.in_object_1 = None
+        self.in_object_2 = None
+        self.in_object_3 = None
+        self.in_object_4 = None
+        self.in_object_5 = None
+        self.in_object_6 = None
+        self.in_object_7 = None
+        self.in_object_8 = None
+        self.in_object_9 = None
+        self.in_object_10 = None
 
         # MODIFIED BY LUCA REBUFFI 14/10/2014
         #self.auto_execute = False
@@ -508,8 +526,35 @@ class OWPythonScript(widget.OWWidget):
     def setClassifier(self, classifier):
         self.in_classifier = classifier
 
-    def setObject(self, obj):
-        self.in_object = obj
+    def setObject1(self, obj):
+        self.in_object_1 = obj
+
+    def setObject2(self, obj):
+        self.in_object_2 = obj
+
+    def setObject3(self, obj):
+        self.in_object_3 = obj
+
+    def setObject4(self, obj):
+        self.in_object_4 = obj
+
+    def setObject5(self, obj):
+        self.in_object_5 = obj
+
+    def setObject6(self, obj):
+        self.in_object_6 = obj
+
+    def setObject7(self, obj):
+        self.in_object_7 = obj
+
+    def setObject8(self, obj):
+        self.in_object_8 = obj
+
+    def setObject9(self, obj):
+        self.in_object_9 = obj
+
+    def setObject10(self, obj):
+        self.in_object_10 = obj
 
     def handleNewSignals(self):
         if self.auto_execute:
