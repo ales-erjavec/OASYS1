@@ -16,6 +16,7 @@ from PyQt4.QtGui import (
 from PyQt4.QtCore import Qt, QRegExp, QByteArray
 
 from oasys.widgets import widget
+from oasys.widgets import gui as oasysgui
 from orangewidget import gui
 
 from orangecontrib.shadow.util.script import itemmodels
@@ -371,6 +372,9 @@ class OWPythonScript(widget.OWWidget):
     splitterState = Setting(None)
     auto_execute = Setting(False)
 
+    fonts = ["8", "9", "10", "11", "12", "14", "16", "20", "24"]
+    font_size = Setting(4)
+
     def __init__(self):
         super().__init__()
 
@@ -401,11 +405,17 @@ class OWPythonScript(widget.OWWidget):
         gui.label(
             self.infoBox, self,
             "<p>Execute python script.</p><p>Input variables:<ul><li> " + \
-            "<li>".join(t.name for t in self.inputs) + \
+            "<li>".join([self.inputs[0].name, ".",".",".", self.inputs[-1].name]) + \
             "</ul></p><p>Output variables:<ul><li>" + \
             "<li>".join(t.name for t in self.outputs) + \
             "</ul></p>"
         )
+
+        self.optionBox = oasysgui.widgetBox(self.controlArea, 'Options')
+
+        gui.comboBox(self.optionBox, self, "font_size", label="Font Size", labelWidth=120,
+                     items=self.fonts,
+                     sendSelectedValue=False, orientation="horizontal", callback=self.changeFont)
 
         self.libraryList = itemmodels.PyListModel(
             [], self,
@@ -513,6 +523,8 @@ class OWPythonScript(widget.OWWidget):
         self.splitCanvas.splitterMoved[int, int].connect(self.onSpliterMoved)
         self.controlArea.layout().addStretch(1)
         self.resize(800, 600)
+
+        self.changeFont()
 
     def setExampleTable(self, et):
         self.in_data = et
@@ -684,6 +696,11 @@ class OWPythonScript(widget.OWWidget):
             signal = out.name
             self.send(signal, getattr(self, signal, None))
 
+    def changeFont(self):
+        font = QFont(self.defaultFont)
+        font.setPixelSize(int(self.fonts[self.font_size]))
+        self.text.setFont(font)
+        self.console.setFont(font)
 
 if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
