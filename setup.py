@@ -13,7 +13,7 @@ except ImportError:
 
 NAME = 'OASYS'
 
-VERSION = '0.1.25'
+VERSION = '0.1.26'
 ISRELEASED = False
 
 DESCRIPTION = 'OrAnge SYnchrotron Suite'
@@ -53,6 +53,11 @@ INSTALL_REQUIRES = (
     'setuptools',
     'orange-canvas-core>=0.0.7,<0.1',
     'orange-widget-core>=0.0,<0.1',
+    'numpy',
+    'scipy>=0.17.0',
+    'matplotlib==1.4.3', #problems found with 1.5.0
+    'silx',
+    'srxraylib>=1.0.7',
 )
 
 SETUP_REQUIRES = (
