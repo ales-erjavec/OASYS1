@@ -53,10 +53,10 @@ INSTALL_REQUIRES = (
     'setuptools',
     'orange-canvas-core>=0.0.7,<0.1',
     'orange-widget-core>=0.0,<0.1',
-    'numpy',
-    'scipy>=0.17.0',
+    'numpy==1.11.0', #problems found with 1.12.0
+    'scipy==0.17.0',
     'matplotlib==1.4.3', #problems found with 1.5.0
-    'silx',
+    'silx==0.4.0',
     'srxraylib>=1.0.7',
 )
 
