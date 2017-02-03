@@ -57,7 +57,7 @@ INSTALL_REQUIRES = (
     'scipy==0.17.0',
     'matplotlib==1.4.3', #problems found with 1.5.0
     'silx==0.4.0',
-    'srxraylib>=1.0.7',
+    'srxraylib>=1.0.11',
 )
 
 SETUP_REQUIRES = (
