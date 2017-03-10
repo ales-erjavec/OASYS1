@@ -14,7 +14,7 @@ except ImportError:
 NAME = 'OASYS'
 
 VERSION = '1.0.0'
-ISRELEASED = False
+ISRELEASED = True
 
 DESCRIPTION = 'OrAnge SYnchrotron Suite'
 README_FILE = os.path.join(os.path.dirname(__file__), 'README.txt')
@@ -58,6 +58,8 @@ INSTALL_REQUIRES = (
     'matplotlib',
     'silx>=0.4.0',
     'srxraylib>=1.0.11',
+    'syned',
+    'wofry',
 )
 
 SETUP_REQUIRES = (

@@ -15,7 +15,7 @@ WIDGETS_ENTRY = "oasys.widgets"
 MENU_ENTRY = "oasys.menus"
 
 #: Parameters for searching add-on packages in PyPi using xmlrpc api.
-ADDON_PYPI_SEARCH_SPEC = {"keywords": "oasys", "owner" : "lucarebuffi"}
+ADDON_PYPI_SEARCH_SPEC = {"keywords": "oasys1", "owner" : "lucarebuffi"}
 #: Entry points by which add-ons register with pkg_resources.
 ADDONS_ENTRY = "oasys.addons"
 
