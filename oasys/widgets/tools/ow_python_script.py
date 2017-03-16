@@ -17,9 +17,9 @@ from PyQt4.QtCore import Qt, QRegExp, QByteArray
 
 from oasys.widgets import widget
 from oasys.widgets import gui as oasysgui
-from orangewidget import gui
+from oasys.util.script import itemmodels
 
-from orangecontrib.shadow.util.script import itemmodels
+from orangewidget import gui
 from orangewidget.settings import Setting
 
 __all__ = ["OWPythonScript"]
