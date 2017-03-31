@@ -11,7 +11,7 @@ except ImportError:
     ez_setup.use_setuptools()
     from setuptools import setup
 
-NAME = 'OASYS'
+NAME = 'OASYS1'
 
 VERSION = '1.0.0'
 ISRELEASED = True
