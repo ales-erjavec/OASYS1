@@ -275,6 +275,9 @@ def main(argv=None):
     log.info("Running widget discovery process.")
 
     cache_filename = os.path.join(config.cache_dir(), "widget-registry.pck")
+
+    print(cache_filename)
+
     if options.no_discovery:
         widget_registry = pickle.load(open(cache_filename, "rb"))
         widget_registry = qt.QtWidgetRegistry(widget_registry)

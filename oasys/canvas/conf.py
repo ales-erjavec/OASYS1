@@ -30,7 +30,7 @@ config.spec += [
 
 class oasysconf(owconfig.orangeconfig):
     OrganizationDomain = ""
-    ApplicationName = "OASYS"
+    ApplicationName = "OASYS1"
     ApplicationVersion = "1.0"
 
     @staticmethod
