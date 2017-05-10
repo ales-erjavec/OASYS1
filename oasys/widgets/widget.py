@@ -117,3 +117,39 @@ Dynamic = widget.Dynamic
 
 InputSignal = widget.InputSignal
 OutputSignal = widget.OutputSignal
+
+from orangewidget import gui
+from orangewidget.settings import Setting
+
+from PyQt4.QtGui import QApplication
+from PyQt4.QtCore import QRect
+
+class AutomaticWidget(OWWidget):
+
+    is_automatic_execution = Setting(True)
+
+    CONTROL_AREA_WIDTH = 405
+
+    MAX_WIDTH = 1320
+    MAX_HEIGHT = 700
+
+    def __init__(self, is_automatic=True):
+        super().__init__()
+
+        geom = QApplication.desktop().availableGeometry()
+        self.setGeometry(QRect(round(geom.width()*0.05),
+                               round(geom.height()*0.05),
+                               round(min(geom.width()*0.98, self.MAX_WIDTH)),
+                               round(min(geom.height()*0.95, self.MAX_HEIGHT))))
+
+        self.setMaximumHeight(self.geometry().height())
+        self.setMaximumWidth(self.geometry().width())
+
+        self.controlArea.setFixedWidth(self.CONTROL_AREA_WIDTH)
+
+        if is_automatic:
+            self.general_options_box = gui.widgetBox(self.controlArea, "General Options", addSpace=True, orientation="horizontal")
+
+            gui.checkBox(self.general_options_box, self, 'is_automatic_execution', 'Automatic Execution')
+        else:
+            self.is_automatic_execution=False

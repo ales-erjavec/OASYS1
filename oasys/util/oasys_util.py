@@ -31,6 +31,9 @@ class EmittingStream(QtCore.QObject):
     def write(self, text):
         self.textWritten.emit(str(text))
 
+    def flush(self):
+        pass
+
 class ShowHtmlDialog(QtGui.QDialog):
 
     def __init__(self, title, hrml_text, width=650, height=400, parent=None):
