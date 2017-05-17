@@ -523,11 +523,17 @@ def pypi_search(spec, timeout=socket._GLOBAL_DEFAULT_TIMEOUT):
         multicall.release_urls(name, version)
 
     results = list(multicall())
+
+    print ("results", results)
+
     release_data = results[::2]
     release_urls = results[1::2]
     packages = []
     for release, urls in zip(release_data, release_urls):
+        print ("Release", release)
+        print ("Urls", urls)
         if release and urls:
+            print("SON QUA")
             # ignore releases without actual source/wheel/egg files,
             # or with empty metadata (deleted from PyPi?).
             urls = [ReleaseUrl(url["filename"], url["url"],

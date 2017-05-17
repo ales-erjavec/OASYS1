@@ -5,15 +5,17 @@ import os
 import subprocess
 
 try:
-    from setuptools import setup
+    from setuptools import find_packages, setup
 except ImportError:
     import ez_setup
     ez_setup.use_setuptools()
-    from setuptools import setup
+    from setuptools import find_packages, setup
+except AttributeError:
+    from setuptools import find_packages, setup
 
 NAME = 'OASYS1'
 
-VERSION = '1.0.1'
+VERSION = '1.0.5'
 ISRELEASED = True
 
 DESCRIPTION = 'OrAnge SYnchrotron Suite'
@@ -33,7 +35,7 @@ KEYWORDS = (
 )
 
 CLASSIFIERS = (
-    'Development Status :: 1 - Planning',
+    'Development Status :: 5 - Production/Stable',
     'Environment :: X11 Applications :: Qt',
     'Environment :: Console',
     'Environment :: Plugins',
