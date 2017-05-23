@@ -17,8 +17,8 @@ import logging
 
 import sip
 
-from PyQt4.QtCore import QSettings
-from PyQt4.QtCore import pyqtSignal as Signal, pyqtProperty as Property
+from PyQt5.QtCore import QSettings
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtProperty as Property
 
 from orangecanvas.scheme import Scheme, readwrite
 

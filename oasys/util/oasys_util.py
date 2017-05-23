@@ -1,6 +1,6 @@
 import os
-from PyQt4 import QtCore, QtGui
-from PyQt4.QtWebKit import QWebView
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtWebEngineWidgets import QWebEngineView
 
 class TTYGrabber:
     def __init__(self,  tmpFileName = 'out.tmp.dat'):
@@ -34,24 +34,24 @@ class EmittingStream(QtCore.QObject):
     def flush(self):
         pass
 
-class ShowHtmlDialog(QtGui.QDialog):
+class ShowHtmlDialog(QtWidgets.QDialog):
 
     def __init__(self, title, hrml_text, width=650, height=400, parent=None):
-        QtGui.QDialog.__init__(self, parent)
+        QtWidgets.QDialog.__init__(self, parent)
         self.setModal(True)
         self.setWindowTitle(title)
-        layout = QtGui.QVBoxLayout(self)
+        layout = QtWidgets.QVBoxLayout(self)
 
-        web_view = QWebView(self)
+        web_view = QWebEngineView(self)
         web_view.setHtml(hrml_text)
 
-        text_area = QtGui.QScrollArea(self)
+        text_area = QtWidgets.QScrollArea(self)
         text_area.setWidget(web_view)
         text_area.setWidgetResizable(True)
         text_area.setFixedHeight(height)
         text_area.setFixedWidth(width)
 
-        bbox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok)
+        bbox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok)
 
         bbox.accepted.connect(self.accept)
         layout.addWidget(text_area)
@@ -63,25 +63,25 @@ class ShowHtmlDialog(QtGui.QDialog):
         dialog.show()
 
 
-class ShowTextDialog(QtGui.QDialog):
+class ShowTextDialog(QtWidgets.QDialog):
 
     def __init__(self, title, text, width=650, height=400, parent=None):
-        QtGui.QDialog.__init__(self, parent)
+        QtWidgets.QDialog.__init__(self, parent)
         self.setModal(True)
         self.setWindowTitle(title)
-        layout = QtGui.QVBoxLayout(self)
+        layout = QtWidgets.QVBoxLayout(self)
 
-        text_edit = QtGui.QTextEdit("", self)
+        text_edit = QtWidgets.QTextEdit("", self)
         text_edit.append(text)
         text_edit.setReadOnly(True)
 
-        text_area = QtGui.QScrollArea(self)
+        text_area = QtWidgets.QScrollArea(self)
         text_area.setWidget(text_edit)
         text_area.setWidgetResizable(True)
         text_area.setFixedHeight(height)
         text_area.setFixedWidth(width)
 
-        bbox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok)
+        bbox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok)
 
         bbox.accepted.connect(self.accept)
         layout.addWidget(text_area)

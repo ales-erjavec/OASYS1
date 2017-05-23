@@ -11,14 +11,17 @@ from contextlib import contextmanager
 from datetime import datetime, timedelta
 import pkg_resources
 
-from PyQt4.QtGui import (
-    QWidget, QMenu, QAction, QKeySequence, QDialog, QMessageBox, QFileDialog,
+from PyQt5.QtWidgets import (
+    QWidget, QMenu, QAction, QDialog, QMessageBox, QFileDialog,
     QHBoxLayout, QLineEdit, QPushButton, QCheckBox, QVBoxLayout, QLabel,
-    QFormLayout, QIcon, QComboBox, QGridLayout, QDesktopServices, QApplication
+    QFormLayout, QComboBox, QGridLayout, QApplication
 )
-from PyQt4.QtCore import Qt, QSettings, QEvent
-from PyQt4.QtCore import pyqtSlot as Slot
-from PyQt4.QtCore import pyqtSignal as pyqtSignal
+from PyQt5.QtGui import (
+    QKeySequence, QIcon
+)
+from PyQt5.QtCore import Qt, QSettings, QEvent, QStandardPaths
+from PyQt5.QtCore import pyqtSlot as Slot
+from PyQt5.QtCore import pyqtSignal as pyqtSignal
 
 from orangecanvas.scheme import readwrite
 from orangecanvas.application import (
@@ -730,8 +733,8 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
 
         if self.last_scheme_dir is None:
             # Get user 'Documents' folder
-            start_dir = QDesktopServices.storageLocation(
-                            QDesktopServices.DocumentsLocation)
+            start_dir = QStandardPaths.standardLocations(
+                            QStandardPaths.DocumentsLocation)[0]
         else:
             start_dir = self.last_scheme_dir
 

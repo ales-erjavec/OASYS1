@@ -1,11 +1,11 @@
 import pickle
 from contextlib import contextmanager
 
-from PyQt4.QtGui import  QItemSelectionModel
-from PyQt4.QtCore import Qt, QAbstractListModel, QModelIndex, QByteArray
-from PyQt4.QtCore import pyqtSignal as Signal
+from PyQt5.QtCore import  QItemSelectionModel
+from PyQt5.QtCore import Qt, QAbstractListModel, QModelIndex, QByteArray
+from PyQt5.QtCore import pyqtSignal as Signal
 
-from PyQt4.QtGui import (
+from PyQt5.QtWidgets import (
     QWidget, QBoxLayout, QToolButton, QAbstractButton, QAction
 )
 
@@ -82,7 +82,7 @@ class PyListModel(QAbstractListModel):
         """
         self._list = lst
         self._other_data = [_store() for _ in lst]
-        self.reset()
+        #self.reset()
 
 
     # noinspection PyMethodOverriding

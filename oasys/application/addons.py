@@ -20,18 +20,19 @@ try:
 except ImportError:
     docutils = None
 
-from PyQt4.QtGui import (
+from PyQt5.QtWidgets import (
     QWidget, QDialog, QLabel, QLineEdit, QTreeView, QHeaderView,
-    QTextBrowser, QTextOption, QDialogButtonBox, QProgressDialog,
-    QVBoxLayout, QPalette, QStandardItemModel, QStandardItem,
-    QSortFilterProxyModel, QItemSelectionModel, QStyle, QStyledItemDelegate,
-    QStyleOptionViewItemV4, QApplication
+    QTextBrowser, QDialogButtonBox, QProgressDialog,
+    QVBoxLayout, QStyle, QStyledItemDelegate,
+    QStyleOptionViewItem, QApplication
 )
-
-from PyQt4.QtCore import (
-    Qt, QObject, QMetaObject, QEvent, QSize, QTimer, QThread, Q_ARG
+from PyQt5.QtGui import (
+    QTextOption, QPalette, QStandardItemModel, QStandardItem
 )
-from PyQt4.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
+from PyQt5.QtCore import (
+    Qt, QObject, QMetaObject, QEvent, QSize, QTimer, QThread, Q_ARG, QSortFilterProxyModel, QItemSelectionModel
+)
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from orangecanvas.gui.utils import message_warning, message_information, \
                         message_critical as message_error
@@ -113,7 +114,7 @@ class TristateCheckItemDelegate(QStyledItemDelegate):
         if event.type() in {QEvent.MouseButtonPress, QEvent.MouseButtonRelease,
                             QEvent.MouseButtonDblClick}:
             pos = event.pos()
-            opt = QStyleOptionViewItemV4(option)
+            opt = QStyleOptionViewItem(option)
             self.initStyleOption(opt, index)
             rect = style.subElementRect(
                 QStyle.SE_ItemViewItemCheckIndicator, opt, widget)

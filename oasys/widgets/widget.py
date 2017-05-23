@@ -1,4 +1,4 @@
-from PyQt4.QtGui import QScrollArea
+from PyQt5.QtWidgets import QScrollArea
 
 from orangewidget import widget
 
@@ -22,6 +22,8 @@ class OWWidget(widget.OWWidget):
 
         """
         super().insertLayout()
+
+        self.setStyleSheet("background-color: #EBEBEB;")
 
         cls = type(self)
 
@@ -121,8 +123,8 @@ OutputSignal = widget.OutputSignal
 from orangewidget import gui
 from orangewidget.settings import Setting
 
-from PyQt4.QtGui import QApplication
-from PyQt4.QtCore import QRect
+from PyQt5.QtWidgets import QApplication
+from PyQt5.QtCore import QRect
 
 class AutomaticWidget(OWWidget):
 

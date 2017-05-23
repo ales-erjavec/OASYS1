@@ -1,7 +1,7 @@
 import os, sys
 
-from PyQt4.QtCore import Qt, QCoreApplication
-from PyQt4.QtGui import QWidget, QGridLayout, QFileDialog, QMessageBox, QLabel, QComboBox
+from PyQt5.QtCore import Qt, QCoreApplication
+from PyQt5.QtWidgets import QWidget, QGridLayout, QFileDialog, QMessageBox, QLabel, QComboBox
 
 from orangewidget import gui as orange_gui
 
@@ -47,6 +47,8 @@ def lineEdit(widget, master, value, label=None, labelWidth=None,
         if (valueType != str):
             ledit.setAlignment(Qt.AlignRight)
 
+    ledit.setStyleSheet("background-color: white;")
+
     return ledit
 
 def widgetBox(widget, box=None, orientation='vertical', margin=None, spacing=4, height=None, width=None, **misc):
@@ -68,6 +70,8 @@ def tabWidget(widget, height=None, width=None):
         tabWidget.setFixedHeight(height)
     if not width is None:
         tabWidget.setFixedWidth(width)
+
+    tabWidget.setStyleSheet('QTabBar::tab::selected {background-color: #a6a6a6;}')
 
     return tabWidget
 

@@ -2,8 +2,8 @@ import logging
 
 import pkg_resources
 
-from PyQt4.QtGui import QPixmap, QFont, QFontMetrics, QColor, QPainter, QIcon
-from PyQt4.QtCore import Qt, QCoreApplication, QPoint, QRect
+from PyQt5.QtGui import QPixmap, QFont, QFontMetrics, QColor, QPainter, QIcon
+from PyQt5.QtCore import Qt, QCoreApplication, QPoint, QRect
 
 from orangewidget.canvas import config as owconfig
 from orangecanvas import config

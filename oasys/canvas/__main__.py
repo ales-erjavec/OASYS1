@@ -17,9 +17,10 @@ import time
 
 import pkg_resources
 
-from PyQt4 import QtCore
-from PyQt4.QtGui import QFont, QColor
-from PyQt4.QtCore import Qt, QDir, QThread, QObject
+from PyQt5 import QtCore
+from PyQt5.QtGui import QFont, QColor
+from PyQt5.QtCore import Qt, QDir, QThread, QObject
+from PyQt5.QtWidgets import QStyleFactory
 
 import orangecanvas
 from orangecanvas.application.application import CanvasApplication
@@ -38,7 +39,6 @@ from oasys.canvas import conf
 
 log = logging.getLogger(__name__)
 
-
 def running_in_ipython():
     try:
         __IPYTHON__
@@ -53,7 +53,7 @@ signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 def fix_osx_10_9_private_font():
     """Temporary fix for QTBUG-32789."""
-    from PyQt4.QtCore import QSysInfo, QT_VERSION
+    from PyQt5.QtCore import QSysInfo, QT_VERSION
     if sys.platform == "darwin":
         try:
             QFont.insertSubstitution(".Helvetica Neue DeskInterface",
@@ -113,7 +113,7 @@ def main(argv=None):
                       help="Do not redirect stdout/err to canvas output view.")
     parser.add_option("--style",
                       help="QStyle to use",
-                      type="str", default="plastique")
+                      type="str", default="Fusion")
     parser.add_option("--stylesheet",
                       help="Application level CSS style sheet to use",
                       type="str", default="orange.qss")
@@ -314,6 +314,10 @@ def main(argv=None):
     want_welcome = True or \
         settings.value("startup/show-welcome-screen", True, type=bool) \
         and not options.no_welcome
+
+    app.setStyle(QStyleFactory.create('Fusion'))
+    #app.setStyle(QStyleFactory.create('Macintosh'))
+    #app.setStyle(QStyleFactory.create('Windows'))
 
     # Process events to make sure the canvas_window layout has
     # a chance to activate (the welcome dialog is modal and will

@@ -5,15 +5,20 @@ import keyword
 import itertools
 import unicodedata
 
-from PyQt4 import QtGui
+from PyQt5 import QtGui, QtWidgets
 
-from PyQt4.QtGui import (
-    QTextCursor, QFont, QColor, QPalette, QListView, QSizePolicy, QAction,
-    QMenu, QKeySequence, QSplitter, QToolButton, QItemSelectionModel,
+from PyQt5.QtWidgets import (
+    QListView, QSizePolicy, QAction,
+    QMenu, QSplitter, QToolButton,
     QFileDialog
 )
 
-from PyQt4.QtCore import Qt, QRegExp, QByteArray
+from PyQt5.QtGui import (
+    QTextCursor, QFont, QColor, QPalette, QKeySequence
+)
+
+
+from PyQt5.QtCore import Qt, QRegExp, QByteArray, QItemSelectionModel
 
 from oasys.widgets import widget
 from oasys.widgets import gui as oasysgui
@@ -66,7 +71,7 @@ class PythonSyntaxHighlighter(QtGui.QSyntaxHighlighter):
             index = exp.indexIn(text)
             while index >= 0:
                 length = exp.matchedLength()
-                if exp.numCaptures() > 0:
+                if exp.captureCount() > 0:
                     self.setFormat(exp.pos(1), len(str(exp.cap(1))), format)
                 else:
                     self.setFormat(exp.pos(0), len(str(exp.cap(0))), format)
@@ -93,7 +98,7 @@ class PythonSyntaxHighlighter(QtGui.QSyntaxHighlighter):
                                 3)
 
 
-class PythonScriptEditor(QtGui.QPlainTextEdit):
+class PythonScriptEditor(QtWidgets.QPlainTextEdit):
     INDENT = 4
 
     def lastLine(self):
@@ -128,9 +133,9 @@ class PythonScriptEditor(QtGui.QPlainTextEdit):
             super().keyPressEvent(event)
 
 
-class PythonConsole(QtGui.QPlainTextEdit, code.InteractiveConsole):
+class PythonConsole(QtWidgets.QPlainTextEdit, code.InteractiveConsole):
     def __init__(self, locals=None, parent=None):
-        QtGui.QPlainTextEdit.__init__(self, parent)
+        QtWidgets.QPlainTextEdit.__init__(self, parent)
         code.InteractiveConsole.__init__(self, locals)
         self.history, self.historyInd = [""], 0
         self.loop = self.interact()
@@ -228,9 +233,9 @@ class PythonConsole(QtGui.QPlainTextEdit, code.InteractiveConsole):
             self.complete()
         elif event.key() in [Qt.Key_Left, Qt.Key_Backspace]:
             if self.textCursor().position() > self.newPromptPos:
-                QtGui.QPlainTextEdit.keyPressEvent(self, event)
+                QtWidgets.QPlainTextEdit.keyPressEvent(self, event)
         else:
-            QtGui.QPlainTextEdit.keyPressEvent(self, event)
+            QtWidgets.QPlainTextEdit.keyPressEvent(self, event)
 
     def historyUp(self):
         self.setLine(self.history[self.historyInd])
@@ -308,7 +313,7 @@ class Script(object):
         self.filename = filename
 
 
-class ScriptItemDelegate(QtGui.QStyledItemDelegate):
+class ScriptItemDelegate(QtWidgets.QStyledItemDelegate):
     def __init__(self, parent):
         super().__init__(parent)
 
@@ -322,13 +327,13 @@ class ScriptItemDelegate(QtGui.QStyledItemDelegate):
         script = index.data(Qt.DisplayRole)
 
         if script.flags & Script.Modified:
-            option = QtGui.QStyleOptionViewItemV4(option)
+            option = QtWidgets.QStyleOptionViewItem(option)
             option.palette.setColor(QPalette.Text, QColor(Qt.red))
             option.palette.setColor(QPalette.Highlight, QColor(Qt.darkRed))
         super().paint(painter, option, index)
 
     def createEditor(self, parent, option, index):
-        return QtGui.QLineEdit(parent)
+        return QtWidgets.QLineEdit(parent)
 
     def setEditorData(self, editor, index):
         script = index.data(Qt.DisplayRole)
@@ -518,7 +523,7 @@ class OWPythonScript(widget.OWWidget):
 
         self.splitCanvas.setSizes([2, 1])
         if self.splitterState is not None:
-            self.splitCanvas.restoreState(QByteArray(self.splitterState))
+            self.splitCanvas.restoreState(QByteArray(bytearray(self.splitterState, "ascii")))
 
         self.splitCanvas.splitterMoved[int, int].connect(self.onSpliterMoved)
         self.controlArea.layout().addStretch(1)
@@ -628,7 +633,7 @@ class OWPythonScript(widget.OWWidget):
 
         if script not in self._cachedDocuments:
             doc = QtGui.QTextDocument(self)
-            doc.setDocumentLayout(QtGui.QPlainTextDocumentLayout(doc))
+            doc.setDocumentLayout(QtWidgets.QPlainTextDocumentLayout(doc))
             doc.setPlainText(script.script)
             doc.setDefaultFont(QFont(self.defaultFont))
             doc.highlighter = PythonSyntaxHighlighter(doc)
@@ -703,7 +708,7 @@ class OWPythonScript(widget.OWWidget):
         self.console.setFont(font)
 
 if __name__ == "__main__":
-    app = QtGui.QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
     ow = OWPythonScript()
     ow.show()
     app.exec_()
