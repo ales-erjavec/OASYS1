@@ -1,7 +1,7 @@
 import os, sys
 
 from PyQt5.QtCore import Qt, QCoreApplication
-from PyQt5.QtWidgets import QWidget, QGridLayout, QFileDialog, QMessageBox, QLabel, QComboBox
+from PyQt5.QtWidgets import QWidget, QGridLayout, QFileDialog, QMessageBox, QLabel, QComboBox, QTextEdit
 
 from orangewidget import gui as orange_gui
 
@@ -75,7 +75,7 @@ def tabWidget(widget, height=None, width=None):
 
     return tabWidget
 
-def createTabPage(tabWidget, name, widgetToAdd=None, canScroll=False, height=None, width=None):
+def createTabPage(tabWidget, name, widgetToAdd=None, canScroll=False, height=None, width=None, isImage=False):
 
     tab = orange_gui.createTabPage(tabWidget, name, widgetToAdd, canScroll)
     tab.layout().setAlignment(Qt.AlignTop)
@@ -84,6 +84,8 @@ def createTabPage(tabWidget, name, widgetToAdd=None, canScroll=False, height=Non
         tab.setFixedHeight(height)
     if not width is None:
         tab.setFixedWidth(width)
+
+    if isImage: tab.setStyleSheet("background-color: #FFFFFF;")
 
     return tab
 
@@ -95,6 +97,15 @@ def selectFileFromDialog(widget, previous_file_path="", message="Select File", s
     else:
         return previous_file_path
 
+def textArea(height=None, width=None, readOnly=True):
+        area = QTextEdit()
+        area.setReadOnly(readOnly)
+        area.setStyleSheet("background-color: white;")
+
+        if not height is None: area.setFixedHeight(height)
+        if not width is None: area.setFixedWidth(width)
+    
+        return area
 # ------------------------------------
 # UTILITY CLASS
 # ------------------------------------
