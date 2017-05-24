@@ -53,11 +53,11 @@ CLASSIFIERS = (
 
 INSTALL_REQUIRES = (
     'setuptools',
-    #'orange-canvas-core>=0.0.7,<0.1',
-    #'orange-widget-core>=0.0,<0.1',
     'numpy',
     'scipy',
     'matplotlib',
+    'oasys-canvas-core',
+    'oasys-widget-core',
     'silx>=0.4.0',
     'srxraylib>=1.0.11',
     'syned',
