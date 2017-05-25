@@ -186,8 +186,8 @@ class AddonManagerWidget(QWidget):
             self.__update_details
         )
         header = self.__view.header()
-        header.setResizeMode(0, QHeaderView.Fixed)
-        header.setResizeMode(2, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(0, QHeaderView.Fixed)
+        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
 
         self.__details = QTextBrowser(
             frameShape=QTextBrowser.NoFrame,

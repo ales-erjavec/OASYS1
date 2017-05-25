@@ -1,6 +1,11 @@
 import os
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtWebEngineWidgets import QWebEngineView
+import platform
+
+if platform.system() == 'Darwin':
+    from PyQt5.QtWebEngineWidgets import QWebEngineView as QWebView
+elif platform.system() == 'Linux':
+    from PyQt5.QtWebKitWidgets import QWebView
 
 class TTYGrabber:
     def __init__(self,  tmpFileName = 'out.tmp.dat'):
@@ -42,7 +47,7 @@ class ShowHtmlDialog(QtWidgets.QDialog):
         self.setWindowTitle(title)
         layout = QtWidgets.QVBoxLayout(self)
 
-        web_view = QWebEngineView(self)
+        web_view = QWebView(self)
         web_view.setHtml(hrml_text)
 
         text_area = QtWidgets.QScrollArea(self)
