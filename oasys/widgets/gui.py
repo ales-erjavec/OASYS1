@@ -165,3 +165,48 @@ class OptionDialog(QMessageBox):
             return dlg.selection
         else:
             return None
+
+
+#######################################################################
+#######################################################################
+#######################################################################
+# FIXING BUG ON MATPLOTLIB 2.0.0
+#######################################################################
+#######################################################################
+#######################################################################
+
+from silx.gui.plot.backends.BackendMatplotlib import BackendMatplotlibQt
+from silx.gui.plot.PlotWindow import PlotWindow
+
+class OasysBackendMatplotlibQt(BackendMatplotlibQt):
+
+    def __init__(self, plot, parent=None):
+        super().__init__(plot, parent)
+
+    def _onMouseMove(self, event):
+        try:
+            super(OasysBackendMatplotlibQt, self)._onMouseMove(event)
+        except ValueError as exception:
+            if "Data has no positive values, and therefore can not be log-scaled" in str(exception):
+                pass
+            else:
+                raise exception
+
+
+def plotWindow(parent=None, backend=None,
+               resetzoom=True, autoScale=True, logScale=True, grid=True,
+               curveStyle=True, colormap=True,
+               aspectRatio=True, yInverted=True,
+               copy=True, save=True, print_=True,
+               control=False, position=False,
+               roi=True, mask=True, fit=False):
+    if backend is None:
+        backend = OasysBackendMatplotlibQt
+
+    return PlotWindow(parent=parent, backend=backend,
+                      resetzoom=resetzoom, autoScale=autoScale, logScale=logScale, grid=grid,
+                      curveStyle=curveStyle, colormap=colormap,
+                      aspectRatio=aspectRatio, yInverted=yInverted,
+                      copy=copy, save=save, print_=print_,
+                      control=control, position=position,
+                      roi=roi, mask=mask, fit=fit)
