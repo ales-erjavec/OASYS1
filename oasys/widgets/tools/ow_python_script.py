@@ -596,7 +596,7 @@ class OWPythonScript(widget.OWWidget):
             self, 'Open Python Script',
             os.path.expanduser("~/"),
             'Python files (*.py)\nAll files(*.*)'
-        )
+        )[0]
 
         filename = str(filename)
         if filename:
@@ -678,7 +678,7 @@ class OWPythonScript(widget.OWWidget):
             self, 'Save Python Script',
             filename,
             'Python files (*.py)\nAll files(*.*)'
-        )
+        )[0]
 
         if filename:
             fn = ""

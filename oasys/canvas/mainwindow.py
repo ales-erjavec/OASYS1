@@ -446,24 +446,28 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         default_units = QSettings().value(
             "output/default-units", 1, type=int)
 
-        contents = io.BytesIO(open(filename, "rb").read())
-        doc = ElementTree.parse(contents)
-        root = doc.getroot()
-        workdir = root.get("working_directory")
-        workunits = root.get("workspace_units")
-        title = root.get("title", "untitled")
-        # First parse the contents into intermediate representation
-        # to catch format errors early (will be re-parsed later).
         try:
+            contents = io.BytesIO(open(filename, "rb").read())
+            doc = ElementTree.parse(contents)
+            root = doc.getroot()
+            workdir = root.get("working_directory")
+            workunits = root.get("workspace_units")
+            title = root.get("title", "untitled")
+            # First parse the contents into intermediate representation
+            # to catch format errors early (will be re-parsed later).
+            try:
+                readwrite.parse_ows_etree_v_2_0(doc)
+            except Exception:
+                message_critical(
+                     self.tr("Could not load an Orange Workflow file"),
+                     title=self.tr("Error"),
+                     informative_text=self.tr("An unexpected error occurred "
+                                              "while loading '%s'.") % filename,
+                     exc_info=True,
+                     parent=self)
+                return None
             readwrite.parse_ows_etree_v_2_0(doc)
         except Exception:
-            message_critical(
-                 self.tr("Could not load an Orange Workflow file"),
-                 title=self.tr("Error"),
-                 informative_text=self.tr("An unexpected error occurred "
-                                          "while loading '%s'.") % filename,
-                 exc_info=True,
-                 parent=self)
             return None
 
         # ensure we have a valid working directory either default or
@@ -744,7 +748,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         filename = QFileDialog.getOpenFileName(
             self, self.tr("Open Orange Workflow File"),
             start_dir, self.tr("Orange Workflow (*.ows)"),
-        )
+        )[0]
 
         if filename:
             return self.load_scheme_on_window(filename, self.instantiate_window())
