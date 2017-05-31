@@ -396,6 +396,7 @@ class AddonManagerDialog(QDialog):
             sizeGripEnabled=False,
             windowTitle="Progress"
         )
+        self.__progress.cancel()
         self.__progress.canceled.connect(self.reject)
 
         # The installer thread
