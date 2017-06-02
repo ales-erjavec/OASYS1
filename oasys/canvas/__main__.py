@@ -398,10 +398,14 @@ def main(argv=None):
     else:
         status = False
 
+    if automatic_saver_thread.isRunning():
+        automatic_saver_thread.deleteLater()
+
     # Collect any cycles before deleting the QApplication instance
     gc.collect()
 
     del app
+
     return status
 
 class SaveWorkspaceObj(QObject):
