@@ -14,6 +14,7 @@ import shlex
 import shutil
 import signal
 import time
+import platform
 
 import pkg_resources
 
@@ -82,331 +83,354 @@ def fix_win_pythonw_std_stream():
 
 
 def main(argv=None):
-    if argv is None:
-        argv = sys.argv
 
-    usage = "usage: %prog [options] [workflow_file]"
-    parser = optparse.OptionParser(usage=usage)
+    # PREVENTS MESSAGING FROM THREADING PROBLEMS IN MATPLOTLIB:
+    # The process has forked and you cannot use this CoreFoundation functionality safely. You MUST exec().
+    # Break on __THE_PROCESS_HAS_FORKED_AND_YOU_CANNOT_USE_THIS_COREFOUNDATION_FUNCTIONALITY___YOU_MUST_EXEC__() to debug.
+    #
+    # This problem cause the continous appearing of Popup Windows "Python Quit Unexpectedly", with no reason.
+    #
+    if platform.system() == "Darwin":
+        crash_report = os.popen("defaults read com.apple.CrashReporter DialogType").read().strip()
+        os.system("defaults write com.apple.CrashReporter DialogType none")
 
-    parser.add_option("--no-discovery",
-                      action="store_true",
-                      help="Don't run widget discovery "
-                           "(use full cache instead)")
-    parser.add_option("--force-discovery",
-                      action="store_true",
-                      help="Force full widget discovery "
-                           "(invalidate cache)")
-    parser.add_option("--clear-widget-settings",
-                      action="store_true",
-                      help="Remove stored widget setting")
-    parser.add_option("--no-welcome",
-                      action="store_true",
-                      help="Don't show welcome dialog.")
-    parser.add_option("--no-splash",
-                      action="store_true",
-                      help="Don't show splash screen.")
-    parser.add_option("-l", "--log-level",
-                      help="Logging level (0, 1, 2, 3, 4)",
-                      type="int", default=1)
-    parser.add_option("--no-redirect",
-                      action="store_true",
-                      help="Do not redirect stdout/err to canvas output view.")
-    parser.add_option("--style",
-                      help="QStyle to use",
-                      type="str", default="Fusion")
-    parser.add_option("--stylesheet",
-                      help="Application level CSS style sheet to use",
-                      type="str", default="orange.qss")
-    parser.add_option("--qt",
-                      help="Additional arguments for QApplication",
-                      type="str", default=None)
+    try:
+        if argv is None:
+            argv = sys.argv
 
-    (options, args) = parser.parse_args(argv[1:])
+        usage = "usage: %prog [options] [workflow_file]"
+        parser = optparse.OptionParser(usage=usage)
 
-    levels = [logging.CRITICAL,
-              logging.ERROR,
-              logging.WARN,
-              logging.INFO,
-              logging.DEBUG]
+        parser.add_option("--no-discovery",
+                          action="store_true",
+                          help="Don't run widget discovery "
+                               "(use full cache instead)")
+        parser.add_option("--force-discovery",
+                          action="store_true",
+                          help="Force full widget discovery "
+                               "(invalidate cache)")
+        parser.add_option("--clear-widget-settings",
+                          action="store_true",
+                          help="Remove stored widget setting")
+        parser.add_option("--no-welcome",
+                          action="store_true",
+                          help="Don't show welcome dialog.")
+        parser.add_option("--no-splash",
+                          action="store_true",
+                          help="Don't show splash screen.")
+        parser.add_option("-l", "--log-level",
+                          help="Logging level (0, 1, 2, 3, 4)",
+                          type="int", default=1)
+        parser.add_option("--no-redirect",
+                          action="store_true",
+                          help="Do not redirect stdout/err to canvas output view.")
+        parser.add_option("--style",
+                          help="QStyle to use",
+                          type="str", default="Fusion")
+        parser.add_option("--stylesheet",
+                          help="Application level CSS style sheet to use",
+                          type="str", default="orange.qss")
+        parser.add_option("--qt",
+                          help="Additional arguments for QApplication",
+                          type="str", default=None)
 
-    # Fix streams before configuring logging (otherwise it will store
-    # and write to the old file descriptors)
-    fix_win_pythonw_std_stream()
+        (options, args) = parser.parse_args(argv[1:])
 
-    # Try to fix fonts on OSX Mavericks
-    fix_osx_10_9_private_font()
+        levels = [logging.CRITICAL,
+                  logging.ERROR,
+                  logging.WARN,
+                  logging.INFO,
+                  logging.DEBUG]
 
-    # File handler should always be at least INFO level so we need
-    # the application root level to be at least at INFO.
+        # Fix streams before configuring logging (otherwise it will store
+        # and write to the old file descriptors)
+        fix_win_pythonw_std_stream()
 
-    root_level = min(levels[options.log_level], logging.INFO)
-    rootlogger = logging.getLogger(orangecanvas.__name__)
-    rootlogger.setLevel(root_level)
-    oasyslogger = logging.getLogger("oasys")
-    oasyslogger.setLevel(root_level)
+        # Try to fix fonts on OSX Mavericks
+        fix_osx_10_9_private_font()
 
-    # Standard output stream handler at the requested level
-    stream_handler = logging.StreamHandler()
-    stream_handler.setLevel(level=levels[options.log_level])
-    rootlogger.addHandler(stream_handler)
-    oasyslogger.addHandler(stream_handler)
+        # File handler should always be at least INFO level so we need
+        # the application root level to be at least at INFO.
 
-    config.set_default(conf.oasysconf)
-    log.info("Starting 'OASYS' application.")
+        root_level = min(levels[options.log_level], logging.INFO)
+        rootlogger = logging.getLogger(orangecanvas.__name__)
+        rootlogger.setLevel(root_level)
+        oasyslogger = logging.getLogger("oasys")
+        oasyslogger.setLevel(root_level)
 
-    qt_argv = argv[:1]
+        # Standard output stream handler at the requested level
+        stream_handler = logging.StreamHandler()
+        stream_handler.setLevel(level=levels[options.log_level])
+        rootlogger.addHandler(stream_handler)
+        oasyslogger.addHandler(stream_handler)
 
-#     if options.style is not None:
-    qt_argv += ["-style", options.style]
+        config.set_default(conf.oasysconf)
+        log.info("Starting 'OASYS' application.")
 
-    if options.qt is not None:
-        qt_argv += shlex.split(options.qt)
+        qt_argv = argv[:1]
 
-    qt_argv += args
+    #     if options.style is not None:
+        qt_argv += ["-style", options.style]
 
-    if options.clear_widget_settings:
-        log.debug("Clearing widget settings")
-        shutil.rmtree(config.widget_settings_dir(), ignore_errors=True)
+        if options.qt is not None:
+            qt_argv += shlex.split(options.qt)
 
-    log.debug("Starting CanvasApplicaiton with argv = %r.", qt_argv)
-    app = CanvasApplication(qt_argv)
+        qt_argv += args
 
-    # NOTE: config.init() must be called after the QApplication constructor
-    config.init()
+        if options.clear_widget_settings:
+            log.debug("Clearing widget settings")
+            shutil.rmtree(config.widget_settings_dir(), ignore_errors=True)
 
-    file_handler = logging.FileHandler(
-        filename=os.path.join(config.log_dir(), "canvas.log"),
-        mode="w"
-    )
+        log.debug("Starting CanvasApplicaiton with argv = %r.", qt_argv)
+        app = CanvasApplication(qt_argv)
 
-    file_handler.setLevel(root_level)
-    rootlogger.addHandler(file_handler)
+        # NOTE: config.init() must be called after the QApplication constructor
+        config.init()
 
-    # intercept any QFileOpenEvent requests until the main window is
-    # fully initialized.
-    # NOTE: The QApplication must have the executable ($0) and filename
-    # arguments passed in argv otherwise the FileOpen events are
-    # triggered for them (this is done by Cocoa, but QApplicaiton filters
-    # them out if passed in argv)
+        file_handler = logging.FileHandler(
+            filename=os.path.join(config.log_dir(), "canvas.log"),
+            mode="w"
+        )
 
-    open_requests = []
+        file_handler.setLevel(root_level)
+        rootlogger.addHandler(file_handler)
 
-    def onrequest(url):
-        log.info("Received an file open request %s", url)
-        open_requests.append(url)
+        # intercept any QFileOpenEvent requests until the main window is
+        # fully initialized.
+        # NOTE: The QApplication must have the executable ($0) and filename
+        # arguments passed in argv otherwise the FileOpen events are
+        # triggered for them (this is done by Cocoa, but QApplicaiton filters
+        # them out if passed in argv)
 
-    app.fileOpenRequest.connect(onrequest)
+        open_requests = []
 
-    settings = QSettings()
+        def onrequest(url):
+            log.info("Received an file open request %s", url)
+            open_requests.append(url)
 
-    stylesheet = options.stylesheet
-    stylesheet_string = None
+        app.fileOpenRequest.connect(onrequest)
 
-    if stylesheet != "none":
-        if os.path.isfile(stylesheet):
-            stylesheet_string = open(stylesheet, "rb").read()
-        else:
-            if not os.path.splitext(stylesheet)[1]:
-                # no extension
-                stylesheet = os.path.extsep.join([stylesheet, "qss"])
+        settings = QSettings()
 
-            pkg_name = orangecanvas.__name__
-            resource = "styles/" + stylesheet
+        stylesheet = options.stylesheet
+        stylesheet_string = None
 
-            if pkg_resources.resource_exists(pkg_name, resource):
-                stylesheet_string = \
-                    pkg_resources.resource_string(pkg_name, resource).decode()
-
-                base = pkg_resources.resource_filename(pkg_name, "styles")
-
-                pattern = re.compile(
-                    r"^\s@([a-zA-Z0-9_]+?)\s*:\s*([a-zA-Z0-9_/]+?);\s*$",
-                    flags=re.MULTILINE
-                )
-
-                matches = pattern.findall(stylesheet_string)
-
-                for prefix, search_path in matches:
-                    QDir.addSearchPath(prefix, os.path.join(base, search_path))
-                    log.info("Adding search path %r for prefix, %r",
-                             search_path, prefix)
-
-                stylesheet_string = pattern.sub("", stylesheet_string)
-
+        if stylesheet != "none":
+            if os.path.isfile(stylesheet):
+                stylesheet_string = open(stylesheet, "rb").read()
             else:
-                log.info("%r style sheet not found.", stylesheet)
+                if not os.path.splitext(stylesheet)[1]:
+                    # no extension
+                    stylesheet = os.path.extsep.join([stylesheet, "qss"])
 
-    # Add the default canvas_icons search path
-    dirpath = os.path.abspath(os.path.dirname(orangecanvas.__file__))
-    QDir.addSearchPath("canvas_icons", os.path.join(dirpath, "icons"))
+                pkg_name = orangecanvas.__name__
+                resource = "styles/" + stylesheet
 
-    canvas_window = OASYSMainWindow()
-    canvas_window.setWindowIcon(config.application_icon())
+                if pkg_resources.resource_exists(pkg_name, resource):
+                    stylesheet_string = \
+                        pkg_resources.resource_string(pkg_name, resource).decode()
 
-    if stylesheet_string is not None:
-        canvas_window.setStyleSheet(stylesheet_string)
+                    base = pkg_resources.resource_filename(pkg_name, "styles")
 
-    if not options.force_discovery:
-        reg_cache = cache.registry_cache()
-    else:
-        reg_cache = None
+                    pattern = re.compile(
+                        r"^\s@([a-zA-Z0-9_]+?)\s*:\s*([a-zA-Z0-9_/]+?);\s*$",
+                        flags=re.MULTILINE
+                    )
 
-    widget_registry = qt.QtWidgetRegistry()
+                    matches = pattern.findall(stylesheet_string)
 
-    widget_discovery = config.widget_discovery(
-        widget_registry, cached_descriptions=reg_cache)
-    menu_registry = conf.menu_registry()
+                    for prefix, search_path in matches:
+                        QDir.addSearchPath(prefix, os.path.join(base, search_path))
+                        log.info("Adding search path %r for prefix, %r",
+                                 search_path, prefix)
 
-    want_splash = \
-        settings.value("startup/show-splash-screen", True, type=bool) and \
-        not options.no_splash
+                    stylesheet_string = pattern.sub("", stylesheet_string)
 
-    if want_splash:
-        pm, rect = config.splash_screen()
-        splash_screen = SplashScreen(pixmap=pm, textRect=rect)
-        splash_screen.setFont(QFont("Helvetica", 12))
-        color = QColor("#FFD39F")
+                else:
+                    log.info("%r style sheet not found.", stylesheet)
 
-        def show_message(message):
-            splash_screen.showMessage(message, color=color)
+        # Add the default canvas_icons search path
+        dirpath = os.path.abspath(os.path.dirname(orangecanvas.__file__))
+        QDir.addSearchPath("canvas_icons", os.path.join(dirpath, "icons"))
 
-        widget_registry.category_added.connect(show_message)
+        canvas_window = OASYSMainWindow()
+        canvas_window.setWindowIcon(config.application_icon())
 
-    log.info("Running widget discovery process.")
+        if stylesheet_string is not None:
+            canvas_window.setStyleSheet(stylesheet_string)
 
-    cache_filename = os.path.join(config.cache_dir(), "widget-registry.pck")
+        if not options.force_discovery:
+            reg_cache = cache.registry_cache()
+        else:
+            reg_cache = None
 
-    if options.no_discovery:
-        widget_registry = pickle.load(open(cache_filename, "rb"))
-        widget_registry = qt.QtWidgetRegistry(widget_registry)
-    else:
+        widget_registry = qt.QtWidgetRegistry()
+
+        widget_discovery = config.widget_discovery(
+            widget_registry, cached_descriptions=reg_cache)
+        menu_registry = conf.menu_registry()
+
+        want_splash = \
+            settings.value("startup/show-splash-screen", True, type=bool) and \
+            not options.no_splash
+
         if want_splash:
-            splash_screen.show()
-        widget_discovery.run(config.widgets_entry_points())
-        if want_splash:
-            splash_screen.hide()
-            splash_screen.deleteLater()
+            pm, rect = config.splash_screen()
+            splash_screen = SplashScreen(pixmap=pm, textRect=rect)
+            splash_screen.setFont(QFont("Helvetica", 12))
+            color = QColor("#FFD39F")
 
-        # Store cached descriptions
-        cache.save_registry_cache(widget_discovery.cached_descriptions)
-        with open(cache_filename, "wb") as f:
-            pickle.dump(WidgetRegistry(widget_registry), f)
+            def show_message(message):
+                splash_screen.showMessage(message, color=color)
 
-    set_global_registry(widget_registry)
+            widget_registry.category_added.connect(show_message)
 
-    canvas_window.set_widget_registry(widget_registry)
-    canvas_window.set_menu_registry(menu_registry)
+        log.info("Running widget discovery process.")
 
-    # automatic save
+        cache_filename = os.path.join(config.cache_dir(), "widget-registry.pck")
 
-    automatic_saver_thread = QThread()
-    automatic_saver = SaveWorkspaceObj(canvas_window, )
-    automatic_saver.moveToThread(automatic_saver_thread)
-    automatic_saver.finished.connect(automatic_saver_thread.quit)
-    automatic_saver_thread.started.connect(automatic_saver.long_running)
-    automatic_saver_thread.finished.connect(app.exit)
-    automatic_saver_thread.start()
+        if options.no_discovery:
+            widget_registry = pickle.load(open(cache_filename, "rb"))
+            widget_registry = qt.QtWidgetRegistry(widget_registry)
+        else:
+            if want_splash:
+                splash_screen.show()
+            widget_discovery.run(config.widgets_entry_points())
+            if want_splash:
+                splash_screen.hide()
+                splash_screen.deleteLater()
 
-    canvas_window.show()
-    canvas_window.raise_()
+            # Store cached descriptions
+            cache.save_registry_cache(widget_discovery.cached_descriptions)
+            with open(cache_filename, "wb") as f:
+                pickle.dump(WidgetRegistry(widget_registry), f)
+
+        set_global_registry(widget_registry)
+
+        canvas_window.set_widget_registry(widget_registry)
+        canvas_window.set_menu_registry(menu_registry)
+
+        # automatic save
+
+        automatic_saver_thread = QThread()
+        automatic_saver = SaveWorkspaceObj(canvas_window, )
+        automatic_saver.moveToThread(automatic_saver_thread)
+        automatic_saver.finished.connect(automatic_saver_thread.quit)
+        automatic_saver_thread.started.connect(automatic_saver.long_running)
+        automatic_saver_thread.finished.connect(app.exit)
+        automatic_saver_thread.start()
+
+        canvas_window.show()
+        canvas_window.raise_()
 
 
-    want_welcome = True or \
-        settings.value("startup/show-welcome-screen", True, type=bool) \
-        and not options.no_welcome
+        want_welcome = True or \
+            settings.value("startup/show-welcome-screen", True, type=bool) \
+            and not options.no_welcome
 
-    app.setStyle(QStyleFactory.create('Fusion'))
-    #app.setStyle(QStyleFactory.create('Macintosh'))
-    #app.setStyle(QStyleFactory.create('Windows'))
+        app.setStyle(QStyleFactory.create('Fusion'))
+        #app.setStyle(QStyleFactory.create('Macintosh'))
+        #app.setStyle(QStyleFactory.create('Windows'))
 
-    # Process events to make sure the canvas_window layout has
-    # a chance to activate (the welcome dialog is modal and will
-    # block the event queue, plus we need a chance to receive open file
-    # signals when running without a splash screen)
-    app.processEvents()
-
-    app.fileOpenRequest.connect(canvas_window.open_scheme_file)
-
-    close_app = False
-
-    if open_requests:
-        if "pydevd.py" in str(open_requests[0].path()): # PyCharm Debugger on
-            open_requests = []
-
-    if want_welcome and not args and not open_requests:
-        if not canvas_window.welcome_dialog():
-            log.info("Welcome screen cancelled; closing application")
-            close_app = True
-
-    elif args:
-        log.info("Loading a scheme from the command line argument %r",
-                 args[0])
-        canvas_window.load_scheme(args[0])
-    elif open_requests:
-        log.info("Loading a scheme from an `QFileOpenEvent` for %r",
-                 open_requests[-1])
-        canvas_window.load_scheme(open_requests[-1].toLocalFile())
-
-    stdout_redirect = \
-        settings.value("output/redirect-stdout", True, type=bool)
-
-    stderr_redirect = \
-        settings.value("output/redirect-stderr", True, type=bool)
-
-    # cmd line option overrides settings / no redirect is possible
-    # under ipython
-    if options.no_redirect or running_in_ipython():
-        stderr_redirect = stdout_redirect = False
-
-    output_view = canvas_window.output_view()
-
-    if stdout_redirect:
-        stdout = TextStream()
-        stdout.stream.connect(output_view.write)
-        if sys.stdout is not None:
-            # also connect to original fd
-            stdout.stream.connect(sys.stdout.write)
-    else:
-        stdout = sys.stdout
-
-    if stderr_redirect:
-        error_writer = output_view.formated(color=Qt.red)
-        stderr = TextStream()
-        stderr.stream.connect(error_writer.write)
-        if sys.stderr is not None:
-            # also connect to original fd
-            stderr.stream.connect(sys.stderr.write)
-    else:
-        stderr = sys.stderr
-
-    if stderr_redirect:
-        sys.excepthook = ExceptHook()
-        sys.excepthook.handledException.connect(output_view.parent().show)
-
-    if not close_app:
-        with redirect_stdout(stdout), redirect_stderr(stderr):
-            log.info("Entering main event loop.")
-            try:
-                status = app.exec_()
-            except BaseException:
-                log.error("Error in main event loop.", exc_info=True)
-
-        canvas_window.deleteLater()
+        # Process events to make sure the canvas_window layout has
+        # a chance to activate (the welcome dialog is modal and will
+        # block the event queue, plus we need a chance to receive open file
+        # signals when running without a splash screen)
         app.processEvents()
-        app.flush()
-        del canvas_window
-    else:
-        status = False
 
-    if automatic_saver_thread.isRunning():
-        automatic_saver_thread.deleteLater()
+        app.fileOpenRequest.connect(canvas_window.open_scheme_file)
 
-    # Collect any cycles before deleting the QApplication instance
-    gc.collect()
+        close_app = False
 
-    del app
+        if open_requests:
+            if "pydevd.py" in str(open_requests[0].path()): # PyCharm Debugger on
+                open_requests = []
 
-    return status
+        if want_welcome and not args and not open_requests:
+            if not canvas_window.welcome_dialog():
+                log.info("Welcome screen cancelled; closing application")
+                close_app = True
+
+        elif args:
+            log.info("Loading a scheme from the command line argument %r",
+                     args[0])
+            canvas_window.load_scheme(args[0])
+        elif open_requests:
+            log.info("Loading a scheme from an `QFileOpenEvent` for %r",
+                     open_requests[-1])
+            canvas_window.load_scheme(open_requests[-1].toLocalFile())
+
+        stdout_redirect = \
+            settings.value("output/redirect-stdout", True, type=bool)
+
+        stderr_redirect = \
+            settings.value("output/redirect-stderr", True, type=bool)
+
+        # cmd line option overrides settings / no redirect is possible
+        # under ipython
+        if options.no_redirect or running_in_ipython():
+            stderr_redirect = stdout_redirect = False
+
+        output_view = canvas_window.output_view()
+
+        if stdout_redirect:
+            stdout = TextStream()
+            stdout.stream.connect(output_view.write)
+            if sys.stdout is not None:
+                # also connect to original fd
+                stdout.stream.connect(sys.stdout.write)
+        else:
+            stdout = sys.stdout
+
+        if stderr_redirect:
+            error_writer = output_view.formated(color=Qt.red)
+            stderr = TextStream()
+            stderr.stream.connect(error_writer.write)
+            if sys.stderr is not None:
+                # also connect to original fd
+                stderr.stream.connect(sys.stderr.write)
+        else:
+            stderr = sys.stderr
+
+        if stderr_redirect:
+            sys.excepthook = ExceptHook()
+            sys.excepthook.handledException.connect(output_view.parent().show)
+
+        if not close_app:
+            with redirect_stdout(stdout), redirect_stderr(stderr):
+                log.info("Entering main event loop.")
+                try:
+                    status = app.exec_()
+                except BaseException:
+                    log.error("Error in main event loop.", exc_info=True)
+
+            canvas_window.deleteLater()
+            app.processEvents()
+            app.flush()
+            del canvas_window
+        else:
+            status = False
+
+        if automatic_saver_thread.isRunning():
+            automatic_saver_thread.deleteLater()
+
+        # Collect any cycles before deleting the QApplication instance
+        gc.collect()
+
+        del app
+
+        # RESTORE INITIAL USER SETTINGS
+        if platform.system() == "Darwin":
+            os.system("defaults write com.apple.CrashReporter DialogType " + crash_report)
+
+        return status
+    except Exception as e:
+        # RESTORE INITIAL USER SETTINGS
+        if platform.system() == "Darwin":
+            os.system("defaults write com.apple.CrashReporter DialogType "  + crash_report)
+
+        raise e
+
 
 class SaveWorkspaceObj(QObject):
     finished = QtCore.pyqtSignal()
