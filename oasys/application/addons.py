@@ -480,7 +480,8 @@ def pypi_search(spec, timeout=socket._GLOBAL_DEFAULT_TIMEOUT):
     Search package distributions available on PyPi using PyPiXMLRPC.
     """
     pypi = xmlrpc.client.ServerProxy(
-        "https://pypi.python.org/pypi",
+        #"https://upload.pypi.org/legacy/",
+        "https://pypi.python.org/pypi/",
         transport=SafeTransport(timeout=timeout)
     )
 
