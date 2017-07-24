@@ -101,6 +101,10 @@ class PythonSyntaxHighlighter(QtGui.QSyntaxHighlighter):
 class PythonScriptEditor(QtWidgets.QPlainTextEdit):
     INDENT = 4
 
+    def __init__(self, parent=None):
+        QtWidgets.QPlainTextEdit.__init__(self, parent)
+        self.setStyleSheet("background-color: white;")
+
     def lastLine(self):
         text = str(self.toPlainText())
         pos = self.textCursor().position()
@@ -137,6 +141,8 @@ class PythonConsole(QtWidgets.QPlainTextEdit, code.InteractiveConsole):
     def __init__(self, locals=None, parent=None):
         QtWidgets.QPlainTextEdit.__init__(self, parent)
         code.InteractiveConsole.__init__(self, locals)
+        self.setStyleSheet("background-color: white;")
+
         self.history, self.historyInd = [""], 0
         self.loop = self.interact()
         next(self.loop)
