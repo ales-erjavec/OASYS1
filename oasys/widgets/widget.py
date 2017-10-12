@@ -1,4 +1,5 @@
 from PyQt5.QtWidgets import QScrollArea
+from PyQt5.QtCore import Qt
 
 from orangewidget import widget
 
@@ -12,6 +13,11 @@ def layout_insert(layout, widget, before):
     layout.insertWidget(i, widget, )
 
 class OWWidget(widget.OWWidget):
+
+    def __init__(self):
+        super().__init__()
+
+        self.setWindowFlags(Qt.WindowMinimizeButtonHint)
 
     def insertLayout(self):
         """
