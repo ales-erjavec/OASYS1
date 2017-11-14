@@ -17,7 +17,7 @@ class OWWidget(widget.OWWidget):
     def __init__(self):
         super().__init__()
 
-        self.setWindowFlags(Qt.WindowMinimizeButtonHint)
+        self.setWindowFlags(Qt.WindowMinimizeButtonHint | Qt.WindowCloseButtonHint)
 
     def insertLayout(self):
         """
