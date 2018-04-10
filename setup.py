@@ -15,7 +15,7 @@ except AttributeError:
 
 NAME = 'OASYS1'
 
-VERSION = '1.0.20'
+VERSION = '1.1.0'
 ISRELEASED = True
 
 DESCRIPTION = 'OrAnge SYnchrotron Suite'
@@ -56,9 +56,9 @@ INSTALL_REQUIRES = (
     'numpy',
     'scipy',
     'matplotlib',
-    'oasys-canvas-core>=0.0.5',
+    'oasys-canvas-core>=0.0.6',
     'oasys-widget-core>=0.0.4',
-    'silx>=0.5.0',
+    'silx>=0.7.0',
     'srxraylib>=1.0.11',
     'syned>=1.0.6',
     'wofry>=1.0.5',
