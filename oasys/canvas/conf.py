@@ -31,7 +31,7 @@ config.spec += [
 class oasysconf(owconfig.orangeconfig):
     OrganizationDomain = ""
     ApplicationName = "OASYS1"
-    ApplicationVersion = "1.0"
+    ApplicationVersion = "1.1"
 
     @staticmethod
     def splash_screen():
