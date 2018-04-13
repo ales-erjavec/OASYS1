@@ -7,6 +7,22 @@ if platform.system() == 'Darwin':
 elif platform.system() == 'Linux':
     from PyQt5.QtWebKitWidgets import QWebView
 
+
+
+class TriggerOut:
+    def __init__(self, new_object=False):
+        super().__init__()
+
+        self.new_object = new_object
+
+class TriggerIn:
+    def __init__(self, new_object=False, interrupt=False):
+        super().__init__()
+
+        self.new_object = new_object
+        self.interrupt = interrupt
+
+
 class TTYGrabber:
     def __init__(self,  tmpFileName = 'out.tmp.dat'):
         self.tmpFileName = tmpFileName
