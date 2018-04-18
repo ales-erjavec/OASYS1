@@ -481,7 +481,8 @@ def pypi_search(spec, timeout=socket._GLOBAL_DEFAULT_TIMEOUT):
     """
     pypi = xmlrpc.client.ServerProxy(
         #"https://upload.pypi.org/legacy/",
-        "https://pypi.python.org/pypi/",
+        "https://legacy.pypi.org/pypi/whatever",
+        #"https://pypi.python.org/pypi/",
         transport=SafeTransport(timeout=timeout)
     )
 
@@ -520,6 +521,7 @@ def pypi_search(spec, timeout=socket._GLOBAL_DEFAULT_TIMEOUT):
     addons = pypi.search(spec)
 
     multicall = xmlrpc.client.MultiCall(pypi)
+
     for addon in addons:
         name, version = addon["name"], addon["version"]
         multicall.release_data(name, version)
