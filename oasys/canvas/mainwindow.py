@@ -316,11 +316,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         self.__updatable = 0
 
         if check:
-            f = self.__executor.submit(
-                addons.pypi_search,
-                oasysconf.addon_pypi_search_spec(),
-                timeout=10
-            )
+            f = self.__executor.submit(addons.list_available_versions)
             f.add_done_callback(
                 addons.method_queued(self.__set_pypi_addons_f, (object,)))
             self.__pypi_addons_f = f
@@ -950,7 +946,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                 print("Error in creating Customized Menu: " + str(menu_instance))
                 print(str(exception.args[0]))
                 continue
-
+    '''
     def open_addons(self):
         """Open the add-on manager dialog.
         """
@@ -991,6 +987,19 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
             self.__p_addon_items_available.connect(progress.hide)
             self.__p_addon_items_available.connect(dlg.setItems)
 
+        return dlg.exec_()
+    '''
+
+    def open_addons(self):
+        from oasys.application.addons import AddonManagerDialog, have_install_permissions
+        if not have_install_permissions():
+            QMessageBox(QMessageBox.Warning,
+                        "Add-ons: insufficient permissions",
+                        "Insufficient permissions to install add-ons. Try starting Orange "
+                        "as a system administrator or install Orange in user folders.",
+                        parent=self).exec_()
+        dlg = AddonManagerDialog(self, windowTitle=self.tr("Add-ons"))
+        dlg.setAttribute(Qt.WA_DeleteOnClose)
         return dlg.exec_()
 
     def closeSecondaryEvent(self, event):
@@ -1035,7 +1044,6 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         settings.endGroup()
 
         event.accept()
-
 
     def closeEvent(self, event):
         if self.is_main:
