@@ -2,11 +2,15 @@ import os
 from PyQt5 import QtCore, QtGui, QtWidgets
 import platform
 
-if platform.system() == 'Darwin':
-    from PyQt5.QtWebEngineWidgets import QWebEngineView as QWebView
-elif platform.system() == 'Linux':
-    from PyQt5.QtWebKitWidgets import QWebView
-
+try:
+    if platform.system() == 'Darwin':
+        from PyQt5.QtWebEngineWidgets import QWebEngineView as QWebView
+    elif platform.system() == 'Linux':
+        from PyQt5.QtWebKitWidgets import QWebView
+    USE_WEB_KIT = True
+except ImportError:
+    QWebView = None
+    USE_WEB_KIT = False
 
 
 class TriggerOut:
@@ -57,14 +61,17 @@ class EmittingStream(QtCore.QObject):
 
 class ShowHtmlDialog(QtWidgets.QDialog):
 
-    def __init__(self, title, hrml_text, width=650, height=400, parent=None):
+    def __init__(self, title, html_text, width=650, height=400, parent=None):
         QtWidgets.QDialog.__init__(self, parent)
         self.setModal(True)
         self.setWindowTitle(title)
         layout = QtWidgets.QVBoxLayout(self)
 
-        web_view = QWebView(self)
-        web_view.setHtml(hrml_text)
+        if USE_WEB_KIT:
+            web_view = QWebView(self)
+            web_view.setHtml(html_text)
+        else:
+            web_view = QtWidgets.QLabel(html_text)
 
         text_area = QtWidgets.QScrollArea(self)
         text_area.setWidget(web_view)
