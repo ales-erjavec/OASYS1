@@ -1,3 +1,5 @@
+import os
+
 from PyQt5.QtWidgets import QScrollArea
 from PyQt5.QtCore import Qt
 
@@ -13,6 +15,8 @@ def layout_insert(layout, widget, before):
     layout.insertWidget(i, widget, )
 
 class OWWidget(widget.OWWidget):
+
+    IS_DEVELOP = False if not "OASYSDEVELOP" in os.environ.keys() else str(os.environ.get('OASYSDEVELOP')) == "1"
 
     def __init__(self):
         super().__init__()
