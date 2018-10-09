@@ -14,17 +14,33 @@ except ImportError:
 
 
 class TriggerOut:
-    def __init__(self, new_object=False):
+    def __init__(self, new_object=False, additional_parameters={}):
         super().__init__()
 
         self.new_object = new_object
 
+        self.__additional_parameters=additional_parameters
+
+    def has_additional_parameter(self, name):
+        return name in self.__additional_parameters.keys()
+
+    def get_additional_parameter(self, name):
+        return self.__additional_parameters[name]
+
 class TriggerIn:
-    def __init__(self, new_object=False, interrupt=False):
+    def __init__(self, new_object=False, interrupt=False, additional_parameters={}):
         super().__init__()
 
         self.new_object = new_object
         self.interrupt = interrupt
+
+        self.__additional_parameters=additional_parameters
+
+    def has_additional_parameter(self, name):
+        return name in self.__additional_parameters.keys()
+
+    def get_additional_parameter(self, name):
+        return self.__additional_parameters[name]
 
 
 class TTYGrabber:
