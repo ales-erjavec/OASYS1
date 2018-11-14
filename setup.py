@@ -15,7 +15,7 @@ except AttributeError:
 
 NAME = 'OASYS1'
 
-VERSION = '1.1.13'
+VERSION = '1.1.14'
 ISRELEASED = True
 
 DESCRIPTION = 'OrAnge SYnchrotron Suite'
@@ -59,8 +59,8 @@ INSTALL_REQUIRES = (
     'oasys-canvas-core>=0.0.10',
     'oasys-widget-core>=0.0.5',
     'silx>=0.7.0',
-    'srxraylib>=1.0.11',
-    'syned>=1.0.9',
+    'srxraylib>=1.0.21',
+    'syned>=1.0.10',
     'wofry>=1.0.15',
 )
 
