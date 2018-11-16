@@ -15,7 +15,7 @@ except AttributeError:
 
 NAME = 'OASYS1'
 
-VERSION = '1.1.17'
+VERSION = '1.1.18'
 ISRELEASED = True
 
 DESCRIPTION = 'OrAnge SYnchrotron Suite'
@@ -61,8 +61,8 @@ INSTALL_REQUIRES = (
     'silx>=0.7.0',
     'hdf5plugin',
     'srxraylib>=1.0.21',
-    'syned>=1.0.10',
-    'wofry>=1.0.15',
+    'syned>=1.0.11',
+    'wofry>=1.0.16',
 )
 
 SETUP_REQUIRES = (
