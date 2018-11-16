@@ -10,8 +10,6 @@ from matplotlib import cm
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 
-import orangecanvas.resources as resources
-
 from orangewidget import gui, widget
 from orangewidget.settings import Setting
 
@@ -49,14 +47,14 @@ class OWAbstractHeightErrorProfileSimulator(OWWidget):
     step_x = Setting(1.0)
     step_y = Setting(1.0)
 
-    dimension_x = Setting(20.1)
-    dimension_y = Setting(200.1)
+    dimension_x = Setting(0.201)
+    dimension_y = Setting(2.001)
 
     power_law_exponent_beta_x = Setting(3.0)
     power_law_exponent_beta_y = Setting(3.0)
 
-    correlation_length_x = Setting(30.0)
-    correlation_length_y = Setting(30.0)
+    correlation_length_x = Setting(0.3)
+    correlation_length_y = Setting(0.3)
 
     error_type_x = Setting(profiles_simulation.FIGURE_ERROR)
     error_type_y = Setting(profiles_simulation.FIGURE_ERROR)
@@ -74,7 +72,7 @@ class OWAbstractHeightErrorProfileSimulator(OWWidget):
 
     center_x = Setting(1)
     modify_x = Setting(0)
-    new_length_x = Setting(20.1)
+    new_length_x = Setting(0.201)
     filler_value_x = Setting(0.0)
 
     renormalize_x = Setting(0)
@@ -86,7 +84,7 @@ class OWAbstractHeightErrorProfileSimulator(OWWidget):
 
     center_y = Setting(1)
     modify_y = Setting(0)
-    new_length_y = Setting(200.1)
+    new_length_y = Setting(2.001)
     filler_value_y = Setting(0.0)
 
     renormalize_y = Setting(0)

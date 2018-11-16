@@ -61,7 +61,7 @@ class OWAbstractDabamHeightProfile(OWWidget):
 
     center_y = Setting(1)
     modify_y = Setting(0)
-    new_length = Setting(200.0)
+    new_length = Setting(2.0)
     filler_value = Setting(0.0)
 
     renormalize_y = Setting(1)
