@@ -75,6 +75,50 @@ class EmittingStream(QtCore.QObject):
     def flush(self):
         pass
 
+import h5py, time
+
+subgroup_name = "height_error_profile"
+
+def read_error_profile_file(file_name):
+    if not os.path.isfile(file_name): raise ValueError("File " + file_name + " not existing")
+
+    file = h5py.File(file_name, 'r')
+    xx = file[subgroup_name + "/X"].value
+    yy = file[subgroup_name + "/Y"].value
+    zz = file[subgroup_name + "/Z"].value
+
+    return xx, yy, zz
+
+def write_error_profile_file(zz, xx, yy, file_name, overwrite=True):
+
+    if (os.path.isfile(file_name)) and (overwrite==True): os.remove(file_name)
+
+    if not os.path.isfile(file_name):  # if file doesn't exist, create it.
+        file = h5py.File(file_name, 'w')
+        # points to the default data to be plotted
+        file.attrs['default']          = 'entry'
+        # give the HDF5 root some more attributes
+        file.attrs['file_name']        = file_name
+        file.attrs['file_time']        = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
+        file.attrs['creator']          = 'write_error_profile_file'
+        file.attrs['code']             = 'Oasys'
+        file.attrs['HDF5_Version']     = h5py.version.hdf5_version
+        file.attrs['h5py_version']     = h5py.version.version
+        file.close()
+
+    file = h5py.File(file_name, 'a')
+
+    try:
+        f1 = file.create_group(subgroup_name)
+    except:
+        f1 = file[subgroup_name]
+
+    f1.create_dataset("X", data=xx)
+    f1.create_dataset("Y", data=yy)
+    f1.create_dataset("Z", data=zz)
+
+    file.close()
+
 class ShowHtmlDialog(QtWidgets.QDialog):
 
     def __init__(self, title, html_text, width=650, height=400, parent=None):

@@ -15,7 +15,7 @@ except AttributeError:
 
 NAME = 'OASYS1'
 
-VERSION = '1.1.14'
+VERSION = '1.1.15'
 ISRELEASED = True
 
 DESCRIPTION = 'OrAnge SYnchrotron Suite'
@@ -59,6 +59,7 @@ INSTALL_REQUIRES = (
     'oasys-canvas-core>=0.0.10',
     'oasys-widget-core>=0.0.5',
     'silx>=0.7.0',
+    'hdf5plugin'
     'srxraylib>=1.0.21',
     'syned>=1.0.10',
     'wofry>=1.0.15',
@@ -148,7 +149,7 @@ PACKAGES = [
 PACKAGE_DATA = {
     "oasys.canvas": ["icons/*.png", "icons/*.svg"],
     "oasys.canvas.styles": ["*.qss", "orange/*.svg"],
-    "oasys.widgets.tools": ["icons/*.png", "icons/*.svg"],
+    "oasys.widgets.tools": ["icons/*.png", "icons/*.svg", "misc/*.png"],
     "oasys.widgets.loop_management": ["icons/*.png", "icons/*.svg"],
 }
 

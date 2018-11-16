@@ -616,7 +616,7 @@ class OWAbstractDabamHeightProfile(OWWidget):
                 rms_y = None
             else:
                 if self.error_type_y == profiles_simulation.FIGURE_ERROR:
-                    rms_y = self.rms_y * 1e-9   # from nm to m
+                    rms_y = self.rms_y * 1e-9 * self.si_to_user_units  # from nm to m
                 else:
                     rms_y = self.rms_y * 1e-6 # from urad to rad
 
@@ -647,24 +647,17 @@ class OWAbstractDabamHeightProfile(OWWidget):
 
             title = ' Slope error rms in X direction: %f $\mu$rad' % (sloperms[0]*1e6) + '\n' + \
                     ' Slope error rms in Y direction: %f $\mu$rad' % (sloperms[1]*1e6) + '\n' + \
-                    ' Figure error rms in X direction: %f nm' % (round(zz[0, :].std()*1e9, 6)) + '\n' + \
-                    ' Figure error rms in Y direction: %f nm' % (round(zz[:, 0].std()*1e9, 6))
+                    ' Figure error rms in X direction: %f nm' % (round(zz[0, :].std()*1e9/self.si_to_user_units, 6)) + '\n' + \
+                    ' Figure error rms in Y direction: %f nm' % (round(zz[:, 0].std()*1e9/self.si_to_user_units, 6))
 
-            self.axis.set_xlabel("X [" + self.workspace_units_label + "]")
-            self.axis.set_ylabel("Y [" + self.workspace_units_label + "]")
+            self.axis.set_xlabel("X [" + self.get_axis_um() + "]")
+            self.axis.set_ylabel("Y [" + self.get_axis_um() + "]")
             self.axis.set_zlabel("Z [nm]")
-
             self.axis.set_title(title)
-
             self.axis.mouse_init()
 
             if not not_interactive_mode:
-                try:
-                    import matplotlib
-                    if matplotlib.__version__ == "1.4.3":
-                        self.plot_canvas[5].draw()
-                except:
-                    pass
+                self.plot_canvas[5].draw()
 
                 QMessageBox.information(self, "QMessageBox.information()",
                                         "Height Profile calculated: if the result is satisfactory,\nclick \'Generate Height Profile File\' to complete the operation ",
@@ -686,7 +679,9 @@ class OWAbstractDabamHeightProfile(OWWidget):
 
                 sys.stdout = EmittingStream(textWritten=self.writeStdOut)
 
-                self.write_error_profile_file(self.zz, self.xx, self.yy, congruence.checkFileName(self.heigth_profile_file_name))
+                congruence.checkFileName(self.heigth_profile_file_name)
+
+                self.write_error_profile_file()
 
                 if not not_interactive_mode:
                     QMessageBox.information(self, "QMessageBox.information()",
@@ -704,7 +699,7 @@ class OWAbstractDabamHeightProfile(OWWidget):
                                      exception.args[0],
                                      QMessageBox.Ok)
 
-    def write_error_profile_file(self, zz, xx, yy, heigth_profile_file_name):
+    def write_error_profile_file(self):
         raise NotImplementedError("This method is abstract")
 
     def send_data(self, dimension_x, dimension_y):
@@ -741,6 +736,9 @@ class OWAbstractDabamHeightProfile(OWWidget):
 
     def selectFile(self):
         self.le_heigth_profile_file_name.setText(oasysgui.selectFileFromDialog(self, self.heigth_profile_file_name, "Select Output File", file_extension_filter="Data Files (*.dat)"))
+
+    def get_axis_um(self):
+        return "m"
 
 
 class Overlay(QWidget):
@@ -791,10 +789,3 @@ class Overlay(QWidget):
         if self.position_index == 7: self.position_index = 1
         self.update()
 
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    w = OWdabam_height_profile()
-    w.si_to_user_units = 100
-    w.show()
-    app.exec()
-    w.saveSettings()

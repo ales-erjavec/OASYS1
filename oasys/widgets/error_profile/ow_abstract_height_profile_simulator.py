@@ -26,7 +26,6 @@ try:
 except:
     pass
 
-
 class OWAbstractHeightErrorProfileSimulator(OWWidget):
     want_main_area = 1
     want_control_area = 1
@@ -214,13 +213,13 @@ class OWAbstractHeightErrorProfileSimulator(OWWidget):
         gui.comboBox(self.kind_of_profile_y_box_2, self, "delimiter_y", label="Fields delimiter", labelWidth=260,
                      items=["Spaces", "Tabs"], sendSelectedValue=False, orientation="horizontal")
 
-        oasysgui.lineEdit(self.kind_of_profile_y_box_2, self, "conversion_factor_y_x", "Conversion from file\nto meters (Abscissa)",
-                          labelWidth=260,
-                          valueType=float, orientation="horizontal")
+        self.le_conversion_factor_y_x = oasysgui.lineEdit(self.kind_of_profile_y_box_2, self, "conversion_factor_y_x", "Conversion from file\nto meters (Abscissa)",
+                                                          labelWidth=260,
+                                                          valueType=float, orientation="horizontal")
 
-        oasysgui.lineEdit(self.kind_of_profile_y_box_2, self, "conversion_factor_y_y", "Conversion from file\nto meters (Height Profile Values)",
-                          labelWidth=260,
-                          valueType=float, orientation="horizontal")
+        self.le_conversion_factor_y_y = oasysgui.lineEdit(self.kind_of_profile_y_box_2, self, "conversion_factor_y_y", "Conversion from file\nto meters (Height Profile Values)",
+                                                          labelWidth=260,
+                                                          valueType=float, orientation="horizontal")
 
         gui.separator(self.kind_of_profile_y_box_2)
 
@@ -309,13 +308,13 @@ class OWAbstractHeightErrorProfileSimulator(OWWidget):
         gui.comboBox(self.kind_of_profile_x_box_2 , self, "delimiter_x", label="Fields delimiter", labelWidth=260,
                      items=["Spaces", "Tabs"], sendSelectedValue=False, orientation="horizontal")
 
-        oasysgui.lineEdit(self.kind_of_profile_x_box_2, self, "conversion_factor_x_x", "Conversion from file\nto meters (Abscissa)",
-                          labelWidth=260,
-                          valueType=float, orientation="horizontal")
+        self.le_conversion_factor_x_x = oasysgui.lineEdit(self.kind_of_profile_x_box_2, self, "conversion_factor_x_x", "Conversion from file\nto meters (Abscissa)",
+                                                          labelWidth=260,
+                                                          valueType=float, orientation="horizontal")
 
-        oasysgui.lineEdit(self.kind_of_profile_x_box_2, self, "conversion_factor_x_y", "Conversion from file\nto meters (Height Profile Values)",
-                          labelWidth=260,
-                          valueType=float, orientation="horizontal")
+        self.le_conversion_factor_x_y = oasysgui.lineEdit(self.kind_of_profile_x_box_2, self, "conversion_factor_x_y", "Conversion from file\nto meters (Height Profile Values)",
+                                                          labelWidth=260,
+                                                          valueType=float, orientation="horizontal")
 
         gui.separator(self.kind_of_profile_x_box_2)
 
@@ -386,8 +385,8 @@ class OWAbstractHeightErrorProfileSimulator(OWWidget):
     def after_change_workspace_units(self):
         self.si_to_user_units = 1.0
 
-        self.axis.set_xlabel("X [m]")
-        self.axis.set_ylabel("Y [m]")
+        self.axis.set_xlabel("X [" + self.get_axis_um() + "]")
+        self.axis.set_ylabel("Y [" + self.get_axis_um() + "]")
 
         label = self.le_dimension_y.parent().layout().itemAt(0).widget()
         label.setText(label.text() + " [m]")
@@ -510,7 +509,7 @@ class OWAbstractHeightErrorProfileSimulator(OWWidget):
                     rms_y = None
                 else:
                     if self.error_type_y == profiles_simulation.FIGURE_ERROR:
-                        rms_y = self.rms_y * 1e-9 # from nm to m
+                        rms_y = self.rms_y * 1e-9 * self.si_to_user_units # from nm to m
                     else:
                         rms_y = self.rms_y * 1e-6 # from urad to rad
             else:
@@ -521,7 +520,7 @@ class OWAbstractHeightErrorProfileSimulator(OWWidget):
                 profile_1D_y_y = None
 
                 if self.error_type_y == profiles_simulation.FIGURE_ERROR:
-                    rms_y = self.rms_y * 1e-9 # from nm to m
+                    rms_y = self.rms_y * 1e-9 * self.si_to_user_units # from nm to m
                 else:
                     rms_y = self.rms_y * 1e-6 # from urad to rad
 
@@ -599,7 +598,7 @@ class OWAbstractHeightErrorProfileSimulator(OWWidget):
                     rms_x = None
                 else:
                     if self.error_type_x == profiles_simulation.FIGURE_ERROR:
-                        rms_x = self.rms_x * 1e-9 # from nm to m
+                        rms_x = self.rms_x * 1e-9 * self.si_to_user_units # from nm to m
                     else:
                         rms_x = self.rms_x * 1e-6 # from urad to rad
 
@@ -611,7 +610,7 @@ class OWAbstractHeightErrorProfileSimulator(OWWidget):
                 else: combination += "G"
 
                 if self.error_type_x == profiles_simulation.FIGURE_ERROR:
-                    rms_x = self.rms_x * 1e-9 # from nm to m
+                    rms_x = self.rms_x * 1e-9 * self.si_to_user_units # from nm to m
                 else:
                     rms_x = self.rms_x * 1e-6 # from urad to rad
 
@@ -635,14 +634,14 @@ class OWAbstractHeightErrorProfileSimulator(OWWidget):
                                                                  x_w = profile_1D_x_x,
                                                                  y_w = profile_1D_x_y)
 
-            self.xx = xx  # to user units
-            self.yy = yy  # to user units
-            self.zz = zz  # to user units
+            self.xx = xx
+            self.yy = yy
+            self.zz = zz
 
             self.axis.clear()
 
             x_to_plot, y_to_plot = numpy.meshgrid(self.xx, self.yy)
-            z_to_plot = zz * 1e9
+            z_to_plot = zz * 1e9 / self.si_to_user_units
 
             self.axis.plot_surface(x_to_plot, y_to_plot, z_to_plot,
                                    rstride=1, cstride=1, cmap=cm.autumn, linewidth=0.5, antialiased=True)
@@ -651,11 +650,11 @@ class OWAbstractHeightErrorProfileSimulator(OWWidget):
 
             title = ' Slope error rms in X direction: %f $\mu$rad' % (sloperms[0]*1e6) + '\n' + \
                     ' Slope error rms in Y direction: %f $\mu$rad' % (sloperms[1]*1e6) + '\n' + \
-                    ' Figure error rms in X direction: %f nm' % (round(zz[0, :].std()*1e9, 6)) + '\n' + \
-                    ' Figure error rms in Y direction: %f nm' % (round(zz[:, 0].std()*1e9, 6))
+                    ' Figure error rms in X direction: %f nm' % (round(zz[0, :].std()*1e9/self.si_to_user_units, 6)) + '\n' + \
+                    ' Figure error rms in Y direction: %f nm' % (round(zz[:, 0].std()*1e9/self.si_to_user_units, 6))
 
-            self.axis.set_xlabel("X [m]")
-            self.axis.set_ylabel("Y [m]")
+            self.axis.set_xlabel("X [" + self.get_axis_um() + "]")
+            self.axis.set_ylabel("Y [" + self.get_axis_um() + "]")
             self.axis.set_zlabel("Z [nm]")
             self.axis.set_title(title)
             self.axis.mouse_init()
@@ -683,7 +682,9 @@ class OWAbstractHeightErrorProfileSimulator(OWWidget):
 
                 sys.stdout = EmittingStream(textWritten=self.writeStdOut)
 
-                self.write_error_profile_file(self.zz, self.xx, self.yy, congruence.checkFileName(self.heigth_profile_file_name))
+                congruence.checkFileName(self.heigth_profile_file_name)
+
+                self.write_error_profile_file()
 
                 if not not_interactive_mode:
                     QMessageBox.information(self, "QMessageBox.information()",
@@ -707,12 +708,11 @@ class OWAbstractHeightErrorProfileSimulator(OWWidget):
 
                 if self.IS_DEVELOP: raise exception
 
-    def write_error_profile_file(self, zz, xx, yy, heigth_profile_file_name):
+    def write_error_profile_file(self):
         raise NotImplementedError("This method is abstract")
 
     def send_data(self, dimension_x, dimension_y):
         raise NotImplementedError("This method is abstract")
-
 
     def call_reset_settings(self):
         if ConfirmDialog.confirmed(parent=self, message="Confirm Reset of the Fields?"):
@@ -771,5 +771,8 @@ class OWAbstractHeightErrorProfileSimulator(OWWidget):
 
     def selectFile(self):
         self.le_heigth_profile_file_name.setText(oasysgui.selectFileFromDialog(self, self.heigth_profile_file_name, "Select Output File", file_extension_filter="Data Files (*.dat)"))
+
+    def get_axis_um(self):
+        return "m"
 
 
