@@ -986,7 +986,7 @@ class PipInstaller:
         self.install(package)
 
     def upgrade_no_deps(self, package):
-        cmd = ["python", "-m", "pip", "install", "--upgrade", "--no-deps"]
+        cmd = ["python", "-m", "pip", "install", "--upgrade", "--no-cache-dir"]
         cmd.extend(self.arguments)
         cmd.append(package.name)
 
