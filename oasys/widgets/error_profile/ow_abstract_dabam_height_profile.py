@@ -52,12 +52,12 @@ class OWAbstractDabamHeightProfile(OWWidget):
     slope_error_from = Setting(0.0)
     slope_error_to = Setting(1.5)
     dimension_y_from = Setting(0.0)
-    dimension_y_to = Setting(200.0)
+    dimension_y_to = Setting(2.0)
 
     use_undetrended = Setting(0)
 
-    step_x = Setting(1.0)
-    dimension_x = Setting(10.0)
+    step_x = Setting(0.01)
+    dimension_x = Setting(0.1)
 
     center_y = Setting(1)
     modify_y = Setting(0)
