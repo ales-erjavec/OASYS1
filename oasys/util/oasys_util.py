@@ -77,9 +77,9 @@ class EmittingStream(QtCore.QObject):
 
 import h5py, time
 
-subgroup_name = "height_error_profile"
+subgroup_name = "surface_file"
 
-def read_error_profile_file(file_name):
+def read_surface_file(file_name):
     if not os.path.isfile(file_name): raise ValueError("File " + file_name + " not existing")
 
     file = h5py.File(file_name, 'r')
@@ -89,7 +89,7 @@ def read_error_profile_file(file_name):
 
     return xx, yy, zz
 
-def write_error_profile_file(zz, xx, yy, file_name, overwrite=True):
+def write_surface_file(zz, xx, yy, file_name, overwrite=True):
 
     if (os.path.isfile(file_name)) and (overwrite==True): os.remove(file_name)
 

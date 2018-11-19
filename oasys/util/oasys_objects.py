@@ -1,18 +1,23 @@
 import numpy
 
-class OasysErrorProfileData(object):
-
+class OasysSurfaceData(object):
     def __init__(self,
                  xx=None,
                  yy=None,
                  zz=None,
-                 error_profile_data_file=None,
-                 error_profile_x_dim=0.0,
-                 error_profile_y_dim=0.0):
+                 surface_data_file=None):
         self.xx = xx
         self.yy = yy
         self.zz = zz
-        self.error_profile_data_file=error_profile_data_file
+        self.surface_data_file=surface_data_file
+
+class OasysErrorProfileData(object):
+
+    def __init__(self,
+                 surface_data=None,
+                 error_profile_x_dim=0.0,
+                 error_profile_y_dim=0.0):
+        self.surface_data = surface_data
         self.error_profile_x_dim = error_profile_x_dim
         self.error_profile_y_dim = error_profile_y_dim
 
