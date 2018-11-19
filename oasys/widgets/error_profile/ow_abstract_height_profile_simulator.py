@@ -45,7 +45,7 @@ class OWAbstractHeightErrorProfileSimulator(OWWidget):
     kind_of_profile_y = Setting(0)
 
     step_x = Setting(0.001)
-    step_y = Setting(0.001)
+    step_y = Setting(0.01)
 
     dimension_x = Setting(0.201)
     dimension_y = Setting(2.001)
