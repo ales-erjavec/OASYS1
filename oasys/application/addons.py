@@ -720,7 +720,7 @@ class AddonManagerDialog(QDialog):
         self.reject()
 
     def __on_installer_finished(self):
-        message = "Please restart Orange for changes to take effect."
+        message = "Please restart OASYS for changes to take effect."
         message_information(message, parent=self)
         self.accept()
 
