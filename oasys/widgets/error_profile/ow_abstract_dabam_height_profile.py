@@ -74,6 +74,8 @@ class OWAbstractDabamHeightProfile(OWWidget):
 
     tab=[]
 
+    plotted = False
+
     def __init__(self):
         super().__init__()
 
@@ -532,18 +534,12 @@ class OWAbstractDabamHeightProfile(OWWidget):
         self.calculate_heigth_profile(not_interactive_mode=True)
 
     def calculate_heigth_profile(self, not_interactive_mode=False):
-        import matplotlib
-        print (matplotlib.__version__)
-
         try:
             if self.server.y is None: raise Exception("No Profile Selected")
 
             sys.stdout = EmittingStream(textWritten=self.writeStdOut)
 
             self.check_fields()
-
-            # PREVENTS CRASH WITH PYQT5
-            if not not_interactive_mode:  self.tabs.setCurrentIndex(6)
 
             combination = "EF"
 
@@ -657,7 +653,10 @@ class OWAbstractDabamHeightProfile(OWWidget):
             self.axis.mouse_init()
 
             if not not_interactive_mode:
-                self.plot_canvas[5].draw()
+                self.tabs.setCurrentIndex(6)
+
+                if self.plotted: self.plot_canvas[5].draw()
+                else: self.plotted = True
 
                 QMessageBox.information(self, "QMessageBox.information()",
                                         "Height Profile calculated: if the result is satisfactory,\nclick \'Generate Height Profile File\' to complete the operation ",
