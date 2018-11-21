@@ -254,6 +254,9 @@ class PythonConsole(QtWidgets.QPlainTextEdit, code.InteractiveConsole):
     def complete(self):
         pass
 
+    def flush(self):
+        pass
+
     def _moveCursorToInputLine(self):
         """
         Move the cursor to the input line if not already there. If the cursor
