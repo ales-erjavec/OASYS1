@@ -15,7 +15,7 @@ except AttributeError:
 
 NAME = 'OASYS1'
 
-VERSION = '1.1.23'
+VERSION = '1.1.24'
 ISRELEASED = True
 
 DESCRIPTION = 'OrAnge SYnchrotron Suite'

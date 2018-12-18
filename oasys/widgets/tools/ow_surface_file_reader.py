@@ -136,6 +136,6 @@ class OWSurfaceFileReader(OWWidget):
             if self.IS_DEVELOP: raise exception
 
     def selectSurfaceFile(self):
-        self.le_surface_file_name.setText(oasysgui.selectFileFromDialog(self, self.surface_file_name, "Select Input File", file_extension_filter="HDF5 Files (*.hdf5)"))
+        self.le_surface_file_name.setText(oasysgui.selectFileFromDialog(self, self.surface_file_name, "Select Input File", file_extension_filter="HDF5 Files (*.hdf5 *.h5 *.hdf)"))
 
 
