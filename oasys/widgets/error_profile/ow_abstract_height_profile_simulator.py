@@ -211,11 +211,11 @@ class OWAbstractHeightErrorProfileSimulator(OWWidget):
         gui.comboBox(self.kind_of_profile_y_box_2, self, "delimiter_y", label="Fields delimiter", labelWidth=260,
                      items=["Spaces", "Tabs"], sendSelectedValue=False, orientation="horizontal")
 
-        self.le_conversion_factor_y_x = oasysgui.lineEdit(self.kind_of_profile_y_box_2, self, "conversion_factor_y_x", "Conversion from file\nto meters (Abscissa)",
+        self.le_conversion_factor_y_x = oasysgui.lineEdit(self.kind_of_profile_y_box_2, self, "conversion_factor_y_x", "Conversion from file to meters\n(Abscissa)",
                                                           labelWidth=260,
                                                           valueType=float, orientation="horizontal")
 
-        self.le_conversion_factor_y_y = oasysgui.lineEdit(self.kind_of_profile_y_box_2, self, "conversion_factor_y_y", "Conversion from file\nto meters (Height Profile Values)",
+        self.le_conversion_factor_y_y = oasysgui.lineEdit(self.kind_of_profile_y_box_2, self, "conversion_factor_y_y", "Conversion from file to meters\n(Height Profile Values)",
                                                           labelWidth=260,
                                                           valueType=float, orientation="horizontal")
 
@@ -224,7 +224,7 @@ class OWAbstractHeightErrorProfileSimulator(OWWidget):
         gui.comboBox(self.kind_of_profile_y_box_2, self, "center_y", label="Center Profile in the middle of O.E.", labelWidth=300,
                      items=["No", "Yes"], sendSelectedValue=False, orientation="horizontal")
 
-        gui.comboBox(self.kind_of_profile_y_box_2, self, "modify_y", label="Modify Length?", labelWidth=240,
+        gui.comboBox(self.kind_of_profile_y_box_2, self, "modify_y", label="Modify Length?", labelWidth=200,
                      items=["No", "Rescale to new length", "Fit to new length (fill or cut)"], callback=self.set_ModifyY, sendSelectedValue=False, orientation="horizontal")
 
         self.modify_box_2_1 = oasysgui.widgetBox(self.kind_of_profile_y_box_2, "", addSpace=False, orientation="vertical", height=70)
@@ -306,11 +306,11 @@ class OWAbstractHeightErrorProfileSimulator(OWWidget):
         gui.comboBox(self.kind_of_profile_x_box_2 , self, "delimiter_x", label="Fields delimiter", labelWidth=260,
                      items=["Spaces", "Tabs"], sendSelectedValue=False, orientation="horizontal")
 
-        self.le_conversion_factor_x_x = oasysgui.lineEdit(self.kind_of_profile_x_box_2, self, "conversion_factor_x_x", "Conversion from file\nto meters (Abscissa)",
+        self.le_conversion_factor_x_x = oasysgui.lineEdit(self.kind_of_profile_x_box_2, self, "conversion_factor_x_x", "Conversion from file to meters\n(Abscissa)",
                                                           labelWidth=260,
                                                           valueType=float, orientation="horizontal")
 
-        self.le_conversion_factor_x_y = oasysgui.lineEdit(self.kind_of_profile_x_box_2, self, "conversion_factor_x_y", "Conversion from file\nto meters (Height Profile Values)",
+        self.le_conversion_factor_x_y = oasysgui.lineEdit(self.kind_of_profile_x_box_2, self, "conversion_factor_x_y", "Conversion from file to meters\n(Height Profile Values)",
                                                           labelWidth=260,
                                                           valueType=float, orientation="horizontal")
 
@@ -319,7 +319,7 @@ class OWAbstractHeightErrorProfileSimulator(OWWidget):
         gui.comboBox(self.kind_of_profile_x_box_2, self, "center_x", label="Center Profile in the middle of O.E.", labelWidth=300,
                      items=["No", "Yes"], sendSelectedValue=False, orientation="horizontal")
 
-        gui.comboBox(self.kind_of_profile_x_box_2, self, "modify_x", label="Modify Length?", labelWidth=240,
+        gui.comboBox(self.kind_of_profile_x_box_2, self, "modify_x", label="Modify Length?", labelWidth=200,
                      items=["No", "Rescale to new length", "Fit to new length (fill or cut)"], callback=self.set_ModifyX, sendSelectedValue=False, orientation="horizontal")
 
         self.modify_box_1_1 = oasysgui.widgetBox(self.kind_of_profile_x_box_2, "", addSpace=False, orientation="vertical", height=70)
@@ -398,6 +398,24 @@ class OWAbstractHeightErrorProfileSimulator(OWWidget):
         label = self.le_step_x.parent().layout().itemAt(0).widget()
         label.setText(label.text() + " [m]")
         label = self.le_correlation_length_x.parent().layout().itemAt(0).widget()
+        label.setText(label.text() + " [m]")
+
+        label = self.le_conversion_factor_y_x.parent().layout().itemAt(0).widget()
+        label.setText("Conversion from file to meters\n(Abscissa)")
+        label = self.le_conversion_factor_y_y.parent().layout().itemAt(0).widget()
+        label.setText("Conversion from file to meters\n(Height Profile Values)")
+        label = self.le_conversion_factor_x_x.parent().layout().itemAt(0).widget()
+        label.setText("Conversion from file to meters\n(Abscissa)")
+        label = self.le_conversion_factor_x_y.parent().layout().itemAt(0).widget()
+        label.setText("Conversion from file to meters\n(Height Profile Values)")
+
+        label = self.le_new_length_y_1.parent().layout().itemAt(0).widget()
+        label.setText(label.text() + " [m]")
+        label = self.le_new_length_y_2.parent().layout().itemAt(0).widget()
+        label.setText(label.text() + " [m]")
+        label = self.le_new_length_x_1.parent().layout().itemAt(0).widget()
+        label.setText(label.text() + " [m]")
+        label = self.le_new_length_x_2.parent().layout().itemAt(0).widget()
         label.setText(label.text() + " [m]")
 
 
