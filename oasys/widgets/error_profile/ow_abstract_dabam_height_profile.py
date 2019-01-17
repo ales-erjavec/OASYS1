@@ -61,7 +61,7 @@ class OWAbstractDabamHeightProfile(OWWidget):
 
     center_y = Setting(1)
     modify_y = Setting(0)
-    new_length = Setting(2.0)
+    new_length = Setting(0.2)
     filler_value = Setting(0.0)
 
     renormalize_y = Setting(1)
@@ -70,7 +70,7 @@ class OWAbstractDabamHeightProfile(OWWidget):
 
     dabam_profile_index = Setting(1)
 
-    heigth_profile_file_name = Setting('mirror.dat')
+    heigth_profile_file_name = Setting('mirror.hdf5')
 
     tab=[]
 

@@ -55,7 +55,6 @@ class Hdf5TreeViewWidget(qt.QWidget):
             self.__dataViewer.setData(data)
 
     def load_file(self, filename):
-        self.__treeview.findHdf5TreeModel().clear()
         self.__treeview.findHdf5TreeModel().insertFile(filename)
 
     def set_text(self, text):
@@ -73,13 +72,13 @@ class Hdf5TreeViewWidget(qt.QWidget):
 class OWHDF5FileReader(OWWidget):
     name = "HDF5 File Reader"
     id = "hdf5_file_reader"
-    description = "HDF5 XY File Reader"
+    description = "HDF5 File Reader"
     icon = "icons/plot_xy.png"
     author = "Luca Rebuffi"
     maintainer_email = "lrebuffi@anl.gov"
     priority = 3
     category = ""
-    keywords = ["plot_xy_file_reader"]
+    keywords = ["hdf5_file_reader"]
 
     want_main_area = 1
     want_control_area = 1
@@ -97,7 +96,7 @@ class OWHDF5FileReader(OWWidget):
     yy = None
     zz = None
 
-    hdf5_file_name = Setting('plot_xy.hdf5')
+    hdf5_file_name = Setting('file.hdf5')
 
     def __init__(self):
         super().__init__()
@@ -115,12 +114,12 @@ class OWHDF5FileReader(OWWidget):
 
         button_box = oasysgui.widgetBox(self.controlArea, "", addSpace=False, orientation="horizontal")
 
-        button = gui.button(button_box, self, "Load Plot XY", callback=self.load_file)
+        button = gui.button(button_box, self, "Load HDF5 file", callback=self.load_file)
         button.setFixedHeight(45)
 
         input_box_l = oasysgui.widgetBox(self.controlArea, "Input", addSpace=True, orientation="horizontal", height=self.TABS_AREA_HEIGHT)
 
-        self.le_hdf5_file_name = oasysgui.lineEdit(input_box_l, self, "hdf5_file_name", "Plot XY File Name",
+        self.le_hdf5_file_name = oasysgui.lineEdit(input_box_l, self, "hdf5_file_name", "HDF5 File Name",
                                                         labelWidth=120, valueType=str, orientation="horizontal")
 
         gui.button(input_box_l, self, "...", callback=self.selectPlotXYFile)

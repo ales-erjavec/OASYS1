@@ -89,6 +89,8 @@ def read_surface_file(file_name):
 
     return xx, yy, zz
 
+import numpy
+
 def write_surface_file(zz, xx, yy, file_name, overwrite=True):
 
     if (os.path.isfile(file_name)) and (overwrite==True): os.remove(file_name)
@@ -96,11 +98,11 @@ def write_surface_file(zz, xx, yy, file_name, overwrite=True):
     if not os.path.isfile(file_name):  # if file doesn't exist, create it.
         file = h5py.File(file_name, 'w')
         # points to the default data to be plotted
-        file.attrs['default']          = 'entry'
+        file.attrs['default']          = subgroup_name = '/Z'
         # give the HDF5 root some more attributes
         file.attrs['file_name']        = file_name
         file.attrs['file_time']        = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
-        file.attrs['creator']          = 'write_error_profile_file'
+        file.attrs['creator']          = 'write_surface_file'
         file.attrs['code']             = 'Oasys'
         file.attrs['HDF5_Version']     = h5py.version.hdf5_version
         file.attrs['h5py_version']     = h5py.version.version
@@ -113,9 +115,15 @@ def write_surface_file(zz, xx, yy, file_name, overwrite=True):
     except:
         f1 = file[subgroup_name]
 
-    f1.create_dataset("X", data=xx)
-    f1.create_dataset("Y", data=yy)
-    f1.create_dataset("Z", data=zz)
+    zds = f1.create_dataset("Z", data=zz)
+    xds = f1.create_dataset("X", data=xx)
+    yds = f1.create_dataset("Y", data=yy)
+
+    #zds.dims.create_scale(xds, "X")
+    #zds.dims.create_scale(yds, "Y")
+
+    #zds.dims[0].attach_scale(xds)
+    #zds.dims[1].attach_scale(yds)
 
     file.close()
 

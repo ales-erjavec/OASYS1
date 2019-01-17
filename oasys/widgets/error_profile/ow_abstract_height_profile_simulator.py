@@ -47,8 +47,8 @@ class OWAbstractHeightErrorProfileSimulator(OWWidget):
     step_x = Setting(0.001)
     step_y = Setting(0.01)
 
-    dimension_x = Setting(0.201)
-    dimension_y = Setting(2.001)
+    dimension_x = Setting(0.021)
+    dimension_y = Setting(0.201)
 
     power_law_exponent_beta_x = Setting(3.0)
     power_law_exponent_beta_y = Setting(3.0)
@@ -89,7 +89,7 @@ class OWAbstractHeightErrorProfileSimulator(OWWidget):
 
     renormalize_y = Setting(0)
 
-    heigth_profile_file_name = Setting('mirror.dat')
+    heigth_profile_file_name = Setting('mirror.hdf5')
 
     def __init__(self):
         super().__init__()
