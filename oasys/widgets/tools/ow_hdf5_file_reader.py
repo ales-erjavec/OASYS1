@@ -1,3 +1,5 @@
+import numpy
+
 from PyQt5.QtCore import QRect
 from PyQt5.QtWidgets import QApplication, QMessageBox
 
@@ -11,8 +13,16 @@ from oasys.widgets import congruence
 from silx.gui import qt
 import silx.gui.hdf5
 from silx.gui.data.DataViewerFrame import DataViewerFrame
+from silx.gui.data.DataViewer import DataViewer, DataViews
+from silx.gui.hdf5._utils import H5Node
+from silx.gui.plot.PlotWindow import Plot2D
+
+from h5py import Dataset
 
 class Hdf5TreeViewWidget(qt.QWidget):
+    x_scale = 0
+    y_scale = 1
+
     def __init__(self, file_names=None):
         qt.QWidget.__init__(self)
 
@@ -20,8 +30,19 @@ class Hdf5TreeViewWidget(qt.QWidget):
         self.__text = qt.QTextEdit(self)
         self.__dataViewer = DataViewerFrame(self)
 
+        box = oasysgui.widgetBox(self, "", orientation="vertical")
+
+        box.layout().addWidget(self.__dataViewer)
+        self.box_scale = oasysgui.widgetBox(box, "", orientation="horizontal")
+
+        self.cb_x_scale = gui.comboBox(self.box_scale, self, "x_scale", label="X Scale", items=[], labelWidth=240, sendSelectedValue=False, orientation="horizontal")
+        self.cb_y_scale = gui.comboBox(self.box_scale, self, "y_scale", label="Y Scale", items=[], labelWidth=240, sendSelectedValue=False, orientation="horizontal")
+        gui.button(self.box_scale, self, "Set Scale", callback=self.rescale)
+
+        self.box_scale.setVisible(False)
+
         vSplitter = qt.QSplitter(qt.Qt.Vertical)
-        vSplitter.addWidget(self.__dataViewer)
+        vSplitter.addWidget(box)
         vSplitter.addWidget(self.__text)
         vSplitter.setSizes([10, 0])
 
@@ -49,10 +70,66 @@ class Hdf5TreeViewWidget(qt.QWidget):
         if len(selected) == 1:
             # Update the viewer for a single selection
             data = selected[0]
-            # data is a hdf5.H5Node object
-            # data.h5py_object is a Group/Dataset object (from h5py, spech5, fabioh5)
-            # The dataviewer can display both
             self.__dataViewer.setData(data)
+
+            if isinstance(data, H5Node) and len(data.maxshape)==2:
+                current_group = data.h5py_object.parent
+
+                self.datasets_1d_info = []
+                def func(name, obj):
+                    if isinstance(obj, Dataset) and obj.ndim==1:
+                       self.datasets_1d_info.append([name, obj.value])
+
+                current_group.visititems(func)
+
+                self.cb_x_scale.clear()
+                self.cb_y_scale.clear()
+
+                for dataset in self.datasets_1d_info:
+                    self.cb_x_scale.addItem(dataset[0])
+                    self.cb_y_scale.addItem(dataset[0])
+
+                #for key in group.keys():
+                #    print(key)
+
+                self.box_scale.setVisible(True)
+            else:
+                self.box_scale.setVisible(False)
+
+    def rescale(self):
+        current_view = self.__dataViewer.displayedView()
+        if isinstance(current_view, DataViews._ImageView):
+            dataset_x = self.cb_x_scale.itemText(self.x_scale)
+            dataset_y = self.cb_y_scale.itemText(self.y_scale)
+
+            min_x = 0.0
+            max_x = 0.0
+            min_y = 0.0
+            max_y = 0.0
+            nbins_x = 0.0
+            nbins_y = 0.0
+
+            for dataset in self.datasets_1d_info:
+                if dataset[0] == dataset_x:
+                    min_x = numpy.min(dataset[1])
+                    max_x = numpy.max(dataset[1])
+                    nbins_x = len(dataset[1])
+                elif dataset[0] == dataset_y:
+                    min_y = numpy.min(dataset[1])
+                    max_y = numpy.max(dataset[1])
+                    nbins_y = len(dataset[1])
+
+            origin = (min_x, min_y)
+            scale = (abs((max_x-min_x)/nbins_x), abs((max_y-min_y)/nbins_y))
+
+            for view in current_view.availableViews():
+                widget = view.getWidget()
+
+                if isinstance(widget, Plot2D):
+                    widget.getActiveImage().setOrigin(origin)
+                    widget.getActiveImage().setScale(scale)
+                    widget.setGraphXLimits(min_x, max_x)
+                    widget.setGraphYLimits(min_y, max_y)
 
     def load_file(self, filename):
         self.__treeview.findHdf5TreeModel().insertFile(filename)

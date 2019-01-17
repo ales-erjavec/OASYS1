@@ -98,7 +98,7 @@ def write_surface_file(zz, xx, yy, file_name, overwrite=True):
     if not os.path.isfile(file_name):  # if file doesn't exist, create it.
         file = h5py.File(file_name, 'w')
         # points to the default data to be plotted
-        file.attrs['default']          = subgroup_name = '/Z'
+        file.attrs['default']          = subgroup_name + '/Z'
         # give the HDF5 root some more attributes
         file.attrs['file_name']        = file_name
         file.attrs['file_time']        = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
@@ -115,15 +115,9 @@ def write_surface_file(zz, xx, yy, file_name, overwrite=True):
     except:
         f1 = file[subgroup_name]
 
-    zds = f1.create_dataset("Z", data=zz)
-    xds = f1.create_dataset("X", data=xx)
-    yds = f1.create_dataset("Y", data=yy)
-
-    #zds.dims.create_scale(xds, "X")
-    #zds.dims.create_scale(yds, "Y")
-
-    #zds.dims[0].attach_scale(xds)
-    #zds.dims[1].attach_scale(yds)
+    f1.create_dataset("Z", data=zz)
+    f1.create_dataset("X", data=xx)
+    f1.create_dataset("Y", data=yy)
 
     file.close()
 
