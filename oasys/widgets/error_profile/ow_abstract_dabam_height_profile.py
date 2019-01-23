@@ -11,8 +11,6 @@ from matplotlib import cm
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 
-import orangecanvas.resources as resources
-
 from orangewidget import gui, widget
 from orangewidget.settings import Setting
 
@@ -181,9 +179,12 @@ class OWAbstractDabamHeightProfile(OWWidget):
 
         gui.separator(manual_box)
 
-        button = gui.button(manual_box, self, "Retrieve Profile", callback=self.retrieve_profile)
+        button_box = oasysgui.widgetBox(manual_box, "", addSpace=False, orientation="horizontal")
+
+        button = gui.button(button_box, self, "Retrieve Profile", callback=self.retrieve_profile)
         button.setFixedHeight(35)
-        button.setFixedWidth(self.CONTROL_AREA_WIDTH-35)
+        button = gui.button(button_box, self, "Send Profile", callback=self.send_profile)
+        button.setFixedHeight(35)
 
         input_box = oasysgui.widgetBox(tab_input, "Search Parameters", addSpace=True, orientation="vertical")
 
@@ -412,6 +413,13 @@ class OWAbstractDabamHeightProfile(OWWidget):
     def get_usage_path(self):
         pass
 
+    @classmethod
+    def get_dabam_output(cls):
+        return  {"name": "DABAM 1D Profile",
+                "type": numpy.ndarray,
+                "doc": "DABAM 1D Profile",
+                "id": "DABAM 1D Profile"}
+
     def after_change_workspace_units(self):
         self.si_to_user_units = 1.0
 
@@ -622,6 +630,23 @@ class OWAbstractDabamHeightProfile(OWWidget):
 
             if self.IS_DEVELOP: raise exception
 
+
+    def send_profile(self):
+        try:
+            if self.server.y is None: raise Exception("No Profile Selected")
+
+            dabam_y = self.server.y
+            dabam_profile = numpy.zeros((len(dabam_y), 2))
+            dabam_profile[:, 0] = dabam_y
+            dabam_profile[:, 1] = self.server.zHeights
+
+            self.send("DABAM 1D Profile", dabam_profile)
+        except Exception as exception:
+            QMessageBox.critical(self, "Error",
+                                 exception.args[0],
+                                 QMessageBox.Ok)
+
+            if self.IS_DEVELOP: raise exception
 
     def search_profiles(self):
         try:

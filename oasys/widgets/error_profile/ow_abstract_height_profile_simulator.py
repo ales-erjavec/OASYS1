@@ -91,6 +91,8 @@ class OWAbstractHeightErrorProfileSimulator(OWWidget):
 
     heigth_profile_file_name = Setting('mirror.hdf5')
 
+    inputs=[("DABAM 1D Profile", numpy.ndarray, "receive_dabam_profile")]
+
     def __init__(self):
         super().__init__()
 
@@ -443,6 +445,34 @@ class OWAbstractHeightErrorProfileSimulator(OWWidget):
         self.modify_box_1_2.setVisible(self.modify_x == 1)
         self.modify_box_1_3.setVisible(self.modify_x == 2)
 
+
+    def receive_dabam_profile(self, dabam_profile):
+        if not dabam_profile is None:
+            try:
+                file_name = "dabam_profile_" + str(id(self)) + ".dat"
+
+                file = open(file_name, "w")
+
+                for element in dabam_profile:
+                    file.write(str(element[0]) + " " + str(element[1]) + "\n")
+
+                file.flush()
+                file.close()
+
+                self.kind_of_profile_y = 2
+                self.heigth_profile_1D_file_name_y = file_name
+                self.delimiter_y = 0
+                self.conversion_factor_y_x = 1.0
+                self.conversion_factor_y_y = 1.0
+
+                self.set_KindOfProfileY()
+
+            except Exception as exception:
+                QMessageBox.critical(self, "Error", exception.args[0], QMessageBox.Ok)
+
+                if self.IS_DEVELOP: raise exception
+
+
     def calculate_heigth_profile_ni(self):
         self.calculate_heigth_profile(not_interactive_mode=True)
 
@@ -682,9 +712,7 @@ class OWAbstractHeightErrorProfileSimulator(OWWidget):
                                         "Height Profile calculated: if the result is satisfactory,\nclick \'Generate Height Profile File\' to complete the operation ",
                                         QMessageBox.Ok)
         except Exception as exception:
-            QMessageBox.critical(self, "Error",
-                                 exception.args[0],
-                                 QMessageBox.Ok)
+            QMessageBox.critical(self, "Error", exception.args[0], QMessageBox.Ok)
 
             if self.IS_DEVELOP: raise exception
 
