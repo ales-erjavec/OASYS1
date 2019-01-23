@@ -59,10 +59,33 @@ class OWAbstractDabamHeightProfile(OWWidget):
     step_x = Setting(0.01)
     dimension_x = Setting(0.1)
 
+    kind_of_profile_x = Setting(3)
+
+    power_law_exponent_beta_x = Setting(3.0)
+
+    correlation_length_x = Setting(0.3)
+
+    error_type_x = Setting(profiles_simulation.FIGURE_ERROR)
+
+    rms_x = Setting(0.1)
+    montecarlo_seed_x = Setting(8787)
+
+    heigth_profile_1D_file_name_x= Setting("mirror_1D_x.dat")
+    delimiter_x = Setting(0)
+    conversion_factor_x_x = Setting(0.001)
+    conversion_factor_x_y = Setting(1e-6)
+
+    center_x = Setting(1)
+    modify_x = Setting(0)
+    new_length_x = Setting(0.201)
+    filler_value_x = Setting(0.0)
+
+    renormalize_x = Setting(0)
+
     center_y = Setting(1)
     modify_y = Setting(0)
-    new_length = Setting(0.2)
-    filler_value = Setting(0.0)
+    new_length_y = Setting(0.2)
+    filler_value_y = Setting(0.0)
 
     renormalize_y = Setting(1)
     error_type_y = Setting(0)
@@ -137,6 +160,10 @@ class OWAbstractDabamHeightProfile(OWWidget):
         tab_out = oasysgui.createTabPage(tabs_setting, "Output")
         tab_usa = oasysgui.createTabPage(tabs_setting, "Use of the Widget")
         tab_usa.setStyleSheet("background-color: white;")
+
+        tabs_dabam = oasysgui.tabWidget(tab_gener)
+        tab_length = oasysgui.createTabPage(tabs_dabam, "DABAM Profile")
+        tab_width = oasysgui.createTabPage(tabs_dabam, "Width")
 
         usage_box = oasysgui.widgetBox(tab_usa, "", addSpace=True, orientation="horizontal")
 
@@ -218,12 +245,9 @@ class OWAbstractDabamHeightProfile(OWWidget):
         self.scrollarea.setWidget(self.table)
         self.scrollarea.setWidgetResizable(1)
 
-        output_profile_box = oasysgui.widgetBox(tab_gener, "Surface Generation Parameters", addSpace=True, orientation="vertical", height=320)
+        ##----------------------------------
 
-        self.le_dimension_x = oasysgui.lineEdit(output_profile_box, self, "dimension_x", "Width",
-                           labelWidth=300, valueType=float, orientation="horizontal")
-        self.le_step_x = oasysgui.lineEdit(output_profile_box, self, "step_x", "Step Width",
-                           labelWidth=300, valueType=float, orientation="horizontal")
+        output_profile_box = oasysgui.widgetBox(tab_length, "Surface Generation Parameters", addSpace=True, orientation="vertical", height=320)
 
         gui.comboBox(output_profile_box, self, "center_y", label="Center Profile in the middle of O.E.", labelWidth=300,
                      items=["No", "Yes"], sendSelectedValue=False, orientation="horizontal")
@@ -236,11 +260,11 @@ class OWAbstractDabamHeightProfile(OWWidget):
         self.modify_box_1 = oasysgui.widgetBox(output_profile_box, "", addSpace=False, orientation="vertical", height=60)
 
         self.modify_box_2 = oasysgui.widgetBox(output_profile_box, "", addSpace=False, orientation="vertical", height=60)
-        self.le_new_length_1 = oasysgui.lineEdit(self.modify_box_2, self, "new_length", "New Length", labelWidth=300, valueType=float, orientation="horizontal")
+        self.le_new_length_1 = oasysgui.lineEdit(self.modify_box_2, self, "new_length_y", "New Length", labelWidth=300, valueType=float, orientation="horizontal")
 
         self.modify_box_3 = oasysgui.widgetBox(output_profile_box, "", addSpace=False, orientation="vertical", height=60)
-        self.le_new_length_2 = oasysgui.lineEdit(self.modify_box_3, self, "new_length", "New Length", labelWidth=300, valueType=float, orientation="horizontal")
-        oasysgui.lineEdit(self.modify_box_3, self, "filler_value", "Filler Value (if new length > profile length) [nm]", labelWidth=300, valueType=float, orientation="horizontal")
+        self.le_new_length_2 = oasysgui.lineEdit(self.modify_box_3, self, "new_length_y", "New Length", labelWidth=300, valueType=float, orientation="horizontal")
+        oasysgui.lineEdit(self.modify_box_3, self, "filler_value_y", "Filler Value (if new length > profile length) [nm]", labelWidth=300, valueType=float, orientation="horizontal")
 
         self.set_ModifyY()
 
@@ -258,6 +282,106 @@ class OWAbstractDabamHeightProfile(OWWidget):
                            labelWidth=300, valueType=float, orientation="horizontal")
 
         self.set_RenormalizeY()
+
+        ##----------------------------------
+
+        input_box_w = oasysgui.widgetBox(tab_width, "Calculation Parameters", addSpace=True, orientation="vertical")
+
+
+        gui.comboBox(input_box_w, self, "kind_of_profile_x", label="Kind of Profile", labelWidth=260,
+                     items=["Fractal", "Gaussian", "User File", "None"],
+                     callback=self.set_KindOfProfileX, sendSelectedValue=False, orientation="horizontal")
+
+        gui.separator(input_box_w)
+
+        self.kind_of_profile_x_box_1 = oasysgui.widgetBox(input_box_w, "", addSpace=True, orientation="vertical", height=350)
+
+        self.le_dimension_x = oasysgui.lineEdit(self.kind_of_profile_x_box_1, self, "dimension_x", "Dimensions",
+                          labelWidth=260, valueType=float, orientation="horizontal")
+        self.le_step_x = oasysgui.lineEdit(self.kind_of_profile_x_box_1, self, "step_x", "Step",
+                          labelWidth=260, valueType=float, orientation="horizontal")
+
+        self.kind_of_profile_x_box_1_0 = oasysgui.widgetBox(self.kind_of_profile_x_box_1, "", addSpace=True, orientation="vertical")
+
+        oasysgui.lineEdit(self.kind_of_profile_x_box_1_0, self, "montecarlo_seed_x", "Monte Carlo initial seed",
+                          labelWidth=260, valueType=int, orientation="horizontal")
+
+        self.kind_of_profile_x_box_1_1 = oasysgui.widgetBox(self.kind_of_profile_x_box_1, "", addSpace=True, orientation="vertical")
+
+        oasysgui.lineEdit(self.kind_of_profile_x_box_1_1, self, "power_law_exponent_beta_x", "Beta Value",
+                           labelWidth=260, valueType=float, orientation="horizontal")
+
+        self.kind_of_profile_x_box_1_2 = oasysgui.widgetBox(self.kind_of_profile_x_box_1, "", addSpace=True, orientation="vertical")
+
+        self.le_correlation_length_x = oasysgui.lineEdit(self.kind_of_profile_x_box_1_2, self, "correlation_length_x", "Correlation Length",
+                           labelWidth=260, valueType=float, orientation="horizontal")
+
+        gui.separator(self.kind_of_profile_x_box_1)
+
+        self.kind_of_profile_x_box_1_3 = oasysgui.widgetBox(self.kind_of_profile_x_box_1, "", addSpace=True, orientation="vertical")
+
+        gui.comboBox(self.kind_of_profile_x_box_1_3, self, "error_type_x", label="Normalization to", labelWidth=270,
+                     items=["Figure Error (nm)", "Slope Error (" + "\u03BC" + "rad)"],
+                     sendSelectedValue=False, orientation="horizontal")
+
+        oasysgui.lineEdit(self.kind_of_profile_x_box_1_3, self, "rms_x", "Rms Value",
+                           labelWidth=260, valueType=float, orientation="horizontal")
+
+
+        self.kind_of_profile_x_box_2 = oasysgui.widgetBox(input_box_w, "", addSpace=True, orientation="vertical", height=390)
+
+        select_file_box_1 = oasysgui.widgetBox(self.kind_of_profile_x_box_2, "", addSpace=True, orientation="horizontal")
+
+        self.le_heigth_profile_1D_file_name_x = oasysgui.lineEdit(select_file_box_1, self, "heigth_profile_1D_file_name_x", "1D Profile File Name",
+                                                        labelWidth=120, valueType=str, orientation="horizontal")
+
+        gui.button(select_file_box_1, self, "...", callback=self.selectFile1D_X)
+
+        gui.comboBox(self.kind_of_profile_x_box_2 , self, "delimiter_x", label="Fields delimiter", labelWidth=260,
+                     items=["Spaces", "Tabs"], sendSelectedValue=False, orientation="horizontal")
+
+        self.le_conversion_factor_x_x = oasysgui.lineEdit(self.kind_of_profile_x_box_2, self, "conversion_factor_x_x", "Conversion from file to meters\n(Abscissa)",
+                                                          labelWidth=260,
+                                                          valueType=float, orientation="horizontal")
+
+        self.le_conversion_factor_x_y = oasysgui.lineEdit(self.kind_of_profile_x_box_2, self, "conversion_factor_x_y", "Conversion from file to meters\n(Height Profile Values)",
+                                                          labelWidth=260,
+                                                          valueType=float, orientation="horizontal")
+
+        gui.separator(self.kind_of_profile_x_box_2)
+
+        gui.comboBox(self.kind_of_profile_x_box_2, self, "center_x", label="Center Profile in the middle of O.E.", labelWidth=300,
+                     items=["No", "Yes"], sendSelectedValue=False, orientation="horizontal")
+
+        gui.comboBox(self.kind_of_profile_x_box_2, self, "modify_x", label="Modify Length?", labelWidth=200,
+                     items=["No", "Rescale to new length", "Fit to new length (fill or cut)"], callback=self.set_ModifyX, sendSelectedValue=False, orientation="horizontal")
+
+        self.modify_box_1_1 = oasysgui.widgetBox(self.kind_of_profile_x_box_2, "", addSpace=False, orientation="vertical", height=70)
+
+        self.modify_box_1_2 = oasysgui.widgetBox(self.kind_of_profile_x_box_2, "", addSpace=False, orientation="vertical", height=70)
+        self.le_new_length_x_1 = oasysgui.lineEdit(self.modify_box_1_2, self, "new_length_x", "New Length", labelWidth=300, valueType=float, orientation="horizontal")
+
+        self.modify_box_1_3 = oasysgui.widgetBox(self.kind_of_profile_x_box_2, "", addSpace=False, orientation="vertical", height=70)
+        self.le_new_length_x_2 = oasysgui.lineEdit(self.modify_box_1_3, self, "new_length_x", "New Length", labelWidth=300, valueType=float, orientation="horizontal")
+        oasysgui.lineEdit(self.modify_box_1_3, self, "filler_value_x", "Filler Value (if new length > profile length) [nm]", labelWidth=300, valueType=float, orientation="horizontal")
+
+        self.set_ModifyX()
+
+        gui.comboBox(self.kind_of_profile_x_box_2, self, "renormalize_x", label="Renormalize to different RMS", labelWidth=260,
+                     items=["No", "Yes"], callback=self.set_KindOfProfileX, sendSelectedValue=False, orientation="horizontal")
+
+        self.kind_of_profile_x_box_2_1 = oasysgui.widgetBox(self.kind_of_profile_x_box_2, "", addSpace=True, orientation="vertical")
+
+        gui.comboBox(self.kind_of_profile_x_box_2_1, self, "error_type_x", label="Normalization to", labelWidth=270,
+                     items=["Figure Error (nm)", "Slope Error (" + "\u03BC" + "rad)"],
+                     sendSelectedValue=False, orientation="horizontal")
+
+        oasysgui.lineEdit(self.kind_of_profile_x_box_2_1, self, "rms_x", "Rms Value",
+                           labelWidth=260, valueType=float, orientation="horizontal")
+
+        self.set_KindOfProfileX()
+
+        ##----------------------------------
 
         output_box = oasysgui.widgetBox(tab_gener, "Outputs", addSpace=True, orientation="vertical")
 
@@ -302,13 +426,26 @@ class OWAbstractDabamHeightProfile(OWWidget):
         label.setText(label.text() + " [m]")
         label = self.le_dimension_y_to.parent().layout().itemAt(0).widget()
         label.setText(label.text() + " [m]")
+        label = self.le_new_length_1.parent().layout().itemAt(0).widget()
+        label.setText(label.text() + " [m]")
+        label = self.le_new_length_2.parent().layout().itemAt(0).widget()
+        label.setText(label.text() + " [m]")
+
         label = self.le_dimension_x.parent().layout().itemAt(0).widget()
         label.setText(label.text() + " [m]")
         label = self.le_step_x.parent().layout().itemAt(0).widget()
         label.setText(label.text() + " [m]")
-        label = self.le_new_length_1.parent().layout().itemAt(0).widget()
+        label = self.le_correlation_length_x.parent().layout().itemAt(0).widget()
         label.setText(label.text() + " [m]")
-        label = self.le_new_length_2.parent().layout().itemAt(0).widget()
+
+        label = self.le_conversion_factor_x_x.parent().layout().itemAt(0).widget()
+        label.setText("Conversion from file to meters\n(Abscissa)")
+        label = self.le_conversion_factor_x_y.parent().layout().itemAt(0).widget()
+        label.setText("Conversion from file to meters\n(Height Profile Values)")
+
+        label = self.le_new_length_x_1.parent().layout().itemAt(0).widget()
+        label.setText(label.text() + " [m]")
+        label = self.le_new_length_x_2.parent().layout().itemAt(0).widget()
         label.setText(label.text() + " [m]")
 
     def initializeTabs(self):
@@ -402,6 +539,22 @@ class OWAbstractDabamHeightProfile(OWWidget):
     def set_RenormalizeY(self):
         self.output_profile_box_1.setVisible(self.renormalize_y==1)
         self.output_profile_box_2.setVisible(self.renormalize_y==0)
+
+    def set_KindOfProfileX(self):
+        self.kind_of_profile_x_box_1.setVisible(self.kind_of_profile_x<2 or self.kind_of_profile_x==3)
+
+        self.kind_of_profile_x_box_1_0.setVisible(self.kind_of_profile_x<2)
+        self.kind_of_profile_x_box_1_1.setVisible(self.kind_of_profile_x==0)
+        self.kind_of_profile_x_box_1_2.setVisible(self.kind_of_profile_x==1)
+        self.kind_of_profile_x_box_1_3.setVisible(self.kind_of_profile_x<2)
+
+        self.kind_of_profile_x_box_2.setVisible(self.kind_of_profile_x==2)
+        self.kind_of_profile_x_box_2_1.setVisible(self.kind_of_profile_x==2 and self.renormalize_x==1)
+
+    def set_ModifyX(self):
+        self.modify_box_1_1.setVisible(self.modify_x == 0)
+        self.modify_box_1_2.setVisible(self.modify_x == 1)
+        self.modify_box_1_3.setVisible(self.modify_x == 2)
 
     def table_item_clicked(self):
         if self.table.selectionModel().hasSelection():
@@ -541,7 +694,7 @@ class OWAbstractDabamHeightProfile(OWWidget):
 
             self.check_fields()
 
-            combination = "EF"
+            combination = "E"
 
             if self.modify_y == 2:
                 profile_1D_y_x_temp = self.si_to_user_units * self.server.y
@@ -555,8 +708,8 @@ class OWAbstractDabamHeightProfile(OWWidget):
                 length = numpy.abs(last_coord - first_coord)
                 n_points_old = len(profile_1D_y_x_temp)
 
-                if self.new_length > length:
-                    difference = self.new_length - length
+                if self.new_length_y > length:
+                    difference = self.new_length_y - length
 
                     n_added_points = int(difference/step)
                     if difference % step == 0:
@@ -566,10 +719,10 @@ class OWAbstractDabamHeightProfile(OWWidget):
 
 
                     profile_1D_y_x = numpy.arange(n_added_points + n_points_old) * step
-                    profile_1D_y_y = numpy.ones(n_added_points + n_points_old) * self.filler_value * 1e-9 * self.si_to_user_units
+                    profile_1D_y_y = numpy.ones(n_added_points + n_points_old) * self.filler_value_y * 1e-9 * self.si_to_user_units
                     profile_1D_y_y[int(n_added_points/2) : n_points_old + int(n_added_points/2)] = profile_1D_y_y_temp
-                elif self.new_length < length:
-                    difference = length - self.new_length
+                elif self.new_length_y < length:
+                    difference = length - self.new_length_y
 
                     n_removed_points = int(difference/step)
                     if difference % step == 0:
@@ -592,7 +745,7 @@ class OWAbstractDabamHeightProfile(OWWidget):
                 if self.modify_y == 0:
                     profile_1D_y_x = self.si_to_user_units * self.server.y
                 elif self.modify_y == 1:
-                    scale_factor_y = self.new_length/(self.si_to_user_units * (max(self.server.y)-min(self.server.y)))
+                    scale_factor_y = self.new_length_y / (self.si_to_user_units * (max(self.server.y) - min(self.server.y)))
                     profile_1D_y_x = self.si_to_user_units * self.server.y * scale_factor_y
 
                 if self.use_undetrended == 0: profile_1D_y_y = self.si_to_user_units * self.server.zHeights
@@ -617,14 +770,121 @@ class OWAbstractDabamHeightProfile(OWWidget):
                     rms_y = self.rms_y * 1e-6 # from urad to rad
 
 
-            xx, yy, zz = profiles_simulation.simulate_profile_2D(combination = combination,
-                                                                 error_type_l = self.error_type_y,
-                                                                 rms_l = rms_y,
-                                                                 x_l = profile_1D_y_x,
-                                                                 y_l = profile_1D_y_y,
-                                                                 mirror_width = self.dimension_x,
-                                                                 step_w = self.step_x,
-                                                                 rms_w = 0.0)
+            #### WIDTH
+            if self.kind_of_profile_x == 3:
+                combination += "F"
+
+                xx, yy, zz = profiles_simulation.simulate_profile_2D(combination = combination,
+                                                                     error_type_l = self.error_type_y,
+                                                                     rms_l = rms_y,
+                                                                     x_l = profile_1D_y_x,
+                                                                     y_l = profile_1D_y_y,
+                                                                     mirror_width = self.dimension_x,
+                                                                     step_w = self.step_x,
+                                                                     rms_w = 0.0)
+            else:
+                if self.kind_of_profile_x == 2:
+                    combination += "E"
+
+                    if self.delimiter_x == 1:
+                        profile_1D_x_x, profile_1D_x_y = numpy.loadtxt(self.heigth_profile_1D_file_name_x, delimiter='\t', unpack=True)
+                    else:
+                        profile_1D_x_x, profile_1D_x_y = numpy.loadtxt(self.heigth_profile_1D_file_name_x, unpack=True)
+
+                    profile_1D_x_x *= self.conversion_factor_x_x
+                    profile_1D_x_y *= self.conversion_factor_x_y
+
+                    first_coord = profile_1D_x_x[0]
+                    second_coord  = profile_1D_x_x[1]
+                    last_coord = profile_1D_x_x[-1]
+                    step = numpy.abs(second_coord - first_coord)
+                    length = numpy.abs(last_coord - first_coord)
+                    n_points_old = len(profile_1D_x_x)
+
+                    if self.modify_x == 2:
+                        profile_1D_x_x_temp = profile_1D_x_x
+                        profile_1D_x_y_temp = profile_1D_x_y
+
+                        if self.new_length_x > length:
+                            difference = self.new_length_x - length
+
+                            n_added_points = int(difference/step)
+                            if difference % step == 0:
+                                n_added_points += 1
+                            if n_added_points % 2 != 0:
+                                n_added_points += 1
+
+
+                            profile_1D_x_x = numpy.arange(n_added_points + n_points_old) * step
+                            profile_1D_x_y = numpy.ones(n_added_points + n_points_old) * self.filler_value_x * 1e-9 * self.si_to_user_units
+                            profile_1D_x_y[int(n_added_points/2) : n_points_old + int(n_added_points/2)] = profile_1D_x_y_temp
+                        elif self.new_length_x < length:
+                            difference = length - self.new_length_x
+
+                            n_removed_points = int(difference/step)
+                            if difference % step == 0:
+                                n_removed_points -= 1
+                            if n_removed_points % 2 != 0:
+                                n_removed_points -= 1
+
+                            if n_removed_points >= 2:
+                                profile_1D_x_x = profile_1D_x_x_temp[0 : (n_points_old - n_removed_points)]
+                                profile_1D_x_y = profile_1D_x_y_temp[(int(n_removed_points/2) - 1) : (n_points_old - int(n_removed_points/2) - 1)]
+
+                            else:
+                                profile_1D_x_x = profile_1D_x_x_temp
+                                profile_1D_x_y = profile_1D_x_y_temp
+                        else:
+                            profile_1D_x_x = profile_1D_x_x_temp
+                            profile_1D_x_y = profile_1D_x_y_temp
+
+                    elif self.modify_x == 1:
+                        scale_factor_x = self.new_length_x/length
+                        profile_1D_x_x *= scale_factor_x
+
+                    if self.center_x:
+                        first_coord = profile_1D_x_x[0]
+                        last_coord = profile_1D_x_x[-1]
+                        length = numpy.abs(last_coord - first_coord)
+
+                        profile_1D_x_x_temp = numpy.linspace(-length/2, length/2, len(profile_1D_x_x))
+                        profile_1D_x_x = profile_1D_x_x_temp
+
+
+                    if self.renormalize_x == 0:
+                        rms_x = None
+                    else:
+                        if self.error_type_x == profiles_simulation.FIGURE_ERROR:
+                            rms_x = self.rms_x * 1e-9 * self.si_to_user_units # from nm to m
+                        else:
+                            rms_x = self.rms_x * 1e-6 # from urad to rad
+
+                else:
+                    profile_1D_x_x = None
+                    profile_1D_x_y = None
+
+                    if self.kind_of_profile_x == 0: combination += "F"
+                    else: combination += "G"
+
+                    if self.error_type_x == profiles_simulation.FIGURE_ERROR:
+                        rms_x = self.rms_x * 1e-9 * self.si_to_user_units # from nm to m
+                    else:
+                        rms_x = self.rms_x * 1e-6 # from urad to rad
+
+                xx, yy, zz = profiles_simulation.simulate_profile_2D(combination = combination,
+                                                                     error_type_l = self.error_type_y,
+                                                                     rms_l = rms_y,
+                                                                     x_l = profile_1D_y_x,
+                                                                     y_l = profile_1D_y_y,
+                                                                     mirror_width = self.dimension_x,
+                                                                     step_w = self.step_x,
+                                                                     random_seed_w = self.montecarlo_seed_x,
+                                                                     error_type_w = self.error_type_x,
+                                                                     rms_w = rms_x,
+                                                                     power_law_exponent_beta_w = self.power_law_exponent_beta_x,
+                                                                     correlation_length_w = self.correlation_length_x,
+                                                                     x_w = profile_1D_x_x,
+                                                                     y_w = profile_1D_x_y)
 
             self.xx = xx
             self.yy = yy
@@ -686,12 +946,18 @@ class OWAbstractDabamHeightProfile(OWWidget):
                     QMessageBox.information(self, "QMessageBox.information()",
                                             "Height Profile file " + self.heigth_profile_file_name + " written on disk",
                                             QMessageBox.Ok)
+
+                dimension_x = self.dimension_x
+
+                if self.kind_of_profile_x == 2: #user defined
+                    dimension_x = (self.xx[-1] - self.xx[0])
+
                 if self.modify_y == 0:
                     dimension_y = self.si_to_user_units * (self.server.y[-1] - self.server.y[0])
                 if self.modify_y == 1 or self.modify_y == 2:
-                    dimension_y = self.new_length
+                    dimension_y = self.new_length_y
 
-                self.send_data(self.dimension_x, dimension_y)
+                self.send_data(dimension_x, dimension_y)
 
             except Exception as exception:
                 QMessageBox.critical(self, "Error",
@@ -713,18 +979,34 @@ class OWAbstractDabamHeightProfile(OWWidget):
                 pass
 
     def check_fields(self):
-        self.dimension_x = congruence.checkStrictlyPositiveNumber(self.dimension_x, "Dimension X")
-        self.step_x = congruence.checkStrictlyPositiveNumber(self.step_x, "Step X")
-
         congruence.checkLessOrEqualThan(self.step_x, self.dimension_x/2, "Step Width", "Width/2")
 
         if self.modify_y == 1 or self.modify_y == 2:
-            self.new_length = congruence.checkStrictlyPositiveNumber(self.new_length, "New Length")
+            self.new_length_y = congruence.checkStrictlyPositiveNumber(self.new_length_y, "New Length")
 
         if self.renormalize_y == 1:
             self.rms_y = congruence.checkPositiveNumber(self.rms_y, "Rms Y")
 
         congruence.checkDir(self.heigth_profile_file_name)
+
+        if self.kind_of_profile_x == 3:
+            self.dimension_x = congruence.checkStrictlyPositiveNumber(self.dimension_x, "Dimension X")
+            self.step_x = congruence.checkStrictlyPositiveNumber(self.step_x, "Step X")
+        elif self.kind_of_profile_x < 2:
+            self.dimension_x = congruence.checkStrictlyPositiveNumber(self.dimension_x, "Dimension X")
+            self.step_x = congruence.checkStrictlyPositiveNumber(self.step_x, "Step X")
+            if self.kind_of_profile_x == 0: self.power_law_exponent_beta_x = congruence.checkPositiveNumber(self.power_law_exponent_beta_x, "Beta Value X")
+            if self.kind_of_profile_x == 1: self.correlation_length_x = congruence.checkStrictlyPositiveNumber(self.correlation_length_x, "Correlation Length X")
+            self.rms_x = congruence.checkPositiveNumber(self.rms_x, "Rms X")
+            self.montecarlo_seed_x = congruence.checkPositiveNumber(self.montecarlo_seed_x, "Monte Carlo initial seed X")
+        elif self.kind_of_profile_x == 2:
+            congruence.checkFile(self.heigth_profile_1D_file_name_x)
+            self.conversion_factor_x_x = congruence.checkStrictlyPositiveNumber(self.conversion_factor_x_x, "Conversion from file to meters (Abscissa)")
+            self.conversion_factor_x_y = congruence.checkStrictlyPositiveNumber(self.conversion_factor_x_y, "Conversion from file to meters (Height Profile Values)")
+            if self.modify_x > 0:
+                self.new_length_x = congruence.checkStrictlyPositiveNumber(self.new_length_x, "New Length")
+            if self.renormalize_x == 1:
+                self.rms_x = congruence.checkPositiveNumber(self.rms_x, "Rms X")
 
     def writeStdOut(self, text):
         cursor = self.shadow_output.textCursor()
@@ -732,6 +1014,9 @@ class OWAbstractDabamHeightProfile(OWWidget):
         cursor.insertText(text)
         self.shadow_output.setTextCursor(cursor)
         self.shadow_output.ensureCursorVisible()
+
+    def selectFile1D_X(self):
+        self.le_heigth_profile_1D_file_name_x.setText(oasysgui.selectFileFromDialog(self, self.heigth_profile_1D_file_name_x, "Select 1D Height Profile File", file_extension_filter="Data Files (*.dat *.txt)"))
 
     def selectFile(self):
         self.le_heigth_profile_file_name.setText(oasysgui.selectFileFromDialog(self, self.heigth_profile_file_name, "Select Output File", file_extension_filter="Data Files (*.dat)"))
