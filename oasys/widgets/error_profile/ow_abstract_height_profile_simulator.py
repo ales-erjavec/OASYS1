@@ -445,7 +445,6 @@ class OWAbstractHeightErrorProfileSimulator(OWWidget):
         self.modify_box_1_2.setVisible(self.modify_x == 1)
         self.modify_box_1_3.setVisible(self.modify_x == 2)
 
-
     def receive_dabam_profile(self, dabam_profile):
         if not dabam_profile is None:
             try:
