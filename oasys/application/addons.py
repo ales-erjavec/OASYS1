@@ -441,10 +441,20 @@ class AddonManagerDialog(QDialog):
         info_bar.setLayout(info_layout)
         self.layout().addWidget(info_bar)
 
+        container = QWidget()
+        container.setLayout(QHBoxLayout())
+
         buttons = QDialogButtonBox(
             orientation=Qt.Horizontal,
             standardButtons=QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
         )
+
+        empty = QWidget()
+        empty.setFixedWidth(1)
+
+        container.layout().addWidget(buttons)
+        container.layout().addWidget(empty)
+
         addmore = QPushButton(
             "Add more...", toolTip="Add an add-on not listed below",
             autoDefault=False
@@ -455,7 +465,11 @@ class AddonManagerDialog(QDialog):
         buttons.accepted.connect(self.__accepted)
         buttons.rejected.connect(self.reject)
 
-        self.layout().addWidget(buttons)
+        empty = QWidget()
+        empty.setFixedHeight(1)
+
+        self.layout().addWidget(container)
+        self.layout().addWidget(empty)
 
         self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         if AddonManagerDialog._packages is None:
