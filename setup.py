@@ -15,7 +15,7 @@ except AttributeError:
 
 NAME = 'OASYS1'
 
-VERSION = '1.1.33'
+VERSION = '1.1.34'
 ISRELEASED = True
 
 DESCRIPTION = 'OrAnge SYnchrotron Suite'
@@ -51,19 +51,75 @@ CLASSIFIERS = (
     'Intended Audience :: Developers',
 )
 
-INSTALL_REQUIRES = (
-    'setuptools',
-    'numpy',
-    'scipy',
-    'matplotlib',
-    'oasys-canvas-core>=0.0.10',
-    'oasys-widget-core>=0.0.5',
-    'silx>=0.7.0',
-    'hdf5plugin',
-    'srxraylib>=1.0.21',
-    'syned>=1.0.11',
-    'wofry>=1.0.17',
-)
+# REDUNDANT, BUT SAFER IN CASE OF PROBLEM WITH SPECIFIC VERSION OF SPECIFIC LIBRARIES
+
+import sys, platform
+
+if "darwin" in sys.platform:
+    INSTALL_REQUIRES = (
+        'setuptools',
+        'numpy>=1.16.0',
+        'sip>=4.19.8',
+        'PyQt5>=5.11.3',
+        'scipy',
+        'matplotlib',
+        'oasys-canvas-core>=0.0.10',
+        'oasys-widget-core>=0.0.5',
+        'silx>=0.7.0',
+        'hdf5plugin',
+        'srxraylib>=1.0.21',
+        'syned>=1.0.11',
+        'wofry>=1.0.17',
+    )
+elif "linux" in sys.platform:
+    if "debian" in platform.platform(): # miniconda
+        INSTALL_REQUIRES = (
+            'setuptools',
+            'numpy>=1.16.0',
+            'sip>=4.19.8',
+            'PyQt5>=5.11.3',
+            'scipy',
+            'matplotlib',
+            'oasys-canvas-core>=0.0.10',
+            'oasys-widget-core>=0.0.5',
+            'silx>=0.7.0',
+            'hdf5plugin',
+            'srxraylib>=1.0.21',
+            'syned>=1.0.11',
+            'wofry>=1.0.17',
+        )
+    elif "Ubuntu" in platform.platform(): # default python.org
+        INSTALL_REQUIRES = (
+            'setuptools',
+            'numpy>=1.16.0',
+            'sip>=4.19.8',
+            'PyQt5>=5.11.3',
+            'scipy',
+            'matplotlib',
+            'oasys-canvas-core>=0.0.10',
+            'oasys-widget-core>=0.0.5',
+            'silx>=0.7.0',
+            'hdf5plugin',
+            'srxraylib>=1.0.21',
+            'syned>=1.0.11',
+            'wofry>=1.0.17',
+        )
+else:
+    INSTALL_REQUIRES = (
+        'setuptools',
+        'numpy>=1.16.0',
+        'sip>=4.19.8',
+        'PyQt5>=5.11.3',
+        'scipy',
+        'matplotlib',
+        'oasys-canvas-core>=0.0.10',
+        'oasys-widget-core>=0.0.5',
+        'silx>=0.7.0',
+        'hdf5plugin',
+        'srxraylib>=1.0.21',
+        'syned>=1.0.11',
+        'wofry>=1.0.17',
+    )
 
 SETUP_REQUIRES = (
     'setuptools',
