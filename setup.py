@@ -15,7 +15,7 @@ except AttributeError:
 
 NAME = 'OASYS1'
 
-VERSION = '1.1.34'
+VERSION = '1.1.35'
 ISRELEASED = True
 
 DESCRIPTION = 'OrAnge SYnchrotron Suite'
@@ -67,9 +67,9 @@ if "darwin" in sys.platform:
         'oasys-widget-core>=0.0.5',
         'silx>=0.7.0',
         'hdf5plugin',
-        'srxraylib>=1.0.21',
-        'syned>=1.0.11',
-        'wofry>=1.0.17',
+        'srxraylib>=1.0.22',
+        'syned>=1.0.12',
+        'wofry>=1.0.18',
     )
 elif "linux" in sys.platform:
     if "debian" in platform.platform(): # miniconda
@@ -84,9 +84,9 @@ elif "linux" in sys.platform:
             'oasys-widget-core>=0.0.5',
             'silx>=0.7.0',
             'hdf5plugin',
-            'srxraylib>=1.0.21',
-            'syned>=1.0.11',
-            'wofry>=1.0.17',
+            'srxraylib>=1.0.22',
+            'syned>=1.0.12',
+            'wofry>=1.0.18',
         )
     elif "Ubuntu" in platform.platform(): # default python.org
         INSTALL_REQUIRES = (
@@ -100,9 +100,9 @@ elif "linux" in sys.platform:
             'oasys-widget-core>=0.0.5',
             'silx>=0.7.0',
             'hdf5plugin',
-            'srxraylib>=1.0.21',
-            'syned>=1.0.11',
-            'wofry>=1.0.17',
+            'srxraylib>=1.0.22',
+            'syned>=1.0.12',
+            'wofry>=1.0.18',
         )
 else:
     INSTALL_REQUIRES = (
@@ -116,9 +116,9 @@ else:
         'oasys-widget-core>=0.0.5',
         'silx>=0.7.0',
         'hdf5plugin',
-        'srxraylib>=1.0.21',
-        'syned>=1.0.11',
-        'wofry>=1.0.17',
+        'srxraylib>=1.0.22',
+        'syned>=1.0.12',
+        'wofry>=1.0.18',
     )
 
 SETUP_REQUIRES = (
