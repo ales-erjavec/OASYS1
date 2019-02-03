@@ -15,7 +15,7 @@ except AttributeError:
 
 NAME = 'OASYS1'
 
-VERSION = '1.1.35'
+VERSION = '1.1.36'
 ISRELEASED = True
 
 DESCRIPTION = 'OrAnge SYnchrotron Suite'
@@ -69,7 +69,7 @@ if "darwin" in sys.platform:
         'hdf5plugin',
         'srxraylib>=1.0.22',
         'syned>=1.0.12',
-        'wofry>=1.0.18',
+        'wofry>=1.0.19',
     )
 elif "linux" in sys.platform:
     if "debian" in platform.platform(): # miniconda
@@ -86,7 +86,7 @@ elif "linux" in sys.platform:
             'hdf5plugin',
             'srxraylib>=1.0.22',
             'syned>=1.0.12',
-            'wofry>=1.0.18',
+            'wofry>=1.0.19',
         )
     elif "Ubuntu" in platform.platform(): # default python.org
         INSTALL_REQUIRES = (
@@ -102,7 +102,7 @@ elif "linux" in sys.platform:
             'hdf5plugin',
             'srxraylib>=1.0.22',
             'syned>=1.0.12',
-            'wofry>=1.0.18',
+            'wofry>=1.0.19',
         )
 else:
     INSTALL_REQUIRES = (
@@ -118,7 +118,7 @@ else:
         'hdf5plugin',
         'srxraylib>=1.0.22',
         'syned>=1.0.12',
-        'wofry>=1.0.18',
+        'wofry>=1.0.19',
     )
 
 SETUP_REQUIRES = (
