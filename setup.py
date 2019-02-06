@@ -1,4 +1,5 @@
-#! /usr/bin/env python3
+
+'requests',#! /usr/bin/env python3
 
 import imp
 import os
@@ -55,6 +56,7 @@ if "darwin" in sys.platform:
         'PyQt5>=5.11.3',
         'scipy',
         'matplotlib',
+        'requests',
         'oasys-canvas-core>=0.0.10',
         'oasys-widget-core>=0.0.5',
         'silx>=0.7.0',
@@ -71,6 +73,7 @@ elif "linux" in sys.platform:
             'PyQt5>=5.11.3',
             'scipy',
             'matplotlib',
+            'requests',
             'oasys-canvas-core>=0.0.10',
             'oasys-widget-core>=0.0.5',
             'silx>=0.7.0',
@@ -86,6 +89,7 @@ elif "linux" in sys.platform:
             'PyQt5>=5.11.3',
             'scipy',
             'matplotlib',
+            'requests',
             'oasys-canvas-core>=0.0.10',
             'oasys-widget-core>=0.0.5',
             'silx>=0.7.0',
@@ -101,6 +105,7 @@ else:
         'PyQt5>=5.11.3',
         'scipy',
         'matplotlib',
+        'requests',
         'oasys-canvas-core>=0.0.10',
         'oasys-widget-core>=0.0.5',
         'silx>=0.7.0',
