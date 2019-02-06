@@ -52,7 +52,6 @@ if "darwin" in sys.platform:
     INSTALL_REQUIRES = (
         'setuptools',
         'numpy>=1.16.0',
-        'sip>=4.19.8',
         'PyQt5>=5.11.3',
         'scipy',
         'matplotlib',
@@ -69,7 +68,6 @@ elif "linux" in sys.platform:
         INSTALL_REQUIRES = (
             'setuptools',
             'numpy>=1.16.0',
-            'sip>=4.19.8',
             'PyQt5>=5.11.3',
             'scipy',
             'matplotlib',
@@ -81,11 +79,10 @@ elif "linux" in sys.platform:
             'syned>=1.0.12',
             'wofry>=1.0.19',
         )
-    elif "Ubuntu" in platform.platform().lower(): # default python.org
+    elif "ubuntu" in platform.platform().lower(): # default python.org
         INSTALL_REQUIRES = (
             'setuptools',
             'numpy>=1.16.0',
-            'sip>=4.19.8',
             'PyQt5>=5.11.3',
             'scipy',
             'matplotlib',
@@ -101,7 +98,6 @@ else:
     INSTALL_REQUIRES = (
         'setuptools',
         'numpy>=1.16.0',
-        'sip>=4.19.8',
         'PyQt5>=5.11.3',
         'scipy',
         'matplotlib',
