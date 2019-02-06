@@ -3,15 +3,10 @@
 import imp
 import os
 import subprocess
+import sys
+import platform
 
-try:
-    from setuptools import find_packages, setup
-except ImportError:
-    import ez_setup
-    ez_setup.use_setuptools()
-    from setuptools import find_packages, setup
-except AttributeError:
-    from setuptools import find_packages, setup
+from setuptools import setup
 
 NAME = 'OASYS1'
 
@@ -53,8 +48,6 @@ CLASSIFIERS = (
 
 # REDUNDANT, BUT SAFER IN CASE OF PROBLEM WITH SPECIFIC VERSION OF SPECIFIC LIBRARIES
 
-import sys, platform
-
 if "darwin" in sys.platform:
     INSTALL_REQUIRES = (
         'setuptools',
@@ -72,7 +65,7 @@ if "darwin" in sys.platform:
         'wofry>=1.0.19',
     )
 elif "linux" in sys.platform:
-    if "debian" in platform.platform(): # miniconda
+    if "debian" in platform.platform().lower(): # miniconda
         INSTALL_REQUIRES = (
             'setuptools',
             'numpy>=1.16.0',
@@ -88,7 +81,7 @@ elif "linux" in sys.platform:
             'syned>=1.0.12',
             'wofry>=1.0.19',
         )
-    elif "Ubuntu" in platform.platform(): # default python.org
+    elif "Ubuntu" in platform.platform().lower(): # default python.org
         INSTALL_REQUIRES = (
             'setuptools',
             'numpy>=1.16.0',
@@ -136,9 +129,9 @@ def git_version():
         # construct minimal environment
         env = {}
         for k in ['SYSTEMROOT', 'PATH']:
-            v = os.environ.get(k)
-            if v is not None:
-                env[k] = v
+            ver = os.environ.get(k)
+            if ver is not None:
+                env[k] = ver
         # LANGUAGE is used on win32
         env['LANGUAGE'] = 'C'
         env['LANG'] = 'C'
@@ -148,11 +141,11 @@ def git_version():
 
     try:
         out = _minimal_ext_cmd(['git', 'rev-parse', 'HEAD'])
-        GIT_REVISION = out.strip().decode('ascii')
+        git_revision = out.strip().decode('ascii')
     except OSError:
-        GIT_REVISION = "Unknown"
+        git_revision = "Unknown"
 
-    return GIT_REVISION
+    return git_revision
 
 
 def write_version_py(filename='oasys/version.py'):
@@ -169,28 +162,24 @@ if not release:
     version = full_version
     short_version += ".dev"
 """
-    FULLVERSION = VERSION
+    full_version = VERSION
     if os.path.exists('.git'):
-        GIT_REVISION = git_version()
+        git_revision = git_version()
     elif os.path.exists('oasys/version.py'):
         # must be a source distribution, use existing version file
         version = imp.load_source("oasys.version", "oasys/version.py")
-        GIT_REVISION = version.git_revision
+        git_revision = version.git_revision
     else:
-        GIT_REVISION = "Unknown"
+        git_revision = "Unknown"
 
     if not ISRELEASED:
-        FULLVERSION += '.dev0+' + GIT_REVISION[:7]
+        full_version += '.dev0+' + git_revision[:7]
 
-    a = open(filename, 'w')
-    try:
-        a.write(cnt % {'version': VERSION,
-                       'full_version': FULLVERSION,
-                       'git_revision': GIT_REVISION,
-                       'isrelease': str(ISRELEASED)})
-    finally:
-        a.close()
-
+    with open(filename, 'w') as file:
+        file.write(cnt % {'version': VERSION,
+                          'full_version': full_version,
+                          'git_revision': git_revision,
+                          'isrelease': str(ISRELEASED)})
 
 PACKAGES = [
     "oasys",
@@ -234,7 +223,7 @@ def setup_package():
         classifiers=CLASSIFIERS,
         packages=PACKAGES,
         package_data=PACKAGE_DATA,
-        entry_points = ENTRY_POINTS,
+        entry_points=ENTRY_POINTS,
         # extra setuptools args
         zip_safe=False,  # the package can run out of an .egg file
         include_package_data=True,
