@@ -5,6 +5,7 @@ dist
 MANIFEST
 oasys/version.py
 doc/build
+ENV/
 
 *.so
 *.pyd
