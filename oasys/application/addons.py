@@ -88,20 +88,12 @@ Installed = namedtuple(
 
 
 def is_updatable(item):
-    if isinstance(item, Available):
+    if isinstance(item, Available) or item.installable is None:
         return False
-    elif item.installable is None:
-        return False
-    else:
-        inst, dist = item
-        try:
-            v1 = version.StrictVersion(dist.version)
-            v2 = version.StrictVersion(inst.version)
-        except ValueError:
-            pass
-        else:
-            return v1 < v2
-
+    inst, dist = item
+    try:
+        return version.StrictVersion(dist.version) < version.StrictVersion(inst.version)
+    except ValueError:
         return (version.LooseVersion(dist.version) <
                 version.LooseVersion(inst.version))
 

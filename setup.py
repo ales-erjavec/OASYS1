@@ -51,6 +51,7 @@ CLASSIFIERS = (
 if "darwin" in sys.platform:
     INSTALL_REQUIRES = (
         'setuptools',
+        'pytest',
         'numpy>=1.16.0',
         'PyQt5>=5.11.3',
         'scipy',
@@ -68,6 +69,7 @@ elif "linux" in sys.platform:
     if "debian" in platform.platform().lower(): # miniconda
         INSTALL_REQUIRES = (
             'setuptools',
+            'pytest',
             'numpy>=1.16.0',
             'PyQt5>=5.11.3',
             'scipy',
@@ -84,6 +86,7 @@ elif "linux" in sys.platform:
     elif "ubuntu" in platform.platform().lower(): # default python.org
         INSTALL_REQUIRES = (
             'setuptools',
+            'pytest',
             'numpy>=1.16.0',
             'PyQt5>=5.11.3',
             'scipy',
@@ -100,6 +103,7 @@ elif "linux" in sys.platform:
 else:
     INSTALL_REQUIRES = (
         'setuptools',
+        'pytest',
         'numpy>=1.16.0',
         'PyQt5>=5.11.3',
         'scipy',
