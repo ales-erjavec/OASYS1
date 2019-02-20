@@ -72,38 +72,21 @@ if "darwin" in sys.platform:
         'wofry>=1.0.19',
     )
 elif "linux" in sys.platform:
-    if "debian" in platform.platform(): # miniconda
-        INSTALL_REQUIRES = (
-            'setuptools',
-            'numpy>=1.16.0',
-            'sip>=4.19.8',
-            'PyQt5>=5.11.3',
-            'scipy',
-            'matplotlib',
-            'oasys-canvas-core>=0.0.10',
-            'oasys-widget-core>=0.0.5',
-            'silx>=0.7.0',
-            'hdf5plugin',
-            'srxraylib>=1.0.22',
-            'syned>=1.0.12',
-            'wofry>=1.0.19',
-        )
-    elif "Ubuntu" in platform.platform(): # default python.org
-        INSTALL_REQUIRES = (
-            'setuptools',
-            'numpy>=1.16.0',
-            'sip>=4.19.8',
-            'PyQt5>=5.11.3',
-            'scipy',
-            'matplotlib',
-            'oasys-canvas-core>=0.0.10',
-            'oasys-widget-core>=0.0.5',
-            'silx>=0.7.0',
-            'hdf5plugin',
-            'srxraylib>=1.0.22',
-            'syned>=1.0.12',
-            'wofry>=1.0.19',
-        )
+    INSTALL_REQUIRES = (
+        'setuptools',
+        'numpy>=1.16.0',
+        'sip>=4.19.8',
+        'PyQt5>=5.11.3',
+        'scipy',
+        'matplotlib',
+        'oasys-canvas-core>=0.0.10',
+        'oasys-widget-core>=0.0.5',
+        'silx>=0.7.0',
+        'hdf5plugin',
+        'srxraylib>=1.0.22',
+        'syned>=1.0.12',
+        'wofry>=1.0.19',
+    )
 else:
     INSTALL_REQUIRES = (
         'setuptools',
