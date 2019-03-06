@@ -15,7 +15,7 @@ except AttributeError:
 
 NAME = 'OASYS1'
 
-VERSION = '1.1.39'
+VERSION = '1.1.40'
 ISRELEASED = True
 
 DESCRIPTION = 'OrAnge SYnchrotron Suite'
@@ -59,7 +59,7 @@ if "darwin" in sys.platform:
     INSTALL_REQUIRES = (
         'setuptools',
         'numpy>=1.16.0',
-        'PyQt5==5.11.3',
+        'PyQt5>=5.11.3',
         'scipy',
         'matplotlib',
         'oasys-canvas-core>=0.0.10',
@@ -74,7 +74,7 @@ elif "linux" in sys.platform:
     INSTALL_REQUIRES = (
         'setuptools',
         'numpy>=1.16.0',
-        'PyQt5==5.11.3',
+        'PyQt5>=5.11.3',
         'scipy',
         'matplotlib',
         'oasys-canvas-core>=0.0.10',
@@ -89,7 +89,7 @@ else:
     INSTALL_REQUIRES = (
         'setuptools',
         'numpy>=1.16.0',
-        'PyQt5==5.11.3',
+        'PyQt5>=5.11.3',
         'scipy',
         'matplotlib',
         'oasys-canvas-core>=0.0.10',
