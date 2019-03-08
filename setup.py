@@ -15,7 +15,7 @@ except AttributeError:
 
 NAME = 'OASYS1'
 
-VERSION = '1.1.40'
+VERSION = '1.1.41'
 ISRELEASED = True
 
 DESCRIPTION = 'OrAnge SYnchrotron Suite'
@@ -64,7 +64,7 @@ if "darwin" in sys.platform:
         'matplotlib',
         'oasys-canvas-core>=0.0.10',
         'oasys-widget-core>=0.0.5',
-        'silx>=0.7.0',
+        'silx>=0.10.0',
         'hdf5plugin',
         'srxraylib>=1.0.22',
         'syned>=1.0.12',
