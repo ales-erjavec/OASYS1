@@ -101,9 +101,20 @@ def write_surface_file(zz, xx, yy, file_name, overwrite=True):
     except:
         f1 = file[subgroup_name]
 
-    f1.create_dataset("Z", data=zz)
-    f1.create_dataset("X", data=xx)
-    f1.create_dataset("Y", data=yy)
+    f1z = f1.create_dataset("Z", data=zz)
+    f1x = f1.create_dataset("X", data=xx)
+    f1y = f1.create_dataset("Y", data=yy)
+
+
+    # NEXUS attributes for automatic plot
+    f1.attrs['NX_class'] = 'NXdata'
+    f1.attrs['signal'] = "Z"
+    f1.attrs['axes'] = [b"Y", b"X"]
+
+    f1z.attrs['interpretation'] = 'image'
+    f1x.attrs['long_name'] = "X [m]"
+    f1y.attrs['long_name'] = "Y [m]"
+
 
     file.close()
 
