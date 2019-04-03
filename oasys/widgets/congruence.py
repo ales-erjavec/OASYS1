@@ -90,3 +90,13 @@ def checkFile(fileName):
         raise Exception("File " + fileName + " not existing")
 
     return filePath
+
+
+def checkUrl(myfileurl):
+    from urllib.request import urlopen
+    try:
+        u = urlopen(myfileurl)
+    except:
+        raise Exception("URL or File not accessible: "+myfileurl)
+
+    return myfileurl
