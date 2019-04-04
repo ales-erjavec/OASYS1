@@ -15,18 +15,18 @@ except AttributeError:
 
 NAME = 'OASYS1'
 
-VERSION = '1.1.41'
+VERSION = '1.1.42'
 ISRELEASED = True
 
 DESCRIPTION = 'OrAnge SYnchrotron Suite'
 README_FILE = os.path.join(os.path.dirname(__file__), 'README.txt')
 LONG_DESCRIPTION = open(README_FILE).read()
 AUTHOR = 'Luca Rebuffi, Manuel Sanchez del Rio and Bioinformatics Laboratory, FRI UL'
-AUTHOR_EMAIL = 'luca.rebuffi@elettra.eu'
-URL = 'https://github.com/lucarebuffi/OASYS1'
-DOWNLOAD_URL = 'https://github.com/lucarebuffi/OASYS1'
-MAINTAINER = 'Luca Rebuffi, Elettra-Sincrotrone Trieste S.C.p.A.'
-MAINTAINER_EMAIL = 'luca.rebuffi@elettra.eu'
+AUTHOR_EMAIL = 'lrebuffi@anl.gov'
+URL = 'https://github.com/oasys-kit/OASYS1'
+DOWNLOAD_URL = 'https://github.com/oasys-kit/OASYS1'
+MAINTAINER = 'Luca Rebuffi, Argonne National Lab, USA'
+MAINTAINER_EMAIL = 'lrebuffi@anl.gov'
 LICENSE = 'GPLv3'
 
 KEYWORDS = (
@@ -66,9 +66,9 @@ if "darwin" in sys.platform:
         'oasys-widget-core>=0.0.5',
         'silx>=0.10.0',
         'hdf5plugin',
-        'srxraylib>=1.0.22',
+        'srxraylib>=1.0.23',
         'syned>=1.0.12',
-        'wofry>=1.0.19',
+        'wofry>=1.0.20',
     )
 elif "linux" in sys.platform:
     INSTALL_REQUIRES = (
