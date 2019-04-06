@@ -10,7 +10,7 @@ from setuptools import setup
 
 NAME = 'OASYS1'
 
-VERSION = '1.1.36'
+VERSION = '1.1.42'
 ISRELEASED = True
 
 DESCRIPTION = 'OrAnge SYnchrotron Suite'
@@ -63,7 +63,7 @@ if "darwin" in sys.platform:
         'hdf5plugin',
         'srxraylib>=1.0.22',
         'syned>=1.0.12',
-        'wofry>=1.0.19',
+        'wofry>=1.0.20',
     )
 elif "linux" in sys.platform:
     if "debian" in platform.platform().lower(): # miniconda
