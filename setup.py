@@ -15,7 +15,7 @@ except AttributeError:
 
 NAME = 'OASYS1'
 
-VERSION = '1.1.43'
+VERSION = '1.1.44'
 ISRELEASED = True
 
 DESCRIPTION = 'OrAnge SYnchrotron Suite'
@@ -62,7 +62,7 @@ if "darwin" in sys.platform:
         'PyQt5>=5.11.3',
         'scipy',
         'matplotlib',
-        'oasys-canvas-core>=0.0.10',
+        'oasys-canvas-core>=0.0.11',
         'oasys-widget-core>=0.0.5',
         'silx>=0.10.0',
         'hdf5plugin',
@@ -77,13 +77,13 @@ elif "linux" in sys.platform:
         'PyQt5>=5.11.3',
         'scipy',
         'matplotlib',
-        'oasys-canvas-core>=0.0.10',
+        'oasys-canvas-core>=0.0.11',
         'oasys-widget-core>=0.0.5',
-        'silx>=0.7.0',
+        'silx>=0.10.0',
         'hdf5plugin',
-        'srxraylib>=1.0.22',
+        'srxraylib>=1.0.23',
         'syned>=1.0.12',
-        'wofry>=1.0.19',
+        'wofry>=1.0.20',
     )
 else:
     INSTALL_REQUIRES = (
@@ -92,13 +92,13 @@ else:
         'PyQt5>=5.11.3',
         'scipy',
         'matplotlib',
-        'oasys-canvas-core>=0.0.10',
+        'oasys-canvas-core>=0.0.11',
         'oasys-widget-core>=0.0.5',
-        'silx>=0.7.0',
+        'silx>=0.10.0',
         'hdf5plugin',
-        'srxraylib>=1.0.22',
+        'srxraylib>=1.0.23',
         'syned>=1.0.12',
-        'wofry>=1.0.19',
+        'wofry>=1.0.20',
     )
 
 SETUP_REQUIRES = (
