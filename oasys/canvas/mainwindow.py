@@ -50,6 +50,7 @@ class OASYSUserSettings(settings.UserSettingsDialog):
 
         generaltab = self.widget(0)
         outputtab = self.widget(1)
+        appstab = self.widget(2)
 
         box = QWidget(self, objectName="working-directory-container")
         layout = QVBoxLayout()
@@ -96,11 +97,27 @@ class OASYSUserSettings(settings.UserSettingsDialog):
         layout3.addWidget(self.combo_automatic_save)
         box3.setLayout(layout3)
 
+        box4 = QWidget(self, objectName="send-footprint-container")
+
+        layout4 = QVBoxLayout()
+        layout4.setContentsMargins(0, 0, 0, 0)
+        self.combo_send_footprint = QComboBox()
+        self.combo_send_footprint.addItems([self.tr("No"), self.tr("Yes")])
+
+        self.combo_send_footprint.setCurrentIndex(QSettings().value("output/send-footprint", 0, int))
+        self.combo_send_footprint.currentIndexChanged.connect(self.change_send_footprint)
+
+        layout4.addWidget(self.combo_send_footprint)
+        box4.setLayout(layout4)
+
         generaltab.layout().insertRow(
             0, self.tr("Default Units"), box2)
 
         generaltab.layout().insertRow(
             0, self.tr("Automatically save every"), box3)
+
+        appstab.layout().insertRow(
+            0, self.tr("Shadow: send footprint beam"), box4)
 
         outputtab.layout().insertRow(
             0, self.tr("Default working directory"), box)
@@ -110,6 +127,10 @@ class OASYSUserSettings(settings.UserSettingsDialog):
         
     def change_units(self):
         QSettings().setValue("output/default-units", self.combo_units.currentIndex())
+
+    def change_send_footprint(self):
+        QSettings().setValue("output/send-footprint", self.combo_send_footprint.currentIndex())
+
 
     def change_working_directory(self):
         cur_wd = QSettings().value("output/default-working-directory",
