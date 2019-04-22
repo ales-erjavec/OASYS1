@@ -1,6 +1,4 @@
 import os
-import sys
-import platform
 import io
 import platform
 import pickle
