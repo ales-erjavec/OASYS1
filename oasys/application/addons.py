@@ -94,8 +94,7 @@ def is_updatable(item):
     try:
         return version.StrictVersion(dist.version) < version.StrictVersion(inst.version)
     except ValueError:
-        return (version.LooseVersion(dist.version) <
-                version.LooseVersion(inst.version))
+        return version.LooseVersion(dist.version) < version.LooseVersion(inst.version)
 
 
 class TristateCheckItemDelegate(QStyledItemDelegate):
