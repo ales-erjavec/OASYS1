@@ -15,7 +15,7 @@ except AttributeError:
 
 NAME = 'OASYS1'
 
-VERSION = '1.1.44'
+VERSION = '1.1.45'
 ISRELEASED = True
 
 DESCRIPTION = 'OrAnge SYnchrotron Suite'
@@ -51,60 +51,24 @@ CLASSIFIERS = (
     'Intended Audience :: Developers',
 )
 
-# REDUNDANT, BUT SAFER IN CASE OF PROBLEM WITH SPECIFIC VERSION OF SPECIFIC LIBRARIES
-
-import sys, platform
-
-if "darwin" in sys.platform:
-    INSTALL_REQUIRES = (
-        'setuptools',
-        'numpy>=1.16.0',
-        'PyQt5>=5.11.3',
-        'scipy',
-        'matplotlib',
-        'oasys-canvas-core>=0.0.11',
-        'oasys-widget-core>=0.0.5',
-        'silx>=0.10.0',
-        'hdf5plugin',
-        'srxraylib>=1.0.23',
-        'syned>=1.0.12',
-        'wofry>=1.0.20',
-    )
-elif "linux" in sys.platform:
-    INSTALL_REQUIRES = (
-        'setuptools',
-        'numpy>=1.16.0',
-        'PyQt5>=5.11.3',
-        'scipy',
-        'matplotlib',
-        'oasys-canvas-core>=0.0.11',
-        'oasys-widget-core>=0.0.5',
-        'silx>=0.10.0',
-        'hdf5plugin',
-        'srxraylib>=1.0.23',
-        'syned>=1.0.12',
-        'wofry>=1.0.20',
-    )
-else:
-    INSTALL_REQUIRES = (
-        'setuptools',
-        'numpy>=1.16.0',
-        'PyQt5>=5.11.3',
-        'scipy',
-        'matplotlib',
-        'oasys-canvas-core>=0.0.11',
-        'oasys-widget-core>=0.0.5',
-        'silx>=0.10.0',
-        'hdf5plugin',
-        'srxraylib>=1.0.23',
-        'syned>=1.0.12',
-        'wofry>=1.0.20',
-    )
+INSTALL_REQUIRES = (
+    'setuptools',
+    'numpy>=1.16.0',
+    'PyQt5>=5.11.3',
+    'scipy',
+    'matplotlib',
+    'oasys-canvas-core>=0.0.12',
+    'oasys-widget-core>=0.0.6',
+    'silx>=0.10.0',
+    'hdf5plugin',
+    'srxraylib>=1.0.23',
+    'syned>=1.0.12',
+    'wofry>=1.0.20',
+)
 
 SETUP_REQUIRES = (
     'setuptools',
 )
-
 
 # Return the git revision as a string
 def git_version():

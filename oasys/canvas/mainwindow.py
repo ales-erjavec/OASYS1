@@ -1,5 +1,6 @@
 import os
 import sys
+import platform
 import io
 import pickle
 import tempfile
@@ -268,7 +269,8 @@ def atomicupdate(filepath):
         os.chmod(tempfilename, 0o644)
     else:
         # Copy user, group and access flags
-        os.chown(tempfilename, stat.st_uid, stat.st_gid)
+        if platform.system() != 'Windows':
+            os.chown(tempfilename, stat.st_uid, stat.st_gid)
         os.chmod(tempfilename, stat.st_mode)
 
     try:
