@@ -1,17 +1,5 @@
 import os
-from PyQt5 import QtCore, QtGui, QtWidgets
-import platform
-
-try:
-    if platform.system() == 'Darwin':
-        from PyQt5.QtWebEngineWidgets import QWebEngineView as QWebView
-    elif platform.system() == 'Linux':
-        from PyQt5.QtWebKitWidgets import QWebView
-    USE_WEB_KIT = True
-except ImportError:
-    QWebView = None
-    USE_WEB_KIT = False
-
+from PyQt5 import QtCore, QtWidgets
 
 class TriggerOut:
     def __init__(self, new_object=False, additional_parameters={}):
@@ -89,8 +77,6 @@ def read_surface_file(file_name):
 
     return xx, yy, zz
 
-import numpy
-
 def write_surface_file(zz, xx, yy, file_name, overwrite=True):
 
     if (os.path.isfile(file_name)) and (overwrite==True): os.remove(file_name)
@@ -115,42 +101,22 @@ def write_surface_file(zz, xx, yy, file_name, overwrite=True):
     except:
         f1 = file[subgroup_name]
 
-    f1.create_dataset("Z", data=zz)
-    f1.create_dataset("X", data=xx)
-    f1.create_dataset("Y", data=yy)
+    f1z = f1.create_dataset("Z", data=zz)
+    f1x = f1.create_dataset("X", data=xx)
+    f1y = f1.create_dataset("Y", data=yy)
+
+
+    # NEXUS attributes for automatic plot
+    f1.attrs['NX_class'] = 'NXdata'
+    f1.attrs['signal'] = "Z"
+    f1.attrs['axes'] = [b"Y", b"X"]
+
+    f1z.attrs['interpretation'] = 'image'
+    f1x.attrs['long_name'] = "X [m]"
+    f1y.attrs['long_name'] = "Y [m]"
+
 
     file.close()
-
-class ShowHtmlDialog(QtWidgets.QDialog):
-
-    def __init__(self, title, html_text, width=650, height=400, parent=None):
-        QtWidgets.QDialog.__init__(self, parent)
-        self.setModal(True)
-        self.setWindowTitle(title)
-        layout = QtWidgets.QVBoxLayout(self)
-
-        if USE_WEB_KIT:
-            web_view = QWebView(self)
-            web_view.setHtml(html_text)
-        else:
-            web_view = QtWidgets.QLabel(html_text)
-
-        text_area = QtWidgets.QScrollArea(self)
-        text_area.setWidget(web_view)
-        text_area.setWidgetResizable(True)
-        text_area.setFixedHeight(height)
-        text_area.setFixedWidth(width)
-
-        bbox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok)
-
-        bbox.accepted.connect(self.accept)
-        layout.addWidget(text_area)
-        layout.addWidget(bbox)
-
-    @classmethod
-    def show_html(cls, title, html_text, width=650, height=400, parent=None):
-        dialog = ShowHtmlDialog(title, html_text, width, height, parent)
-        dialog.show()
 
 
 class ShowTextDialog(QtWidgets.QDialog):

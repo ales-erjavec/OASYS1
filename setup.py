@@ -10,18 +10,19 @@ from setuptools import setup
 
 NAME = 'OASYS1'
 
-VERSION = '1.1.42'
+VERSION = '1.1.46'
+
 ISRELEASED = True
 
 DESCRIPTION = 'OrAnge SYnchrotron Suite'
 README_FILE = os.path.join(os.path.dirname(__file__), 'README.txt')
 LONG_DESCRIPTION = open(README_FILE).read()
 AUTHOR = 'Luca Rebuffi, Manuel Sanchez del Rio and Bioinformatics Laboratory, FRI UL'
-AUTHOR_EMAIL = 'luca.rebuffi@elettra.eu'
-URL = 'https://github.com/lucarebuffi/OASYS1'
-DOWNLOAD_URL = 'https://github.com/lucarebuffi/OASYS1'
-MAINTAINER = 'Luca Rebuffi, Elettra-Sincrotrone Trieste S.C.p.A.'
-MAINTAINER_EMAIL = 'luca.rebuffi@elettra.eu'
+AUTHOR_EMAIL = 'lrebuffi@anl.gov'
+URL = 'https://github.com/oasys-kit/OASYS1'
+DOWNLOAD_URL = 'https://github.com/oasys-kit/OASYS1'
+MAINTAINER = 'Luca Rebuffi, Argonne National Lab, USA'
+MAINTAINER_EMAIL = 'lrebuffi@anl.gov'
 LICENSE = 'GPLv3'
 
 KEYWORDS = (
@@ -46,82 +47,24 @@ CLASSIFIERS = (
     'Intended Audience :: Developers',
 )
 
-# REDUNDANT, BUT SAFER IN CASE OF PROBLEM WITH SPECIFIC VERSION OF SPECIFIC LIBRARIES
-
-if "darwin" in sys.platform:
-    INSTALL_REQUIRES = (
-        'setuptools',
-        'pytest',
-        'numpy>=1.16.0',
-        'PyQt5>=5.11.3',
-        'scipy',
-        'matplotlib',
-        'requests',
-        'oasys-canvas-core>=0.0.10',
-        'oasys-widget-core>=0.0.5',
-        'silx>=0.7.0',
-        'hdf5plugin',
-        'srxraylib>=1.0.22',
-        'syned>=1.0.12',
-        'wofry>=1.0.20',
-    )
-elif "linux" in sys.platform:
-    if "debian" in platform.platform().lower(): # miniconda
-        INSTALL_REQUIRES = (
-            'setuptools',
-            'pytest',
-            'numpy>=1.16.0',
-            'PyQt5>=5.11.3',
-            'scipy',
-            'matplotlib',
-            'requests',
-            'oasys-canvas-core>=0.0.10',
-            'oasys-widget-core>=0.0.5',
-            'silx>=0.7.0',
-            'hdf5plugin',
-            'srxraylib>=1.0.22',
-            'syned>=1.0.12',
-            'wofry>=1.0.19',
-        )
-    elif "ubuntu" in platform.platform().lower(): # default python.org
-        INSTALL_REQUIRES = (
-            'setuptools',
-            'pytest',
-            'numpy>=1.16.0',
-            'PyQt5>=5.11.3',
-            'scipy',
-            'matplotlib',
-            'requests',
-            'oasys-canvas-core>=0.0.10',
-            'oasys-widget-core>=0.0.5',
-            'silx>=0.7.0',
-            'hdf5plugin',
-            'srxraylib>=1.0.22',
-            'syned>=1.0.12',
-            'wofry>=1.0.19',
-        )
-else:
-    INSTALL_REQUIRES = (
-        'setuptools',
-        'pytest',
-        'numpy>=1.16.0',
-        'PyQt5>=5.11.3',
-        'scipy',
-        'matplotlib',
-        'requests',
-        'oasys-canvas-core>=0.0.10',
-        'oasys-widget-core>=0.0.5',
-        'silx>=0.7.0',
-        'hdf5plugin',
-        'srxraylib>=1.0.22',
-        'syned>=1.0.12',
-        'wofry>=1.0.19',
-    )
+INSTALL_REQUIRES = (
+    'setuptools',
+    'numpy>=1.16.0',
+    'PyQt5>=5.11.3',
+    'scipy',
+    'matplotlib',
+    'oasys-canvas-core>=0.0.12',
+    'oasys-widget-core>=0.0.6',
+    'silx>=0.10.0',
+    'hdf5plugin',
+    'srxraylib>=1.0.23',
+    'syned>=1.0.12',
+    'wofry>=1.0.20',
+)
 
 SETUP_REQUIRES = (
     'setuptools',
 )
-
 
 # Return the git revision as a string
 def git_version():
