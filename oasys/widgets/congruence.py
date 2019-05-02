@@ -97,6 +97,9 @@ def checkUrl(myfileurl):
     try:
         u = urlopen(myfileurl)
     except:
-        raise Exception("URL or File not accessible: "+myfileurl)
+        try:
+            return checkFile(myfileurl)
+        except:
+            raise Exception("URL or File not accessible: "+myfileurl)
 
     return myfileurl
