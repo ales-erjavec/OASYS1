@@ -101,6 +101,7 @@ class OASYSUserSettings(settings.UserSettingsDialog):
 
         layout4 = QVBoxLayout()
         layout4.setContentsMargins(0, 0, 0, 0)
+
         self.combo_send_footprint = QComboBox()
         self.combo_send_footprint.addItems([self.tr("No"), self.tr("Yes")])
 
@@ -110,14 +111,67 @@ class OASYSUserSettings(settings.UserSettingsDialog):
         layout4.addWidget(self.combo_send_footprint)
         box4.setLayout(layout4)
 
+        box5 = QWidget(self, objectName="shadow-default-colormap-container")
+
+        layout5 = QVBoxLayout()
+        layout5.setContentsMargins(0, 0, 0, 0)
+
+        self.combo_default_cm_shadow = QComboBox()
+        self.combo_default_cm_shadow.addItems([self.tr("gray"), self.tr("reversed gray"), self.tr("temperature")])
+
+        self.combo_default_cm_shadow.setCurrentText(QSettings().value("output/shadow-default-colormap", "temperature", str))
+        self.combo_default_cm_shadow.currentIndexChanged.connect(self.change_default_cm_shadow)
+
+        layout5.addWidget(self.combo_default_cm_shadow)
+        box5.setLayout(layout5)
+
+        box6 = QWidget(self, objectName="srw-default-colormap-container")
+
+        layout6 = QVBoxLayout()
+        layout6.setContentsMargins(0, 0, 0, 0)
+
+        self.combo_default_cm_srw = QComboBox()
+        self.combo_default_cm_srw.addItems([self.tr("gray"), self.tr("reversed gray"), self.tr("temperature")])
+
+        self.combo_default_cm_srw.setCurrentText(QSettings().value("output/srw-default-colormap", "gray", str))
+        self.combo_default_cm_srw.currentIndexChanged.connect(self.change_default_cm_srw)
+
+        layout6.addWidget(self.combo_default_cm_srw)
+        box6.setLayout(layout6)
+
+        box7 = QWidget(self, objectName="srw-default-propagation-mode-container")
+
+        layout7 = QVBoxLayout()
+        layout7.setContentsMargins(0, 0, 0, 0)
+
+        self.combo_default_pm_srw = QComboBox()
+        self.combo_default_pm_srw.addItems([self.tr("Element by Element (Wofry)"), self.tr("Element by Element (Native)"), self.tr("Whole Beamline (Native)")])
+
+        self.combo_default_pm_srw.setCurrentIndex(QSettings().value("output/srw-default-propagation-mode", 1, int))
+        self.combo_default_pm_srw.currentIndexChanged.connect(self.change_default_pm_srw)
+
+        layout7.addWidget(self.combo_default_pm_srw)
+        box7.setLayout(layout7)
+
+
         generaltab.layout().insertRow(
             0, self.tr("Default Units"), box2)
 
         generaltab.layout().insertRow(
             0, self.tr("Automatically save every"), box3)
 
+
         appstab.layout().insertRow(
-            0, self.tr("Shadow: send footprint beam"), box4)
+            0, self.tr("SRW: Default Propagation Mode"), box7)
+
+        appstab.layout().insertRow(
+            0, self.tr("SRW: Default Colormap"), box6)
+
+        appstab.layout().insertRow(
+            0, self.tr("ShadowOui: Default Colormap"), box5)
+
+        appstab.layout().insertRow(
+            0, self.tr("ShadowOui: send footprint beam"), box4)
 
         outputtab.layout().insertRow(
             0, self.tr("Default working directory"), box)
@@ -131,6 +185,14 @@ class OASYSUserSettings(settings.UserSettingsDialog):
     def change_send_footprint(self):
         QSettings().setValue("output/send-footprint", self.combo_send_footprint.currentIndex())
 
+    def change_default_cm_shadow(self):
+        QSettings().setValue("output/shadow-default-colormap", self.combo_default_cm_shadow.currentText())
+
+    def change_default_cm_srw(self):
+        QSettings().setValue("output/srw-default-colormap", self.combo_default_cm_srw.currentText())
+
+    def change_default_pm_srw(self):
+        QSettings().setValue("output/srw-default-propagation-mode", self.combo_default_pm_srw.currentIndex())
 
     def change_working_directory(self):
         cur_wd = QSettings().value("output/default-working-directory",
