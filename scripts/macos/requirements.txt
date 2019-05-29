@@ -1,0 +1,12 @@
+# Fixed requirements file for creating a python environment for
+# macOS Orange.app.
+
+# Prebuild dependencies that themself do not publish wheels (e.g. bottleneck)
+--find-links=https://orange.biolab.si/download/files/wheelhouse
+
+requests
+numpy
+scipy
+matplotlib>=3.0.3
+pyqt5>=5.12
+pyqtwebengine

@@ -1,0 +1,17 @@
+# Create an environment for running python from the bundle
+# Should be run as "source ENV"
+
+BUNDLE_DIR=`dirname "$0"`/../
+BUNDLE_DIR=`perl -MCwd=realpath -e 'print realpath($ARGV[0])' "$BUNDLE_DIR"`/
+FRAMEWORKS_DIR="$BUNDLE_DIR"Frameworks/
+RESOURCES_DIR="$BUNDLE_DIR"Resources/
+
+PYVERSION=“3.7”
+PYTHONEXECUTABLE="$FRAMEWORKS_DIR"Python.framework/Resources/Python.app/Contents/MacOS/Python
+PYTHONHOME="$FRAMEWORKS_DIR"Python.framework/Versions/"$PYVERSION"/
+DYLD_FRAMEWORK_PATH="$FRAMEWORKS_DIR"${DYLD_FRAMEWORK_PATH:+:$DYLD_FRAMEWORK_PATH}
+
+export PYTHONNOUSERSITE=1
+
+# Some non framework libraries are put in $FRAMEWORKS_DIR by machlib standalone
+export DYLD_LIBRARY_PATH="$FRAMEWORKS_DIR"${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}lib
