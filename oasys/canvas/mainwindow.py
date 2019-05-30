@@ -97,6 +97,21 @@ class OASYSUserSettings(settings.UserSettingsDialog):
         layout3.addWidget(self.combo_automatic_save)
         box3.setLayout(layout3)
 
+
+        box8 = QWidget(self, objectName="show-effective-source-size-container")
+
+        layout8 = QVBoxLayout()
+        layout8.setContentsMargins(0, 0, 0, 0)
+
+        self.combo_show_effective_source_size = QComboBox()
+        self.combo_show_effective_source_size.addItems([self.tr("No"), self.tr("Yes")])
+
+        self.combo_show_effective_source_size.setCurrentIndex(QSettings().value("output/show-effective-source-size", 0, int))
+        self.combo_show_effective_source_size.currentIndexChanged.connect(self.change_show_effective_source_size)
+
+        layout8.addWidget(self.combo_show_effective_source_size)
+        box8.setLayout(layout8)
+
         box4 = QWidget(self, objectName="send-footprint-container")
 
         layout4 = QVBoxLayout()
@@ -171,7 +186,10 @@ class OASYSUserSettings(settings.UserSettingsDialog):
             0, self.tr("ShadowOui: Default Colormap"), box5)
 
         appstab.layout().insertRow(
-            0, self.tr("ShadowOui: send footprint beam"), box4)
+            0, self.tr("ShadowOui: Send footprint beam"), box4)
+
+        appstab.layout().insertRow(
+            0, self.tr("ShadowOui: Show Effective Source Size"), box8)
 
         outputtab.layout().insertRow(
             0, self.tr("Default working directory"), box)
@@ -181,6 +199,9 @@ class OASYSUserSettings(settings.UserSettingsDialog):
         
     def change_units(self):
         QSettings().setValue("output/default-units", self.combo_units.currentIndex())
+
+    def change_show_effective_source_size(self):
+        QSettings().setValue("output/show-effective-source-size", self.combo_show_effective_source_size.currentIndex())
 
     def change_send_footprint(self):
         QSettings().setValue("output/send-footprint", self.combo_send_footprint.currentIndex())

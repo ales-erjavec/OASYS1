@@ -1,5 +1,5 @@
 import logging
-
+import sys
 import pkg_resources
 
 from PyQt5.QtGui import QPixmap, QFont, QFontMetrics, QColor, QPainter, QIcon
@@ -27,11 +27,14 @@ config.spec += [
                        "Check for updates every (in days)")
 ]
 
-
 class oasysconf(owconfig.orangeconfig):
     OrganizationDomain = ""
     ApplicationName = "OASYS1"
-    ApplicationVersion = "1.1"
+
+    if sys.platform == 'darwin' and sys.version_info[1] <= 6:
+        ApplicationVersion = "1.1"
+    else:
+        ApplicationVersion = "1.2"
 
     @staticmethod
     def splash_screen():
