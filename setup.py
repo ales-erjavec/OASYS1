@@ -1,10 +1,8 @@
 #! /usr/bin/env python3
 
-import imp
+from importlib.machinery import SourceFileLoader
 import os
 import subprocess
-import sys
-import platform
 
 from setuptools import setup
 
@@ -114,7 +112,7 @@ if not release:
         git_revision = git_version()
     elif os.path.exists('oasys/version.py'):
         # must be a source distribution, use existing version file
-        version = imp.load_source("oasys.version", "oasys/version.py")
+        version = SourceFileLoader('oasys.version', 'oasys/version.py').load_module()
         git_revision = version.git_revision
     else:
         git_revision = "Unknown"
@@ -128,7 +126,7 @@ if not release:
                           'git_revision': git_revision,
                           'isrelease': str(ISRELEASED)})
 
-PACKAGES = [
+PACKAGES = (
     "oasys",
     "oasys.canvas",
     "oasys.canvas.styles",
@@ -136,7 +134,7 @@ PACKAGES = [
     "oasys.widgets",
     "oasys.widgets.tools",
     "oasys.widgets.loop_management",
-]
+)
 
 PACKAGE_DATA = {
     "oasys.canvas": ["icons/*.png", "icons/*.svg"],
