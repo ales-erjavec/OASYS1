@@ -95,6 +95,9 @@ class OWSurfaceFileReader(OWWidget):
 
         button_box = oasysgui.widgetBox(self.controlArea, "", addSpace=False, orientation="horizontal")
 
+        button = gui.button(button_box, self, "Read Surface", callback=self.read_surface)
+        button.setFixedHeight(45)
+
         button = gui.button(button_box, self, "Render Surface", callback=self.render_surface)
         button.setFixedHeight(45)
 
@@ -150,9 +153,7 @@ class OWSurfaceFileReader(OWWidget):
                                      "Data Type #2 not recognized",
                                      QMessageBox.Ok)
 
-            #self.render_surface()
-
-    def render_surface(self):
+    def compute(self, plot_data=False):
         try:
             if not self.xx_1 is None and not self.xx_2 is None:
                 xx_1 = self.xx_1
@@ -179,15 +180,16 @@ class OWSurfaceFileReader(OWWidget):
 
                 x_to_plot, y_to_plot = numpy.meshgrid(xx, yy)
 
-                self.axis.plot_surface(x_to_plot, y_to_plot, zz,
-                                       rstride=1, cstride=1, cmap=cm.autumn, linewidth=0.5, antialiased=True)
+                if plot_data:
+                    self.axis.plot_surface(x_to_plot, y_to_plot, zz,
+                                           rstride=1, cstride=1, cmap=cm.autumn, linewidth=0.5, antialiased=True)
 
-                self.axis.set_xlabel("X [m]")
-                self.axis.set_ylabel("Y [m]")
-                self.axis.set_zlabel("Z [m]")
-                self.axis.mouse_init()
+                    self.axis.set_xlabel("X [m]")
+                    self.axis.set_ylabel("Y [m]")
+                    self.axis.set_zlabel("Z [m]")
+                    self.axis.mouse_init()
 
-                self.figure_canvas.draw()
+                    self.figure_canvas.draw()
 
                 if not (self.surface_file_name.endswith("hd5") or self.surface_file_name.endswith("hdf5") or self.surface_file_name.endswith("hdf")):
                     self.surface_file_name += ".hdf5"
@@ -215,6 +217,13 @@ class OWSurfaceFileReader(OWWidget):
                                  QMessageBox.Ok)
 
             if self.IS_DEVELOP: raise exception
+
+
+    def read_surface(self):
+        self.compute(plot_data=False)
+
+    def render_surface(self):
+        self.compute(plot_data=True)
 
     def selectSurfaceFile(self):
         self.le_surface_file_name.setText(oasysgui.selectFileFromDialog(self, self.surface_file_name, "Select Input File", file_extension_filter="HDF5 Files (*.hdf5)"))
