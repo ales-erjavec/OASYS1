@@ -75,7 +75,7 @@ class OWHDF5FileReader(OWWidget):
     icon = "icons/hdf5.png"
     author = "Luca Rebuffi"
     maintainer_email = "lrebuffi@anl.gov"
-    priority = 3
+    priority = 2
     category = ""
     keywords = ["hdf5_file_reader"]
 

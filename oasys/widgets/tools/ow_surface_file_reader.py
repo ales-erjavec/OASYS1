@@ -1,15 +1,14 @@
 import os, sys
 
 import numpy
-from PyQt5.QtCore import QRect, Qt
-from PyQt5.QtWidgets import QApplication, QMessageBox, QLabel, QSizePolicy
-from PyQt5.QtGui import QTextCursor, QFont, QPalette, QColor, QPixmap
+from PyQt5.QtCore import QRect
+from PyQt5.QtWidgets import QApplication, QMessageBox
 
 from matplotlib import cm
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 
-from orangewidget import gui, widget
+from orangewidget import gui
 from orangewidget.settings import Setting
 
 from oasys.widgets.widget import OWWidget
@@ -29,10 +28,10 @@ class OWSurfaceFileReader(OWWidget):
     name = "Surface File Reader"
     id = "surface_file_reader"
     description = "Surface File Reader"
-    icon = "icons/surface.png"
+    icon = "icons/surface_reader.png"
     author = "Luca Rebuffi"
     maintainer_email = "lrebuffi@anl.gov"
-    priority = 2
+    priority = 3
     category = ""
     keywords = ["surface_file_reader"]
 
@@ -59,6 +58,8 @@ class OWSurfaceFileReader(OWWidget):
 
     surface_file_name = Setting('surface.hdf5')
 
+    negate = Setting(0)
+
     def __init__(self):
         super().__init__()
 
@@ -75,16 +76,23 @@ class OWSurfaceFileReader(OWWidget):
 
         button_box = oasysgui.widgetBox(self.controlArea, "", addSpace=False, orientation="horizontal")
 
+        button = gui.button(button_box, self, "Read Surface", callback=self.read_surface)
+        button.setFixedHeight(45)
+
         button = gui.button(button_box, self, "Render Surface", callback=self.render_surface)
         button.setFixedHeight(45)
 
-        input_box_l = oasysgui.widgetBox(self.controlArea, "Input", addSpace=True, orientation="horizontal", height=self.TABS_AREA_HEIGHT)
+        input_box_l = oasysgui.widgetBox(self.controlArea, "Input", addSpace=True, orientation="vertical", height=self.TABS_AREA_HEIGHT)
 
-        self.le_surface_file_name = oasysgui.lineEdit(input_box_l, self, "surface_file_name", "Surface File Name",
+        box = oasysgui.widgetBox(input_box_l, "", addSpace=False, orientation="horizontal")
+
+        self.le_surface_file_name = oasysgui.lineEdit(box, self, "surface_file_name", "Surface File Name",
                                                         labelWidth=120, valueType=str, orientation="horizontal")
 
-        gui.button(input_box_l, self, "...", callback=self.selectSurfaceFile)
+        gui.button(box, self, "...", callback=self.selectSurfaceFile)
 
+        gui.comboBox(input_box_l, self, "negate", label="Invert Surface", labelWidth=350,
+                     items=["No", "Yes"], sendSelectedValue=False, orientation="horizontal")
 
         self.figure = Figure(figsize=(600, 600))
         self.figure.patch.set_facecolor('white')
@@ -99,14 +107,31 @@ class OWSurfaceFileReader(OWWidget):
 
         gui.rubber(self.mainArea)
 
+    def read_surface(self):
+        try:
+            self.surface_file_name = congruence.checkDir(self.surface_file_name)
+
+            xx, yy, zz = OU.read_surface_file(self.surface_file_name)
+            zz = zz if self.negate==0 else -1.0*zz
+
+            self.xx = xx
+            self.yy = yy
+            self.zz = zz
+
+            self.send("Surface Data", OasysSurfaceData(xx=self.xx, yy=self.yy, zz=self.zz, surface_data_file=self.surface_file_name))
+        except Exception as exception:
+            QMessageBox.critical(self, "Error",
+                                 exception.args[0],
+                                 QMessageBox.Ok)
+
+            if self.IS_DEVELOP: raise exception
 
     def render_surface(self):
         try:
             self.surface_file_name = congruence.checkDir(self.surface_file_name)
 
-            #### LENGTH
-
             xx, yy, zz = OU.read_surface_file(self.surface_file_name)
+            zz = zz if self.negate==0 else -1.0*zz
 
             self.xx = xx
             self.yy = yy
