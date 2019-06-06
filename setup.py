@@ -8,7 +8,7 @@ from setuptools import setup
 
 NAME = 'OASYS1'
 
-VERSION = '1.2.3'
+VERSION = '1.2.4'
 
 ISRELEASED = True
 
@@ -47,15 +47,16 @@ CLASSIFIERS = (
 
 INSTALL_REQUIRES = (
     'setuptools',
+    'requests',
     'numpy>=1.16.0',
-    'PyQt5>=5.11.3',
+    'PyQt5>=5.12',
     'scipy',
     'matplotlib',
     'oasys-canvas-core>=0.0.12',
     'oasys-widget-core>=0.0.6',
     'silx>=0.10.0',
     'hdf5plugin',
-    'srxraylib>=1.0.23',
+    'srxraylib>=1.0.25',
     'syned>=1.0.12',
     'wofry>=1.0.20',
 )
