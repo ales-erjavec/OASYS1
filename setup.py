@@ -3,12 +3,13 @@
 from importlib.machinery import SourceFileLoader
 import os
 import subprocess
+import platform
 
 from setuptools import setup
 
 NAME = 'OASYS1'
 
-VERSION = '1.2.4'
+VERSION = '1.2.5'
 
 ISRELEASED = True
 
@@ -60,6 +61,19 @@ INSTALL_REQUIRES = (
     'syned>=1.0.12',
     'wofry>=1.0.20',
 )
+
+
+try:
+    system, node, release, version, machine, processor = platform.uname()
+    if "Debian 3" in version:
+        l1 = list(INSTALL_REQUIRES)
+        for i,element in enumerate(l1):
+            if "PyQt5" in element:
+                l1[i] = "PyQt5==5.11.3"
+        INSTALL_REQUIRES = tuple(l1)
+except:
+    pass
+
 
 SETUP_REQUIRES = (
     'setuptools',
