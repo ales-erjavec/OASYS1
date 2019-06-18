@@ -71,9 +71,9 @@ def read_surface_file(file_name):
     if not os.path.isfile(file_name): raise ValueError("File " + file_name + " not existing")
 
     file = h5py.File(file_name, 'r')
-    xx = file[subgroup_name + "/X"].value
-    yy = file[subgroup_name + "/Y"].value
-    zz = file[subgroup_name + "/Z"].value
+    xx = file[subgroup_name + "/X"][()]
+    yy = file[subgroup_name + "/Y"][()]
+    zz = file[subgroup_name + "/Z"][()]
 
     return xx, yy, zz
 
