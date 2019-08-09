@@ -97,6 +97,14 @@ def selectFileFromDialog(widget, previous_file_path="", message="Select File", s
     else:
         return previous_file_path
 
+def selectDirectoryFromDialog(widget, previous_file_path="", message="Select Folder", start_directory="."):
+    file_path = QFileDialog.getExistingDirectory(widget, message, start_directory, QFileDialog.ShowDirsOnly)
+
+    if not file_path is None and not file_path.strip() == "":
+        return file_path
+    else:
+        return previous_file_path
+
 def textArea(height=None, width=None, readOnly=True):
         area = QTextEdit()
         area.setReadOnly(readOnly)
