@@ -52,7 +52,7 @@ from orangecanvas.help.manager import get_dist_meta, trim, parse_meta
 
 PYPI_API_JSON = "https://pypi.org/pypi/{name}/json"
 OFFICIAL_ADDON_LIST = "https://raw.githubusercontent.com/oasys-kit/oasys-addons/master/list"
-OFFICIAL_ADDON_LIST_ALTERNATIVE = "https://rawcdn.githack.com/oasys-kit/oasys-addons/d573c48ecd5b30e2cd10242775f1de522c8de63c/list"
+OFFICIAL_ADDON_LIST_ALTERNATIVE = "https://rawcdn.githack.com/oasys-kit/oasys-addons/91dbd16c78f2ce42f4abe65e72c17abe064e0520/list"
 
 log = logging.getLogger(__name__)
 
