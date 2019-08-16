@@ -52,6 +52,7 @@ from orangecanvas.help.manager import get_dist_meta, trim, parse_meta
 
 PYPI_API_JSON = "https://pypi.org/pypi/{name}/json"
 OFFICIAL_ADDON_LIST = "https://raw.githubusercontent.com/oasys-kit/oasys-addons/master/list"
+OFFICIAL_ADDON_LIST_ALTERNATIVE = "https://rawcdn.githack.com/oasys-kit/oasys-addons/d573c48ecd5b30e2cd10242775f1de522c8de63c/list"
 
 log = logging.getLogger(__name__)
 
@@ -734,7 +735,10 @@ def list_available_versions():
     """
     List add-ons available.
     """
-    addons = requests.get(OFFICIAL_ADDON_LIST).json()
+    try:
+        addons = requests.get(OFFICIAL_ADDON_LIST).json()
+    except:
+        addons = requests.get(OFFICIAL_ADDON_LIST_ALTERNATIVE).json()
 
     # query pypi.org for installed add-ons that are not in our list
     installed = list_installed_addons()
