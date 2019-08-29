@@ -97,18 +97,19 @@ def selectFileFromDialog(widget, previous_file_path="", message="Select File", s
     else:
         return previous_file_path
 
-def selectDirectoryFromDialog(widget, previous_file_path="", message="Select Folder", start_directory="."):
-    file_path = QFileDialog.getExistingDirectory(widget, message, start_directory, QFileDialog.ShowDirsOnly)
-
-    if not file_path is None and not file_path.strip() == "":
-        return file_path
+def selectDirectoryFromDialog(widget, previous_directory_path="", message="Select Directory", start_directory="."):
+    directory_path = QFileDialog.getExistingDirectory(widget, message, start_directory)
+    if not directory_path is None and not directory_path.strip() == "":
+        return directory_path
     else:
-        return previous_file_path
+        return previous_directory_path
 
-def textArea(height=None, width=None, readOnly=True):
+def textArea(height=None, width=None, readOnly=True, noWrap=None):
         area = QTextEdit()
         area.setReadOnly(readOnly)
         area.setStyleSheet("background-color: white;")
+        if noWrap is not None:
+            area.setLineWrapMode(QTextEdit.NoWrap)
 
         if not height is None: area.setFixedHeight(height)
         if not width is None: area.setFixedWidth(width)

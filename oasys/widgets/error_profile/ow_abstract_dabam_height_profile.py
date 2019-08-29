@@ -93,6 +93,8 @@ class OWAbstractDabamHeightProfile(OWWidget):
 
     heigth_profile_file_name = Setting('mirror.hdf5')
 
+    server_address =  Setting(dabam.default_server) # "http://ftp.esrf.eu/pub/scisoft/dabam/"
+
     tab=[]
 
     plotted = False
@@ -155,6 +157,7 @@ class OWAbstractDabamHeightProfile(OWWidget):
 
         tab_input = oasysgui.createTabPage(tabs_setting, "DABAM Search Setting")
         tab_gener = oasysgui.createTabPage(tabs_setting, "DABAM Generation Setting")
+        tab_server = oasysgui.createTabPage(tabs_setting, "DABAM Server Setting")
         tab_out = oasysgui.createTabPage(tabs_setting, "Output")
         tab_usa = oasysgui.createTabPage(tabs_setting, "Use of the Widget")
         tab_usa.setStyleSheet("background-color: white;")
@@ -174,8 +177,13 @@ class OWAbstractDabamHeightProfile(OWWidget):
 
         manual_box = oasysgui.widgetBox(tab_input, "Manual Entry", addSpace=True, orientation="vertical")
 
-        oasysgui.lineEdit(manual_box, self, "entry_number", "Entry Number",
+        manual_box_1 = oasysgui.widgetBox(manual_box, "", addSpace=True, orientation="horizontal")
+        oasysgui.lineEdit(manual_box_1, self, "entry_number", "Entry Number",
                            labelWidth=300, valueType=int, orientation="horizontal")
+        button = gui.button(manual_box_1, self, "-1", callback=self.retrieve_profile_minus_one)
+        button.setFixedWidth(35)
+        button = gui.button(manual_box_1, self, "+1", callback=self.retrieve_profile_plus_one)
+        button.setFixedWidth(35)
 
         gui.separator(manual_box)
 
@@ -384,6 +392,8 @@ class OWAbstractDabamHeightProfile(OWWidget):
 
         ##----------------------------------
 
+
+
         output_box = oasysgui.widgetBox(tab_gener, "Outputs", addSpace=True, orientation="vertical")
 
         select_file_box = oasysgui.widgetBox(output_box, "", addSpace=True, orientation="horizontal")
@@ -395,6 +405,22 @@ class OWAbstractDabamHeightProfile(OWWidget):
 
         self.shadow_output = oasysgui.textArea(height=400)
 
+        ##---------------------------------- server
+
+        server_box = oasysgui.widgetBox(tab_server, "Server", addSpace=True, orientation="vertical")
+
+        select_server_box = oasysgui.widgetBox(server_box, "", addSpace=True, orientation="vertical")
+
+        self.le_server_address = oasysgui.lineEdit(select_server_box, self, "server_address",
+                                                             "Server (URL or local repository): ",
+                                                             labelWidth=220, valueType=str, orientation="vertical")
+
+        gui.button(select_server_box, self, "local repository...", callback=self.selectServer)
+        gui.button(select_server_box, self, "set default DABAM server", callback=self.selectServerDefault)
+
+        self.server_box = oasysgui.textArea(height=400)
+
+        ##----------------------------------
         out_box = oasysgui.widgetBox(tab_out, "System Output", addSpace=True, orientation="horizontal", height=500)
         out_box.layout().addWidget(self.shadow_output)
 
@@ -578,6 +604,7 @@ class OWAbstractDabamHeightProfile(OWWidget):
             if self.entry_number is None or self.entry_number <= 0:
                 raise Exception("Entry number should be a strictly positive integer number")
 
+            self.server.set_server(self.server_address)
             self.server.load(self.entry_number)
             self.profileInfo.setText(self.server.info_profiles())
             self.plot_canvas[0].setGraphTitle(
@@ -623,6 +650,7 @@ class OWAbstractDabamHeightProfile(OWWidget):
 
             if (self.tabs.currentIndex()==6): self.tabs.setCurrentIndex(1)
 
+
         except Exception as exception:
             QMessageBox.critical(self, "Error",
                                  exception.args[0],
@@ -630,6 +658,13 @@ class OWAbstractDabamHeightProfile(OWWidget):
 
             if self.IS_DEVELOP: raise exception
 
+    def retrieve_profile_minus_one(self):
+        self.entry_number -= 1
+        self.retrieve_profile()
+
+    def retrieve_profile_plus_one(self):
+        self.entry_number += 1
+        self.retrieve_profile()
 
     def send_profile(self):
         try:
@@ -663,7 +698,9 @@ class OWAbstractDabamHeightProfile(OWWidget):
                                                       slp_err_from=self.slope_error_from*1e-6,
                                                       slp_err_to=self.slope_error_to*1e-6,
                                                       length_from=self.dimension_y_from / self.si_to_user_units,
-                                                      length_to=self.dimension_y_to / self.si_to_user_units)
+                                                      length_to=self.dimension_y_to / self.si_to_user_units,
+                                                      server=self.server_address)
+            print(profiles)
 
             for index in range(0, len(profiles)):
                 self.table.insertRow(0)
@@ -1045,6 +1082,15 @@ class OWAbstractDabamHeightProfile(OWWidget):
 
     def selectFile(self):
         self.le_heigth_profile_file_name.setText(oasysgui.selectFileFromDialog(self, self.heigth_profile_file_name, "Select Output File", file_extension_filter="Data Files (*.dat)"))
+
+    def selectServerDefault(self):
+        self.le_server_address.setText(self.server.get_default_server())
+
+    def selectServer(self):
+        # self.le_server_address.setText(oasysgui.selectFileFromDialog(self, self.server_address, "Select Local Directory"))
+
+        directory_name = oasysgui.selectDirectoryFromDialog(self, self.server_address, "Select Local Directory")
+        self.le_server_address.setText(directory_name)
 
     def get_axis_um(self):
         return "m"
