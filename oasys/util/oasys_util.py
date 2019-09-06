@@ -164,13 +164,12 @@ class ChemicalFormulaParser(object):
 
 def get_fwhm(histogram, bins):
     quote = numpy.max(histogram)*0.5
+    cursor = numpy.where(histogram >= quote)
 
-    tt = numpy.where(histogram >= quote)
-
-    if histogram[tt].size > 1:
-        bin_size = bins[1]-bins[0]
-        fwhm = bin_size*(tt[0][-1]-tt[0][0])
-        coordinates = (bins[tt[0][0]],bins[tt[0][-1]])
+    if histogram[cursor].size > 1:
+        bin_size    = bins[1]-bins[0]
+        fwhm        = bin_size*(cursor[0][-1]-cursor[0][0])
+        coordinates = (bins[cursor[0][0]], bins[cursor[0][-1]])
     else:
         fwhm = 0.0
         coordinates = None
