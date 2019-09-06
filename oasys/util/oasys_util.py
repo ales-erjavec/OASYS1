@@ -168,8 +168,8 @@ def get_fwhm(histogram, bins):
     tt = numpy.where(histogram >= quote)
 
     if histogram[tt].size > 1:
-        binSize = bins[1]-bins[0]
-        fwhm = binSize*(tt[0][-1]-tt[0][0])
+        bin_size = bins[1]-bins[0]
+        fwhm = bin_size*(tt[0][-1]-tt[0][0])
         coordinates = (bins[tt[0][0]],bins[tt[0][-1]])
     else:
         fwhm = 0.0
