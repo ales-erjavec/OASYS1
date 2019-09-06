@@ -1,4 +1,4 @@
-import os
+import os, numpy
 from PyQt5 import QtCore, QtWidgets
 
 class TriggerOut:
@@ -162,6 +162,31 @@ class ChemicalFormulaParser(object):
     def parse_formula(cls, formula):
         return parse(formula).getsyms()
 
+def get_fwhm(histogram, bins):
+    quote = numpy.max(histogram)*0.5
+
+    tt = numpy.where(histogram >= quote)
+
+    if histogram[tt].size > 1:
+        binSize = bins[1]-bins[0]
+        fwhm = binSize*(tt[0][-1]-tt[0][0])
+        coordinates = (bins[tt[0][0]],bins[tt[0][-1]])
+    else:
+        fwhm = 0.0
+        coordinates = None
+
+    return fwhm, quote, coordinates
+
+def get_sigma(histogram, bins):
+    frequency = histogram/numpy.sum(histogram)
+    average   = numpy.sum(frequency*bins)
+
+    return numpy.sqrt(numpy.sum(frequency*((bins-average)**2)))
+
+def get_rms(histogram, bins):
+    frequency = histogram/numpy.sum(histogram)
+
+    return numpy.sqrt(numpy.sum(frequency*(bins**2)))
 
 ###################################
 
