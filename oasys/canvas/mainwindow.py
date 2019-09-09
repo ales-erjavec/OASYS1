@@ -729,11 +729,14 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
             if self.recent_scheme() == QDialog.Accepted:
                 dialog.accept()
 
-        def tutorial():
+        def get_started():
             import webbrowser
-            webbrowser.open("https://github.com/srio/ShadowOui-Tutorial")
-            #if self.tutorial_scheme() == QDialog.Accepted:
-            #    dialog.accept()
+            webbrowser.open("https://github.com/oasys-kit/oasys_school")
+
+        def documentation():
+            import webbrowser
+            webbrowser.open("https://www.aps.anl.gov/Science/Scientific-Software/OASYS")
+
 
         new_action = \
             QAction(self.tr("New"), dialog,
@@ -762,12 +765,20 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                     icon=canvasmain.canvas_icons("Recent.svg")
                     )
 
-        tutorials_action = \
-            QAction(self.tr("Tutorial"), dialog,
-                    objectName="welcome-tutorial-action",
-                    toolTip=self.tr("Browse tutorial workflows."),
-                    triggered=tutorial,
-                    icon=canvasmain.canvas_icons("Tutorials.svg")
+        get_started_action = \
+            QAction(self.tr("OASYS School"), self,
+                    objectName="get-started-action",
+                    toolTip=self.tr("OASYS School"),
+                    triggered=get_started,
+                    icon=canvasmain.canvas_icons("Get Started.svg")
+                    )
+
+        documentation_action = \
+            QAction(self.tr("Web Site"), self,
+                    objectName="documentation-action",
+                    toolTip=self.tr("View reference website."),
+                    triggered=documentation,
+                    icon=canvasmain.canvas_icons("Documentation.svg")
                     )
 
         icon = resource_path("icons/Install.svg")
@@ -804,8 +815,10 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                     self.open_addons() if r == QMessageBox.Ok else None
             )
 
-        bottom_row = [self.get_started_action, tutorials_action,
-                      self.documentation_action, addons_action]
+        #bottom_row = [self.get_started_action, self.tutorials_action,
+        #              self.documentation_action, addons_action]
+
+        bottom_row = [get_started_action, documentation_action, addons_action]
 
         self.new_action.triggered.connect(dialog.accept)
         top_row = [new_action, open_action, recent_action]
