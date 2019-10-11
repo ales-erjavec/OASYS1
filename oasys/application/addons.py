@@ -726,10 +726,10 @@ class AddonManagerDialog(QDialog):
         self.reject()
 
     def __on_installer_finished(self):
-        message = "Please restart OASYS for changes to take effect."
+        message = "Click Ok to restart OASYS for changes to take effect."
         message_information(message, parent=self)
         self.accept()
-
+        sys.exit(0)
 
 def list_available_versions():
     """
