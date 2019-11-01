@@ -37,7 +37,6 @@ from orangecanvas.registry import WidgetRegistry, set_global_registry
 
 from oasys.canvas.mainwindow import OASYSMainWindow
 from oasys.canvas import conf
-from oasys.widgets.gui import set_font_size
 log = logging.getLogger(__name__)
 
 def running_in_ipython():
@@ -320,8 +319,6 @@ def main(argv=None):
         automatic_saver_thread.finished.connect(app.exit)
         automatic_saver_thread.start()
 
-        set_font_size(12)
-
         canvas_window.show()
         canvas_window.raise_()
 
@@ -331,8 +328,6 @@ def main(argv=None):
             and not options.no_welcome
 
         app.setStyle(QStyleFactory.create('Fusion'))
-        #app.setStyle(QStyleFactory.create('Macintosh'))
-        #app.setStyle(QStyleFactory.create('Windows'))
 
         # Process events to make sure the canvas_window layout has
         # a chance to activate (the welcome dialog is modal and will

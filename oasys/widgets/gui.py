@@ -5,9 +5,6 @@ from PyQt5.QtWidgets import QWidget, QGridLayout, QFileDialog, QMessageBox, QLab
 
 from orangewidget import gui as orange_gui
 
-current_module = sys.modules[__name__]
-gui_point_size=12
-
 # ----------------------------------
 # Default fonts
 def widgetLabel(widget, label="", labelWidth=None, **misc):
@@ -16,24 +13,7 @@ def widgetLabel(widget, label="", labelWidth=None, **misc):
         lbl.setFixedSize(labelWidth, lbl.sizeHint().height())
     orange_gui.miscellanea(lbl, None, widget, **misc)
 
-    font = lbl.font()
-    font.setPointSize(current_module.gui_point_size)
-    lbl.setFont(font)
-
     return lbl
-
-def set_font_size(point_size=12):
-    current_module.gui_point_size = point_size
-
-    qapp = QCoreApplication.instance()
-
-    # change application font
-    font = qapp.font()
-    font.setPointSize(current_module.gui_point_size)
-    qapp.setFont(font)
-
-    # change orange gui label font
-    orange_gui.widgetLabel = widgetLabel
 
 def lineEdit(widget, master, value, label=None, labelWidth=None,
          orientation='vertical', box=None, callback=None,
