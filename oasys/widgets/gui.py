@@ -1,4 +1,4 @@
-import os, sys
+import os, sys, platform
 
 from PyQt5.QtCore import Qt, QCoreApplication
 from PyQt5.QtWidgets import QWidget, QGridLayout, QFileDialog, QMessageBox, QLabel, QComboBox, QTextEdit
