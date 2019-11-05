@@ -7,6 +7,7 @@ from oasys.widgets.gui import ConfirmDialog
 
 from orangewidget import gui
 from PyQt5.QtGui import QFont, QPalette, QColor
+from PyQt5.QtWidgets import QMessageBox
 from orangewidget.settings import Setting
 
 from oasys.util.oasys_util import TriggerIn, TriggerOut
@@ -147,6 +148,10 @@ class LoopPoint(widget.OWWidget):
                     self.setStatusMessage("")
                     self.send("Trigger", TriggerOut(new_object=False))
                 elif trigger.new_object:
+                    if self.current_new_object == 0:
+                        QMessageBox.critical(self, "Error", "Loop has to be started properly: press the button Start", QMessageBox.Ok)
+                        return
+
                     if self.current_new_object < self.number_of_new_objects:
                         self.current_new_object += 1
                         self.setStatusMessage("Running " + self.get_object_name() + " " + str(self.current_new_object) + " of " + str(self.number_of_new_objects))
