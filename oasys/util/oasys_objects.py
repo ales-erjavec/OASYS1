@@ -42,3 +42,7 @@ class OasysPreProcessorData(object):
 
     def has_additional_data(self, key):
         return key in self._additional_data
+
+class OasysThicknessErrorsData(object):
+    def __init__(self, thickness_error_profile_data_files=[]):
+        self.thickness_error_profile_data_files = thickness_error_profile_data_files
