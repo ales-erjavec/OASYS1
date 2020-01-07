@@ -22,6 +22,10 @@ from PyQt5 import QtCore
 from PyQt5.QtGui import QFont, QColor
 from PyQt5.QtCore import Qt, QDir, QThread, QObject
 from PyQt5.QtWidgets import QStyleFactory
+try: # necessary for XRayServer under Linux
+    from PyQt5.QtWebEngineWidgets import QWebEngineView as QWebView
+except:
+    pass
 
 import orangecanvas
 from orangecanvas.application.application import CanvasApplication

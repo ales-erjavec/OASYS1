@@ -9,7 +9,7 @@ from setuptools import setup
 
 NAME = 'OASYS1'
 
-VERSION = '1.2.27'
+VERSION = '1.2.28'
 
 ISRELEASED = True
 
