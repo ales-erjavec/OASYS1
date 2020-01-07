@@ -9,12 +9,12 @@ from setuptools import setup
 
 NAME = 'OASYS1'
 
-VERSION = '1.2.28'
+VERSION = '1.2.29'
 
 ISRELEASED = True
 
 DESCRIPTION = 'OrAnge SYnchrotron Suite'
-README_FILE = os.path.join(os.path.dirname(__file__), 'README.txt')
+README_FILE = os.path.join(os.path.dirname(__file__), 'README.md')
 LONG_DESCRIPTION = open(README_FILE).read()
 AUTHOR = 'Luca Rebuffi, Manuel Sanchez del Rio and Bioinformatics Laboratory, FRI UL'
 AUTHOR_EMAIL = 'lrebuffi@anl.gov'
