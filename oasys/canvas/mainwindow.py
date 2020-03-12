@@ -169,12 +169,45 @@ class OASYSUserSettings(settings.UserSettingsDialog):
         box7.setLayout(layout7)
 
 
+        box10 = QWidget(self, objectName="wonder-default-gsasii-mode-container")
+
+        layout10 = QVBoxLayout()
+        layout10.setContentsMargins(0, 0, 0, 0)
+
+        self.combo_default_gsasii_wonder = QComboBox()
+        self.combo_default_gsasii_wonder.addItems([self.tr("Online"), self.tr("External")])
+
+        self.combo_default_gsasii_wonder.setCurrentIndex(QSettings().value("output/wonder-default-gsasii-mode", 0, int))
+        self.combo_default_gsasii_wonder.currentIndexChanged.connect(self.change_default_gsasii_wonder)
+
+        layout10.addWidget(self.combo_default_gsasii_wonder)
+        box10.setLayout(layout10)
+
+        box11 = QWidget(self, objectName="wonder-default-automatic-container")
+
+        layout11 = QVBoxLayout()
+        layout11.setContentsMargins(0, 0, 0, 0)
+
+        self.combo_default_automatic_wonder = QComboBox()
+        self.combo_default_automatic_wonder.addItems([self.tr("Runtime Only"), self.tr("OASYS Setting")])
+
+        self.combo_default_automatic_wonder.setCurrentIndex(QSettings().value("output/wonder-default-automatic", 1, int))
+        self.combo_default_automatic_wonder.currentIndexChanged.connect(self.change_default_automatic_wonder)
+
+        layout11.addWidget(self.combo_default_automatic_wonder)
+        box11.setLayout(layout11)
+
         generaltab.layout().insertRow(
             0, self.tr("Default Units"), box2)
 
         generaltab.layout().insertRow(
             0, self.tr("Automatically save every"), box3)
 
+        appstab.layout().insertRow(
+            0, self.tr("Wonder: GSAS-II mode"), box10)
+
+        appstab.layout().insertRow(
+            0, self.tr("Wonder: Automatic Fit"), box11)
 
         appstab.layout().insertRow(
             0, self.tr("SRW: Default Propagation Mode"), box7)
@@ -214,6 +247,12 @@ class OASYSUserSettings(settings.UserSettingsDialog):
 
     def change_default_pm_srw(self):
         QSettings().setValue("output/srw-default-propagation-mode", self.combo_default_pm_srw.currentIndex())
+
+    def change_default_gsasii_wonder(self):
+        QSettings().setValue("output/wonder-default-gsasii-mode", self.combo_default_gsasii_wonder.currentIndex())
+
+    def change_default_automatic_wonder(self):
+        QSettings().setValue("output/wonder-default-automatic", self.combo_default_automatic_wonder.currentIndex())
 
     def change_working_directory(self):
         cur_wd = QSettings().value("output/default-working-directory",
