@@ -179,13 +179,15 @@ def get_fwhm(histogram, bins):
 def get_sigma(histogram, bins):
     frequency = histogram/numpy.sum(histogram)
     average   = numpy.sum(frequency*bins)
-
     return numpy.sqrt(numpy.sum(frequency*((bins-average)**2)))
 
 def get_rms(histogram, bins):
     frequency = histogram/numpy.sum(histogram)
-
     return numpy.sqrt(numpy.sum(frequency*(bins**2)))
+
+def get_average(histogram, bins):
+    frequency = histogram/numpy.sum(histogram)
+    return numpy.sum(frequency*bins)
 
 ###################################
 
