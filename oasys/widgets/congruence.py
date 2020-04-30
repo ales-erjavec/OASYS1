@@ -60,6 +60,8 @@ def checkEqualTo(number1, number2, field_name1, field_name_2):
     if number1 != number2: raise Exception(field_name1 + " should be equal to " + field_name_2)
 
 def checkFileName(fileName):
+    if isinstance(fileName, bytes): fileName = fileName.decode('utf-8')
+
     if fileName is None: raise Exception("File name is Empty")
     if fileName.strip() == "": raise Exception("File name is Empty")
 
@@ -74,6 +76,8 @@ def checkFileName(fileName):
     return filePath
 
 def checkDir(fileName):
+    if isinstance(fileName, bytes): fileName = fileName.decode('utf-8')
+
     filePath = checkFileName(fileName)
 
     container_dir = os.path.dirname(filePath)
@@ -84,6 +88,8 @@ def checkDir(fileName):
     return filePath
 
 def checkFile(fileName):
+    if isinstance(fileName, bytes): fileName = fileName.decode('utf-8')
+
     filePath = checkDir(fileName)
 
     if not os.path.exists(filePath):
