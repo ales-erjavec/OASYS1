@@ -45,7 +45,7 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # #########################################################################
 
-from oasys.widgets.scanning.ow_abstract_scan_variable_node_point import AbstractScanVariableLoopPoint
+from oasys.widgets.abstract.scanning.abstract_scan_variable_node_point import AbstractScanVariableLoopPoint
 
 class ScanVariableLoopPoint(AbstractScanVariableLoopPoint):
 

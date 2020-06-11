@@ -45,7 +45,7 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # #########################################################################
 
-from oasys.widgets.scanning.ow_abstract_scan_file_node_point import AbstractScanFileLoopPoint
+from oasys.widgets.abstract.scanning.abstract_scan_file_node_point import AbstractScanFileLoopPoint
 
 class ScanFileLoopPoint(AbstractScanFileLoopPoint):
 
