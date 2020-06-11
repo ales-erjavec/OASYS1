@@ -59,7 +59,7 @@ from orangewidget.settings import Setting
 
 from oasys.util.oasys_util import TriggerIn, TriggerOut
 
-class AbstractScanLoopPoint(widget.OWWidget):
+class AbstractScanVariableLoopPoint(widget.OWWidget):
 
     inputs = [("Trigger", TriggerIn, "passTrigger")]
 
@@ -333,12 +333,3 @@ class AbstractScanLoopPoint(widget.OWWidget):
             
     def get_object_name(self):
         return "Object"
-
-from PyQt5.QtWidgets import QApplication
-
-if __name__ == "__main__":
-    a = QApplication(sys.argv)
-    ow = ScanLoopPoint()
-    ow.show()
-    a.exec_()
-    ow.saveSettings()

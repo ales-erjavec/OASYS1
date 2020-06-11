@@ -156,12 +156,14 @@ PACKAGE_DATA = {
     "oasys.canvas.styles": ["*.qss", "orange/*.svg"],
     "oasys.widgets.tools": ["icons/*.png", "icons/*.svg", "misc/*.png"],
     "oasys.widgets.loop_management": ["icons/*.png", "icons/*.svg"],
+    "oasys.widgets.scanning": ["icons/*.png", "icons/*.svg"],
 }
 
 ENTRY_POINTS = {
     'oasys.widgets' : (
         "Oasys Tools = oasys.widgets.tools",
-        "Oasys Loop Management = oasys.widgets.loop_management",
+        "Oasys Basic Loops = oasys.widgets.loop_management",
+        "Oasys Scanning Loops = oasys.widgets.scanning",
     )
 }
 

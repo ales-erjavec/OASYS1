@@ -60,7 +60,7 @@ from oasys.widgets.gui import ConfirmDialog
 
 from oasys.util.oasys_util import TriggerIn, TriggerOut
 
-class AbstractScanLoopPoint(widget.OWWidget):
+class AbstractScanFileLoopPoint(widget.OWWidget):
     inputs = [("Trigger", TriggerIn, "passTrigger"),
               ("Files", list, "setFiles")]
 

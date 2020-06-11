@@ -2,7 +2,7 @@ __author__ = 'labx'
 
 """
 =========
-Loop Management
+Scanning Loop Management
 =========
 
 Widgets for loop management
@@ -11,12 +11,12 @@ Widgets for loop management
 
 # Category description for the widget registry
 
-NAME = "Basic Loops"
+NAME = "Scanning Loops"
 
 DESCRIPTION = "Widgets for Loop Management."
 
 BACKGROUND = "#FAAC58"
 
-ICON = "icons/loop_management.png"
+ICON = "icons/scanning.png"
 
-PRIORITY = 2
+PRIORITY = 2.1
