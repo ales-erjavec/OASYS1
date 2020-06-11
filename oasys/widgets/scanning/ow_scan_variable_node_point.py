@@ -51,7 +51,7 @@ class ScanVariableLoopPoint(AbstractScanVariableLoopPoint):
 
     name = "Scanning Variable Loop Point"
     description = "Tools: LoopPoint"
-    icon = "icons/cycle.png"
+    icon = "icons/cycle_variable.png"
     maintainer = "Luca Rebuffi"
     maintainer_email = "lrebuffi(@at@)anl.gov"
     priority = 1
