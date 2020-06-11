@@ -45,10 +45,8 @@
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # #########################################################################
 
-import sys
-
-from PyQt5.QtGui import QImage, QPixmap, QPalette, QFont, QColor, QTextCursor
-from PyQt5.QtWidgets import QLabel, QWidget, QHBoxLayout, QMessageBox, QFileDialog
+from PyQt5.QtGui import QPalette, QFont, QColor
+from PyQt5.QtWidgets import QMessageBox
 
 from orangewidget import gui
 from orangewidget.widget import OWAction
@@ -142,9 +140,7 @@ class AbstractScanLoopPoint(widget.OWWidget):
         if self.has_variable_list():
             self.create_variable_list_box(left_box_1)
         else:
-            oasysgui.lineEdit(left_box_1, self, "variable_name", "Variable Name", labelWidth=100, valueType=str, orientation="horizontal")
-            oasysgui.lineEdit(left_box_1, self, "variable_display_name", "Variable Display Name", labelWidth=100, valueType=str, orientation="horizontal")
-            if self.has_variable_um(): oasysgui.lineEdit(left_box_1, self, "variable_um", "Variable Units", labelWidth=250, valueType=str, orientation="horizontal")
+            self.create_default_variable_box(left_box_1)
 
         self.create_specific_loop_box(left_box_1)
 
@@ -244,6 +240,11 @@ class AbstractScanLoopPoint(widget.OWWidget):
             self.setStatusMessage("")
             self.run_loop = True
             self.suspend_loop = False
+
+    def create_default_variable_box(self, box):
+        oasysgui.lineEdit(box, self, "variable_name", "Variable Name", labelWidth=100, valueType=str, orientation="horizontal")
+        oasysgui.lineEdit(box, self, "variable_display_name", "Variable Display Name", labelWidth=100, valueType=str, orientation="horizontal")
+        if self.has_variable_um(): oasysgui.lineEdit(box, self, "variable_um", "Variable Units", labelWidth=250, valueType=str, orientation="horizontal")
 
     # ABSTRACT METHODS
     def get_current_value_type(self): raise NotImplementedError("This method is abstract")

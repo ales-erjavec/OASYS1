@@ -63,7 +63,6 @@ class AbstractScanVariableLoopPoint(AbstractScanLoopPoint):
     kind_of_loop = Setting(0)
 
     def create_specific_loop_box(self, box):
-
         gui.separator(box)
 
         gui.comboBox(box, self, "kind_of_loop", label="Kind of Loop", labelWidth=350,
