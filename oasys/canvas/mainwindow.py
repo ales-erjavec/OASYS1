@@ -64,15 +64,24 @@ class OASYSUserSettings(settings.UserSettingsDialog):
         layout.addWidget(pb)
         box.setLayout(layout)
 
+        box1 = QWidget(self, objectName="change-container")
+
+        layout1 = QVBoxLayout()
+        layout1.setContentsMargins(0, 0, 0, 0)
+        self.combo_change_title = QComboBox()
+        self.combo_change_title.addItems([self.tr("No"),  self.tr("Yes")])
+        self.combo_change_title.setCurrentIndex(QSettings().value("oasys/change_title_on_new_duplicate", 0, int))
+        self.combo_change_title.currentIndexChanged.connect(self.change_title)
+
+        layout1.addWidget(self.combo_change_title)
+        box1.setLayout(layout1)
+
         box2 = QWidget(self, objectName="units-container")
 
         layout2 = QVBoxLayout()
         layout2.setContentsMargins(0, 0, 0, 0)
         self.combo_units = QComboBox()
-        self.combo_units.addItems([self.tr("m"),
-                              self.tr("cm"),
-                              self.tr("mm")])
-
+        self.combo_units.addItems([self.tr("m"),self.tr("cm"), self.tr("mm")])
         self.combo_units.setCurrentIndex(QSettings().value("output/default-units", 1, int))
         self.combo_units.currentIndexChanged.connect(self.change_units)
 
@@ -198,6 +207,9 @@ class OASYSUserSettings(settings.UserSettingsDialog):
         box11.setLayout(layout11)
 
         generaltab.layout().insertRow(
+            0, self.tr("Add Numeral on New/Duplicate"), box1)
+
+        generaltab.layout().insertRow(
             0, self.tr("Default Units"), box2)
 
         generaltab.layout().insertRow(
@@ -230,6 +242,9 @@ class OASYSUserSettings(settings.UserSettingsDialog):
     def change_automatic_save(self):
         QSettings().setValue("output/automatic-save-minutes", self.combo_automatic_save.currentIndex())
         
+    def change_title(self):
+        QSettings().setValue("oasys/change_title_on_new_duplicate", self.combo_change_title.currentIndex())
+
     def change_units(self):
         QSettings().setValue("output/default-units", self.combo_units.currentIndex())
 
