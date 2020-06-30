@@ -31,5 +31,12 @@ class DataExchangeObject(object):
         v_get_content = numpy.vectorize(self.get_content)
         return v_get_content(content_keys)
 
+    def has_content_key(self, content_key):
+        try:
+            self._content[content_key]
+            return True
+        except:
+            return False
+
     def content_keys(self):
-        return self._content.keys()[2:]
+        return self._content.keys()
