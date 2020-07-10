@@ -305,9 +305,7 @@ class OASYSSchemeInfoDialog(schemeinfo.SchemeInfoDialog):
         self.working_dir_edit.layout().addWidget(self.working_dir_line)
         self.working_dir_edit.layout().addWidget(pb)
 
-        layout.insertRow(
-            2, self.tr("Working directory"), self.working_dir_edit)
-
+        layout.insertRow(2, self.tr("Working directory"), self.working_dir_edit)
 
         self.units_edit = QWidget(self)
         self.units_edit.setLayout(QGridLayout())
@@ -334,8 +332,7 @@ class OASYSSchemeInfoDialog(schemeinfo.SchemeInfoDialog):
         self.units_edit.layout().addWidget(label, 0, 0)
         self.units_edit.layout().addWidget(self.combo_units, 0, 1, Qt.AlignRight)
 
-        layout.insertRow(
-            2, self.tr("Units"), self.units_edit)
+        layout.insertRow( 2, self.tr("Units"), self.units_edit)
 
         # Fix the widget tab order.
         item = layout.itemAt(1, QFormLayout.FieldRole)
@@ -351,11 +348,8 @@ class OASYSSchemeInfoDialog(schemeinfo.SchemeInfoDialog):
 
     def __change_working_directory(self):
         cur_wd = self.working_dir_line.text()
-        new_wd = QFileDialog.getExistingDirectory(
-            self, self.tr("Set working directory"), cur_wd,
-        )
-        if new_wd:
-            self.working_dir_line.setText(new_wd)
+        new_wd = QFileDialog.getExistingDirectory(self, self.tr("Set working directory"), cur_wd)
+        if new_wd: self.working_dir_line.setText(new_wd)
 
     def title(self):
         return self.editor.title()
@@ -445,6 +439,7 @@ def load_pypi_packages():
 def resource_path(path):
     return pkg_resources.resource_filename(__name__, path)
 
+from oasys.util.external_command import CommandFailed, run_command
 
 class OASYSMainWindow(canvasmain.CanvasMainWindow):
 
@@ -489,26 +484,20 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
 
         self.automatic_save.connect(self.automatic_save_scheme)
 
-        self.new_action_on_new_window = \
-            QAction(self.tr("New on a New Window"), self,
-                    objectName="action-new-new-window",
-                    toolTip=self.tr("Open a new workflow on a new window."),
-                    triggered=self.new_scheme_on_new_window,
-                    icon=canvasmain.canvas_icons("New.svg")
-                    )
+        # PUT OLD CODE HERE IN CASE OF ROLLBACK
 
-        self.open_action_on_new_window = \
-            QAction(self.tr("Open on a New Window"), self,
-                    objectName="action-open-new-window",
-                    toolTip=self.tr("Open a workflow on a new window."),
-                    triggered=self.open_scheme_on_new_window,
+        self.new_instance_action = \
+            QAction(self.tr("New OASYS instance"), self,
+                    objectName="new-oasys-instance",
+                    toolTip=self.tr("Run a new OASYS instance"),
+                    triggered=self.new_instance,
                     icon=canvasmain.canvas_icons("Open.svg")
                     )
 
         file_menu = self.menuBar().children()[-1]
 
-        file_menu.insertAction(file_menu.actions()[2], self.open_action_on_new_window)
-        file_menu.insertAction(file_menu.actions()[1], self.new_action_on_new_window)
+        file_menu.addSeparator()
+        file_menu.addAction(self.new_instance_action)
 
     def set_secondary(self):
         self.is_main = False
@@ -531,6 +520,9 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                 [ep.dist for ep in oasysconf.addon_entry_points()])
 
             self.__updatable = sum(addons.is_updatable(item) for item in items)
+
+    def new_instance(self):
+        run_command(["python", "-m", "oasys.canvas"], raise_on_fail=False)
 
     def automatic_save_scheme(self):
         """Save the current scheme. If the scheme does not have an associated
@@ -573,11 +565,15 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
 
         new_scheme = widgetsscheme.OASYSWidgetsScheme(parent=self)
 
-        status = self.show_scheme_properties_for(
-            new_scheme, self.tr("New Workflow")
-        )
+        status = self.show_scheme_properties_for(new_scheme, self.tr("New Workflow"))
 
-        if status == QDialog.Rejected:
+        if status == QDialog.Rejected: return QDialog.Rejected
+        elif not os.path.isdir(new_scheme.working_directory):
+            message_information(
+                "Workflow Working Directory does not exist\n\n"
+                "project creation aborted",
+                parent=self)
+
             return QDialog.Rejected
 
         self.set_new_scheme(new_scheme)
@@ -585,6 +581,656 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                        new_scheme.working_directory)
         os.chdir(new_scheme.working_directory)
         return QDialog.Accepted
+
+    def new_scheme_from(self, filename):
+        """
+        Reimplemented from `CanvasMainWindow.new_scheme_from`.
+
+        Create and return a new :class:`WidgetsScheme` from `filename`.
+
+        Return `None` if an error occurs or the user aborts the process.
+        """
+        log = logging.getLogger(__name__)
+        default_workdir = QSettings().value(
+            "output/default-working-directory",
+            os.path.expanduser("~/Oasys"), type=str)
+        default_units = QSettings().value(
+            "output/default-units", 1, type=int)
+
+        try:
+            contents = io.BytesIO(open(filename, "rb").read())
+            doc = ElementTree.parse(contents)
+            root = doc.getroot()
+            workdir = root.get("working_directory")
+            workunits = root.get("workspace_units")
+            title = root.get("title", "untitled")
+            # First parse the contents into intermediate representation
+            # to catch format errors early (will be re-parsed later).
+            try:
+                readwrite.parse_ows_etree_v_2_0(doc)
+            except Exception:
+                message_critical(
+                     self.tr("Could not load an Orange Workflow file"),
+                     title=self.tr("Error"),
+                     informative_text=self.tr("An unexpected error occurred "
+                                              "while loading '%s'.") % filename,
+                     exc_info=True,
+                     parent=self)
+                return None
+            readwrite.parse_ows_etree_v_2_0(doc)
+        except Exception:
+            return None
+
+
+        '''
+        # ensure we have a valid working directory either default or
+        # stored.
+        if not workdir or not os.path.isdir(workdir):
+            new_workdir = QFileDialog.getExistingDirectory(
+                self, "Set working directory for project '%s'" % (title or "untitled"),
+                default_workdir)
+            if new_workdir:
+                workdir = new_workdir
+            else:
+                log.info("Replacement of not existing Working Directory "
+                         "'%s' aborted by user", workdir)
+                message_information(
+                    "Working directory not set by user:\n\n"
+                    "project load aborted",
+                    parent=self)
+                return None
+        else:
+            ret = message_question(
+                "Working directory set to:\n\n" + workdir,
+                "Working Directory",
+                informative_text="Do you want to change it?",
+                buttons=QMessageBox.Yes | QMessageBox.No,
+                default_button=QMessageBox.No,
+                parent=self)
+
+            if ret == QMessageBox.Yes:
+                new_wd = QFileDialog.getExistingDirectory(
+                    self, "Set working directory for project '%s'" % (title or "untitled"),
+                    default_workdir)
+                if new_wd:
+                    workdir = new_wd
+                    if not os.path.isdir(workdir):
+                        os.mkdir(workdir)
+                else:
+                    log.info("Replacement of not existing Working Directory "
+                             "'%s' aborted by user.", workdir)
+                    message_information(
+                        "Working directory not set by user:\n\n"
+                        "project load aborted",
+                        parent=self)
+                    return None
+
+        # now start the actual load with a valid working directory
+        log.info("Changing current work dir to '%s'", workdir)
+        os.chdir(workdir)
+
+        # ensure we have a valid working directory either default or
+        # stored.
+        if workunits is None:
+            new_units = OptionDialog.get_option(self,
+                                                "Set user's units for project '%s'" % (title or "untitled"),
+                                                "Set user's units",
+                                                ["m", "cm", "mm"], default_units)
+            if not new_units is None:
+                workunits = new_units
+            else:
+                log.info("Replacement of not existing User's Units "
+                         "'%s' aborted by user", "")
+                message_information(
+                    "Project units not set by user:\n\n"
+                    "project load aborted",
+                    parent=self)
+                return None
+        else:
+            workunits = int(workunits)
+            ret = message_question(
+                "User's units set to: " + self.getWorkspaceUnitsLabel(workunits),
+                "User's Units",
+                informative_text="Do you want to change it?",
+                buttons=QMessageBox.Yes | QMessageBox.No,
+                default_button=QMessageBox.No,
+                parent=self)
+
+            if ret == QMessageBox.Yes:
+                new_units = OptionDialog.get_option(self,
+                                                    "Set user's units for project '%s'" % (title or "untitled"),
+                                                    "Set user's units",
+                                                    ["m", "cm", "mm"], workunits)
+                if not new_units is None:
+                    workunits = new_units
+
+                    message_information(
+                        "Project new units set by user: " + self.getWorkspaceUnitsLabel(workunits) + \
+                        "\n\nWarning: values relating to the previous units are not converted",
+                        parent=self)
+                else:
+                    log.info("Replacement of existing User's Units "
+                             "'%s' aborted by user", "")
+                    message_information(
+                        "Project units not set by user:\n\n"
+                        "project load aborted",
+                        parent=self)
+                    return None
+        '''
+
+        new_scheme = widgetsscheme.OASYSWidgetsScheme(parent=self)
+
+        if not workdir or not os.path.isdir(workdir): new_scheme.working_directory = default_workdir
+        else:                                         new_scheme.working_directory = workdir
+
+        if workunits is None: new_scheme.workspace_units = default_units
+        else                : new_scheme.workspace_units = int(workunits)
+
+        errors = []
+        contents.seek(0)
+        try:
+            readwrite.scheme_load(new_scheme, contents, error_handler=errors.append)
+        except Exception:
+            message_critical(
+                 self.tr("Could not load an Orange Workflow file"),
+                 title=self.tr("Error"),
+                 informative_text=self.tr("An unexpected error occurred "
+                                          "while loading '%s'.") % filename,
+                 exc_info=True,
+                 parent=self)
+            return None
+
+        if errors:
+            message_warning(
+                self.tr("Errors occurred while loading the workflow."),
+                title=self.tr("Problem"),
+                informative_text=self.tr(
+                     "There were problems loading some "
+                     "of the widgets/links in the "
+                     "workflow."
+                ),
+                details="\n".join(map(repr, errors)),
+                parent=self
+            )
+
+        status = self.show_scheme_properties_for(new_scheme, self.tr("Properties of " + new_scheme.title))
+
+        if status == QDialog.Rejected:
+            log.info("Confirmation/Modification of workflow properties aborted by user")
+            message_information(
+                "Confirmation/Modification of workflow properties canceled by user\n\n"
+                "project load aborted",
+                parent=self)
+
+            return None
+        elif not os.path.isdir(new_scheme.working_directory):
+            log.info("Workflow Working Directory does not exist")
+            message_information(
+                "Workflow Working Directory does not exist\n\n"
+                "project load aborted",
+                parent=self)
+
+            return None
+        else:
+            return new_scheme
+
+    def getWorkspaceUnitsLabel(self, units):
+        if units == 0:   return "m"
+        elif units == 1: return "cm"
+        elif units == 2: return "mm"
+        else:            return None
+
+    def welcome_dialog(self):
+        """
+        Show a modal welcome dialog for OASYS.
+
+        Reimplemented from `CanvasMainWindow`.
+        """
+
+        dialog = welcomedialog.WelcomeDialog(self)
+        dialog.setWindowTitle(self.tr("Welcome to OASYS"))
+
+        def new_scheme():
+            if self.new_scheme() == QDialog.Accepted:
+                dialog.accept()
+
+        def open_scheme():
+            if self.open_scheme() == QDialog.Accepted:
+                dialog.accept()
+
+        def open_recent():
+            if self.recent_scheme() == QDialog.Accepted:
+                dialog.accept()
+
+        def get_started():
+            import webbrowser
+            webbrowser.open("https://github.com/oasys-kit/oasys_school")
+
+        def documentation():
+            import webbrowser
+            webbrowser.open("https://www.aps.anl.gov/Science/Scientific-Software/OASYS")
+
+
+        new_action = \
+            QAction(self.tr("New"), dialog,
+                    toolTip=self.tr("Open a new workflow."),
+                    triggered=new_scheme,
+                    shortcut=QKeySequence.New,
+                    icon=canvasmain.canvas_icons("New.svg")
+                    )
+
+        open_action = \
+            QAction(self.tr("Open"), dialog,
+                    objectName="welcome-action-open",
+                    toolTip=self.tr("Open a workflow."),
+                    triggered=open_scheme,
+                    shortcut=QKeySequence.Open,
+                    icon=canvasmain.canvas_icons("Open.svg")
+                    )
+
+        recent_action = \
+            QAction(self.tr("Recent"), dialog,
+                    objectName="welcome-recent-action",
+                    toolTip=self.tr("Browse and open a recent workflow."),
+                    triggered=open_recent,
+                    shortcut=QKeySequence(Qt.ControlModifier | \
+                                          (Qt.ShiftModifier | Qt.Key_R)),
+                    icon=canvasmain.canvas_icons("Recent.svg")
+                    )
+
+        get_started_action = \
+            QAction(self.tr("OASYS School"), self,
+                    objectName="get-started-action",
+                    toolTip=self.tr("OASYS School"),
+                    triggered=get_started,
+                    icon=canvasmain.canvas_icons("Get Started.svg")
+                    )
+
+        documentation_action = \
+            QAction(self.tr("Web Site"), self,
+                    objectName="documentation-action",
+                    toolTip=self.tr("View reference website."),
+                    triggered=documentation,
+                    icon=canvasmain.canvas_icons("Documentation.svg")
+                    )
+
+        icon = resource_path("icons/Install.svg")
+
+        addons_action = \
+            QAction(self.tr("Add-ons"), dialog,
+                    objectName="welcome-addons-action",
+                    toolTip=self.tr("Install add-ons"),
+                    triggered=self.open_addons,
+                    icon=QIcon(icon),
+                    )
+
+        if self.__updatable:
+            addons_action.setText("Update Now")
+            addons_action.setToolTip("Update or install new add-ons")
+            addons_action.setIcon(QIcon(resource_path("icons/Update.svg")))
+
+            mbox = QMessageBox(
+                dialog,
+                icon=QMessageBox.Information,
+                text="{} add-on{} {} a newer version.\n"
+                     "Would you like to update now?"
+                     .format("One" if self.__updatable == 1 else self.__updatable,
+                             "s" if self.__updatable > 1 else "",
+                             "has" if self.__updatable == 1 else "have"),
+                standardButtons=QMessageBox.Ok | QMessageBox.No,
+            )
+            mbox.setWindowFlags(Qt.Sheet | Qt.MSWindowsFixedSizeDialogHint)
+            mbox.setModal(True)
+            dialog.show()
+            mbox.show()
+            mbox.finished.connect(
+                lambda r:
+                    self.open_addons() if r == QMessageBox.Ok else None
+            )
+
+        #bottom_row = [self.get_started_action, self.tutorials_action,
+        #              self.documentation_action, addons_action]
+
+        bottom_row = [get_started_action, documentation_action, addons_action]
+
+        self.new_action.triggered.connect(dialog.accept)
+        top_row = [new_action, open_action, recent_action]
+
+        dialog.addRow(top_row, background="light-grass")
+        dialog.addRow(bottom_row, background="light-orange")
+
+        # Find and hide the welcome dialogs bottom bar. It contains the
+        # Show at startup" check box and we ALWAYS want the Welcome Dialog
+        # to show.
+        bottombar = dialog.findChild(QWidget, name='bottom-bar')
+        if bottombar is not None:
+            bottombar.hide()
+
+        status = dialog.exec_()
+
+        dialog.deleteLater()
+
+        return status
+
+    def scheme_properties_dialog(self, existing_scheme=False):
+        """Return an empty `SchemeInfo` dialog instance.
+        """
+        dialog = OASYSSchemeInfoDialog(self, existing_scheme)
+
+        dialog.setWindowTitle(self.tr("Workflow Info"))
+        dialog.setFixedSize(725, 450)
+        return dialog
+
+    def show_scheme_properties(self):
+        """Show current scheme properties.
+        """
+        current_doc = self.current_document()
+        scheme = current_doc.scheme()
+        dialog = self.scheme_properties_dialog(existing_scheme=True)
+        dialog.setAutoCommit(False)
+        dialog.setScheme(scheme)
+        status = dialog.exec_()
+
+        if status == QDialog.Accepted:
+            stack = current_doc.undoStack()
+            scheme = current_doc.scheme()
+            stack.beginMacro(self.tr("Change Info"))
+            current_doc.setTitle(dialog.title())
+            current_doc.setDescription(dialog.description())
+            scheme.working_directory = dialog.workingDirectory()
+            scheme.workspace_units = dialog.workspaceUnits()
+            os.chdir(scheme.working_directory)
+
+            stack.endMacro()
+
+        return status
+
+    def show_scheme_properties_for(self, scheme, window_title=None):
+        """
+        Reimplemented from `CanvasMainWindow.show_properties_for`
+
+        Show scheme properties for `scheme` with `window_title (if None
+        a default 'Scheme Info' title will be used.
+        """
+        dialog = self.scheme_properties_dialog(existing_scheme=False)
+        if window_title is not None: dialog.setWindowTitle(window_title)
+        dialog.setScheme(scheme)
+        status = dialog.exec_()
+
+        if status == QDialog.Accepted:
+            scheme.working_directory = dialog.workingDirectory()
+            scheme.workspace_units = dialog.workspaceUnits()
+            os.chdir(scheme.working_directory)
+
+        dialog.deleteLater()
+        return status
+
+    def open_canvas_settings(self):
+        dlg = OASYSUserSettings(self)
+        dlg.setWindowTitle(self.tr("Preferences"))
+        if dlg.exec_() == 0:
+            self._CanvasMainWindow__update_from_settings()
+
+    def set_menu_registry(self, menu_registry):
+        self.menu_registry = menu_registry
+
+        for menu_instance in self.menu_registry.menus():
+            try:
+                menu_instance.setCanvasMainWindow(self)
+
+                custom_menu = QMenu(menu_instance.name, self)
+                sub_menus = menu_instance.getSubMenuNamesList()
+
+                is_open_container = False
+                container_menu = None
+                action_index = 0
+
+                for index in range(0, len(sub_menus)):
+                    if is_open_container:
+                        if menu_instance.isSeparator(sub_menus[index]):
+                            if container_menu is None: raise Exception("Container Menu has not been defined")
+
+                            container_menu.addSeparator()
+                        elif menu_instance.isOpenContainer(sub_menus[index]):
+                            raise Exception("Container has already been opened: Open Container Operation is inconsistent")
+                        elif menu_instance.isCloseContainer(sub_menus[index]):
+                            is_open_container = False
+                            container_menu = None
+                        else:
+                            if container_menu is None:
+                                container_menu = QMenu(sub_menus[index], self)
+
+                                custom_menu.addMenu(container_menu)
+                            else:
+                                action_index = action_index + 1
+                                custom_action = \
+                                    QAction(sub_menus[index], self,
+                                            objectName=sub_menus[index].lower() + "-action",
+                                            toolTip=self.tr(sub_menus[index]),
+                                            )
+                                custom_action.triggered.connect(getattr(menu_instance, 'executeAction_' + str(action_index)))
+                                container_menu.addAction(custom_action)
+                    else:
+                        if menu_instance.isSeparator(sub_menus[index]):
+                            custom_menu.addSeparator()
+                        elif menu_instance.isOpenContainer(sub_menus[index]):
+                            is_open_container = True
+                        elif menu_instance.isCloseContainer(sub_menus[index]):
+                            raise Exception("Container has not been opened: Close Container Operation is inconsistent")
+                        else:
+                            action_index = action_index + 1
+                            custom_action = \
+                                QAction(sub_menus[index], self,
+                                        objectName=sub_menus[index].lower() + "-action",
+                                        toolTip=self.tr(sub_menus[index]),
+                                        )
+                            custom_action.triggered.connect(getattr(menu_instance, 'executeAction_' + str(action_index)))
+                            custom_menu.addAction(custom_action)
+
+                self.menuBar().addMenu(custom_menu)
+
+
+            except Exception as exception:
+                print("Error in creating Customized Menu: " + str(menu_instance))
+                print(str(exception.args[0]))
+                continue
+
+    def open_addons(self):
+        from oasys.application.addons import AddonManagerDialog, have_install_permissions
+        if not have_install_permissions():
+            QMessageBox(QMessageBox.Warning,
+                        "Add-ons: insufficient permissions",
+                        "Insufficient permissions to install add-ons. Try starting Orange "
+                        "as a system administrator or install Orange in user folders.",
+                        parent=self).exec_()
+        dlg = AddonManagerDialog(self, windowTitle=self.tr("Add-ons"))
+        dlg.setAttribute(Qt.WA_DeleteOnClose)
+        return dlg.exec_()
+
+    def closeSecondaryEvent(self, event):
+        """Close the main window.
+        """
+        document = self.current_document()
+        if document.isModifiedStrict():
+            if self.ask_save_changes() == QDialog.Rejected:
+                # Reject the event
+                event.ignore()
+                return
+
+        old_scheme = document.scheme()
+
+        # Set an empty scheme to clear the document
+        document.setScheme(config.workflow_constructor(parent=self))
+
+        QApplication.sendEvent(old_scheme, QEvent(QEvent.Close))
+
+        old_scheme.deleteLater()
+
+        config.save_config()
+
+        geometry = self.saveGeometry()
+        state = self.saveState(version=self.SETTINGS_VERSION)
+        settings = QSettings()
+        settings.beginGroup("mainwindow")
+        settings.setValue("geometry", geometry)
+        settings.setValue("state", state)
+        settings.setValue("canvasdock/expanded",
+                          self.dock_widget.expanded())
+        settings.setValue("scheme-margins-enabled",
+                          self.scheme_margins_enabled)
+
+        settings.setValue("last-scheme-dir", self.last_scheme_dir)
+        settings.setValue("widgettoolbox/state",
+                          self.widgets_tool_box.saveState())
+
+        settings.setValue("quick-help/visible",
+                          self.canvas_tool_dock.quickHelpVisible())
+
+        settings.endGroup()
+
+        event.accept()
+
+    def closeEvent(self, event):
+        if self.is_main:
+            super().closeEvent(event)
+            if event.isAccepted():
+                if self.__pypi_addons_f is not None:
+                    self.__pypi_addons_f.cancel()
+                self.__executor.shutdown(wait=True)
+        else:
+            self.closeSecondaryEvent(event)
+            if event.isAccepted():
+                if self.__pypi_addons_f is not None:
+                    self.__pypi_addons_f.cancel()
+
+
+    ###############################################
+    # REMOVED
+    ###############################################
+
+    '''
+        in __init__:
+        
+        self.new_action_on_new_window = \
+            QAction(self.tr("New on a New Window"), self,
+                    objectName="action-new-new-window",
+                    toolTip=self.tr("Open a new workflow on a new window."),
+                    triggered=self.new_scheme_on_new_window,
+                    icon=canvasmain.canvas_icons("New.svg")
+                    )
+
+        self.open_action_on_new_window = \
+            QAction(self.tr("Open on a New Window"), self,
+                    objectName="action-open-new-window",
+                    toolTip=self.tr("Open a workflow on a new window."),
+                    triggered=self.open_scheme_on_new_window,
+                    icon=canvasmain.canvas_icons("Open.svg")
+                    )
+
+        file_menu = self.menuBar().children()[-1]
+
+        file_menu.insertAction(file_menu.actions()[2], self.open_action_on_new_window)
+        file_menu.insertAction(file_menu.actions()[1], self.new_action_on_new_window)
+    '''
+
+
+    '''
+    def new_scheme_on_new_window(self):
+        """New scheme. Return QDialog.Rejected if the user canceled
+        the operation and QDialog.Accepted otherwise.
+
+        """
+        window = self.instantiate_window()
+
+        document = window.current_document()
+        if document.isModifiedStrict():
+            # Ask for save changes
+            if window.ask_save_changes() == QDialog.Rejected:
+                return QDialog.Rejected
+
+        new_scheme = config.workflow_constructor(parent=self)
+
+        settings = QSettings()
+        show = settings.value("schemeinfo/show-at-new-scheme", True,
+                              type=bool)
+
+        if show:
+            status = window.show_scheme_properties_for(new_scheme, self.tr("New Workflow"))
+
+            if status == QDialog.Rejected:
+                return QDialog.Rejected
+
+        window.set_new_scheme(new_scheme)
+
+        return QDialog.Accepted
+
+    def open_scheme_on_new_window(self):
+        """Open a new scheme. Return QDialog.Rejected if the user canceled
+        the operation and QDialog.Accepted otherwise.
+
+        """
+        document = self.current_document()
+        if document.isModifiedStrict():
+            if self.ask_save_changes() == QDialog.Rejected:
+                return QDialog.Rejected
+
+        if self.last_scheme_dir is None:
+            # Get user 'Documents' folder
+            start_dir = QStandardPaths.standardLocations(
+                            QStandardPaths.DocumentsLocation)[0]
+        else:
+            start_dir = self.last_scheme_dir
+
+        # TODO: Use a dialog instance and use 'addSidebarUrls' to
+        # set one or more extra sidebar locations where Schemes are stored.
+        # Also use setHistory
+        filename = QFileDialog.getOpenFileName(
+            self, self.tr("Open Orange Workflow File"),
+            start_dir, self.tr("Orange Workflow (*.ows)"),
+        )[0]
+
+        if filename:
+            return self.load_scheme_on_window(filename, self.instantiate_window())
+        else:
+            return QDialog.Rejected
+
+    def instantiate_window(self):
+        window = OASYSMainWindow()
+        window.set_secondary()
+        window.setStyleSheet(self.styleSheet())
+        window.setWindowIcon(self.windowIcon())
+        window.set_widget_registry(self.widget_registry)
+        window.set_menu_registry(self.menu_registry)
+        window.show()
+        window.setGeometry(self.geometry().left() + 10,
+                           self.geometry().top() + 10,
+                           self.geometry().width(),
+                           self.geometry().height())
+
+        return window
+
+    def load_scheme_on_window(self, filename, window):
+        """Load a scheme from a file (`filename`) into the current
+        document updates the recent scheme list and the loaded scheme path
+        property.
+
+        """
+        filename = six.text_type(filename)
+        dirname = os.path.dirname(filename)
+
+        window.last_scheme_dir = dirname
+
+        new_scheme = window.new_scheme_from(filename)
+        if new_scheme is not None:
+            window.set_new_scheme(new_scheme)
+
+            scheme_doc_widget = window.current_document()
+            scheme_doc_widget.setPath(filename)
+
+            window.add_recent_scheme(new_scheme.title, filename)
+            return QDialog.Accepted
+        else:
+            return QDialog.Rejected
 
     def new_scheme_from(self, filename):
         """
@@ -750,482 +1396,4 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                 parent=self
             )
         return new_scheme
-
-    def getWorkspaceUnitsLabel(self, units):
-        if units == 0:
-            return "m"
-        elif units == 1:
-            return "cm"
-        elif units == 2:
-            return "mm"
-        else:
-            return None
-
-    def welcome_dialog(self):
-        """
-        Show a modal welcome dialog for OASYS.
-
-        Reimplemented from `CanvasMainWindow`.
-        """
-
-        dialog = welcomedialog.WelcomeDialog(self)
-        dialog.setWindowTitle(self.tr("Welcome to OASYS"))
-
-        def new_scheme():
-            if self.new_scheme() == QDialog.Accepted:
-                dialog.accept()
-
-        def open_scheme():
-            if self.open_scheme() == QDialog.Accepted:
-                dialog.accept()
-
-        def open_recent():
-            if self.recent_scheme() == QDialog.Accepted:
-                dialog.accept()
-
-        def get_started():
-            import webbrowser
-            webbrowser.open("https://github.com/oasys-kit/oasys_school")
-
-        def documentation():
-            import webbrowser
-            webbrowser.open("https://www.aps.anl.gov/Science/Scientific-Software/OASYS")
-
-
-        new_action = \
-            QAction(self.tr("New"), dialog,
-                    toolTip=self.tr("Open a new workflow."),
-                    triggered=new_scheme,
-                    shortcut=QKeySequence.New,
-                    icon=canvasmain.canvas_icons("New.svg")
-                    )
-
-        open_action = \
-            QAction(self.tr("Open"), dialog,
-                    objectName="welcome-action-open",
-                    toolTip=self.tr("Open a workflow."),
-                    triggered=open_scheme,
-                    shortcut=QKeySequence.Open,
-                    icon=canvasmain.canvas_icons("Open.svg")
-                    )
-
-        recent_action = \
-            QAction(self.tr("Recent"), dialog,
-                    objectName="welcome-recent-action",
-                    toolTip=self.tr("Browse and open a recent workflow."),
-                    triggered=open_recent,
-                    shortcut=QKeySequence(Qt.ControlModifier | \
-                                          (Qt.ShiftModifier | Qt.Key_R)),
-                    icon=canvasmain.canvas_icons("Recent.svg")
-                    )
-
-        get_started_action = \
-            QAction(self.tr("OASYS School"), self,
-                    objectName="get-started-action",
-                    toolTip=self.tr("OASYS School"),
-                    triggered=get_started,
-                    icon=canvasmain.canvas_icons("Get Started.svg")
-                    )
-
-        documentation_action = \
-            QAction(self.tr("Web Site"), self,
-                    objectName="documentation-action",
-                    toolTip=self.tr("View reference website."),
-                    triggered=documentation,
-                    icon=canvasmain.canvas_icons("Documentation.svg")
-                    )
-
-        icon = resource_path("icons/Install.svg")
-
-        addons_action = \
-            QAction(self.tr("Add-ons"), dialog,
-                    objectName="welcome-addons-action",
-                    toolTip=self.tr("Install add-ons"),
-                    triggered=self.open_addons,
-                    icon=QIcon(icon),
-                    )
-
-        if self.__updatable:
-            addons_action.setText("Update Now")
-            addons_action.setToolTip("Update or install new add-ons")
-            addons_action.setIcon(QIcon(resource_path("icons/Update.svg")))
-
-            mbox = QMessageBox(
-                dialog,
-                icon=QMessageBox.Information,
-                text="{} add-on{} {} a newer version.\n"
-                     "Would you like to update now?"
-                     .format("One" if self.__updatable == 1 else self.__updatable,
-                             "s" if self.__updatable > 1 else "",
-                             "has" if self.__updatable == 1 else "have"),
-                standardButtons=QMessageBox.Ok | QMessageBox.No,
-            )
-            mbox.setWindowFlags(Qt.Sheet | Qt.MSWindowsFixedSizeDialogHint)
-            mbox.setModal(True)
-            dialog.show()
-            mbox.show()
-            mbox.finished.connect(
-                lambda r:
-                    self.open_addons() if r == QMessageBox.Ok else None
-            )
-
-        #bottom_row = [self.get_started_action, self.tutorials_action,
-        #              self.documentation_action, addons_action]
-
-        bottom_row = [get_started_action, documentation_action, addons_action]
-
-        self.new_action.triggered.connect(dialog.accept)
-        top_row = [new_action, open_action, recent_action]
-
-        dialog.addRow(top_row, background="light-grass")
-        dialog.addRow(bottom_row, background="light-orange")
-
-        # Find and hide the welcome dialogs bottom bar. It contains the
-        # Show at startup" check box and we ALWAYS want the Welcome Dialog
-        # to show.
-        bottombar = dialog.findChild(QWidget, name='bottom-bar')
-        if bottombar is not None:
-            bottombar.hide()
-
-        status = dialog.exec_()
-
-        dialog.deleteLater()
-
-        return status
-
-    def open_scheme_on_new_window(self):
-        """Open a new scheme. Return QDialog.Rejected if the user canceled
-        the operation and QDialog.Accepted otherwise.
-
-        """
-        document = self.current_document()
-        if document.isModifiedStrict():
-            if self.ask_save_changes() == QDialog.Rejected:
-                return QDialog.Rejected
-
-        if self.last_scheme_dir is None:
-            # Get user 'Documents' folder
-            start_dir = QStandardPaths.standardLocations(
-                            QStandardPaths.DocumentsLocation)[0]
-        else:
-            start_dir = self.last_scheme_dir
-
-        # TODO: Use a dialog instance and use 'addSidebarUrls' to
-        # set one or more extra sidebar locations where Schemes are stored.
-        # Also use setHistory
-        filename = QFileDialog.getOpenFileName(
-            self, self.tr("Open Orange Workflow File"),
-            start_dir, self.tr("Orange Workflow (*.ows)"),
-        )[0]
-
-        if filename:
-            return self.load_scheme_on_window(filename, self.instantiate_window())
-        else:
-            return QDialog.Rejected
-
-    def instantiate_window(self):
-        window = OASYSMainWindow()
-        window.set_secondary()
-        window.setStyleSheet(self.styleSheet())
-        window.setWindowIcon(self.windowIcon())
-        window.set_widget_registry(self.widget_registry)
-        window.set_menu_registry(self.menu_registry)
-        window.show()
-        window.setGeometry(self.geometry().left() + 10,
-                           self.geometry().top() + 10,
-                           self.geometry().width(),
-                           self.geometry().height())
-
-        return window
-
-    def load_scheme_on_window(self, filename, window):
-        """Load a scheme from a file (`filename`) into the current
-        document updates the recent scheme list and the loaded scheme path
-        property.
-
-        """
-        filename = six.text_type(filename)
-        dirname = os.path.dirname(filename)
-
-        window.last_scheme_dir = dirname
-
-        new_scheme = window.new_scheme_from(filename)
-        if new_scheme is not None:
-            window.set_new_scheme(new_scheme)
-
-            scheme_doc_widget = window.current_document()
-            scheme_doc_widget.setPath(filename)
-
-            window.add_recent_scheme(new_scheme.title, filename)
-            return QDialog.Accepted
-        else:
-            return QDialog.Rejected
-
-
-    def new_scheme_on_new_window(self):
-        """New scheme. Return QDialog.Rejected if the user canceled
-        the operation and QDialog.Accepted otherwise.
-
-        """
-        window = self.instantiate_window()
-
-        document = window.current_document()
-        if document.isModifiedStrict():
-            # Ask for save changes
-            if window.ask_save_changes() == QDialog.Rejected:
-                return QDialog.Rejected
-
-        new_scheme = config.workflow_constructor(parent=self)
-
-        settings = QSettings()
-        show = settings.value("schemeinfo/show-at-new-scheme", True,
-                              type=bool)
-
-        if show:
-            status = window.show_scheme_properties_for(
-                new_scheme, self.tr("New Workflow")
-            )
-
-            if status == QDialog.Rejected:
-                return QDialog.Rejected
-
-        window.set_new_scheme(new_scheme)
-
-        return QDialog.Accepted
-
-
-    def scheme_properties_dialog(self, existing_scheme=False):
-        """Return an empty `SchemeInfo` dialog instance.
-        """
-        dialog = OASYSSchemeInfoDialog(self, existing_scheme)
-
-        dialog.setWindowTitle(self.tr("Workflow Info"))
-        dialog.setFixedSize(725, 450)
-        return dialog
-
-    def show_scheme_properties(self):
-        """Show current scheme properties.
-        """
-        current_doc = self.current_document()
-        scheme = current_doc.scheme()
-        dialog = self.scheme_properties_dialog(existing_scheme=True)
-        dialog.setAutoCommit(False)
-        dialog.setScheme(scheme)
-        status = dialog.exec_()
-
-        if status == QDialog.Accepted:
-            stack = current_doc.undoStack()
-            scheme = current_doc.scheme()
-            stack.beginMacro(self.tr("Change Info"))
-            current_doc.setTitle(dialog.title())
-            current_doc.setDescription(dialog.description())
-            scheme.working_directory = dialog.workingDirectory()
-            scheme.workspace_units = dialog.workspaceUnits()
-            os.chdir(scheme.working_directory)
-
-            stack.endMacro()
-
-        return status
-
-    def show_scheme_properties_for(self, scheme, window_title=None):
-        """
-        Reimplemented from `CanvasMainWindow.show_properties_for`
-
-        Show scheme properties for `scheme` with `window_title (if None
-        a default 'Scheme Info' title will be used.
-        """
-        dialog = self.scheme_properties_dialog(existing_scheme=False)
-        if window_title is not None:
-            dialog.setWindowTitle(window_title)
-        dialog.setScheme(scheme)
-        status = dialog.exec_()
-
-        if status == QDialog.Accepted:
-            scheme.working_directory = dialog.workingDirectory()
-            scheme.workspace_units = dialog.workspaceUnits()
-            os.chdir(scheme.working_directory)
-
-        dialog.deleteLater()
-        return status
-
-    def open_canvas_settings(self):
-        dlg = OASYSUserSettings(self)
-        dlg.setWindowTitle(self.tr("Preferences"))
-        if dlg.exec_() == 0:
-            # AAAAAAAAAAAAA!
-            self._CanvasMainWindow__update_from_settings()
-
-    def set_menu_registry(self, menu_registry):
-        self.menu_registry = menu_registry
-
-        for menu_instance in self.menu_registry.menus():
-            try:
-                menu_instance.setCanvasMainWindow(self)
-
-                custom_menu = QMenu(menu_instance.name, self)
-                sub_menus = menu_instance.getSubMenuNamesList()
-
-                is_open_container = False
-                container_menu = None
-                action_index = 0
-
-                for index in range(0, len(sub_menus)):
-                    if is_open_container:
-                        if menu_instance.isSeparator(sub_menus[index]):
-                            if container_menu is None: raise Exception("Container Menu has not been defined")
-
-                            container_menu.addSeparator()
-                        elif menu_instance.isOpenContainer(sub_menus[index]):
-                            raise Exception("Container has already been opened: Open Container Operation is inconsistent")
-                        elif menu_instance.isCloseContainer(sub_menus[index]):
-                            is_open_container = False
-                            container_menu = None
-                        else:
-                            if container_menu is None:
-                                container_menu = QMenu(sub_menus[index], self)
-
-                                custom_menu.addMenu(container_menu)
-                            else:
-                                action_index = action_index + 1
-                                custom_action = \
-                                    QAction(sub_menus[index], self,
-                                            objectName=sub_menus[index].lower() + "-action",
-                                            toolTip=self.tr(sub_menus[index]),
-                                            )
-                                custom_action.triggered.connect(getattr(menu_instance, 'executeAction_' + str(action_index)))
-                                container_menu.addAction(custom_action)
-                    else:
-                        if menu_instance.isSeparator(sub_menus[index]):
-                            custom_menu.addSeparator()
-                        elif menu_instance.isOpenContainer(sub_menus[index]):
-                            is_open_container = True
-                        elif menu_instance.isCloseContainer(sub_menus[index]):
-                            raise Exception("Container has not been opened: Close Container Operation is inconsistent")
-                        else:
-                            action_index = action_index + 1
-                            custom_action = \
-                                QAction(sub_menus[index], self,
-                                        objectName=sub_menus[index].lower() + "-action",
-                                        toolTip=self.tr(sub_menus[index]),
-                                        )
-                            custom_action.triggered.connect(getattr(menu_instance, 'executeAction_' + str(action_index)))
-                            custom_menu.addAction(custom_action)
-
-                self.menuBar().addMenu(custom_menu)
-
-
-            except Exception as exception:
-                print("Error in creating Customized Menu: " + str(menu_instance))
-                print(str(exception.args[0]))
-                continue
-    '''
-    def open_addons(self):
-        """Open the add-on manager dialog.
-        """
-        if not hasattr(self, "__f_pypi_addons") or self.__f_pypi_addons is None:
-            self.__f_pypi_addons = self.__executor.submit(
-                addons.pypi_search,
-                oasysconf.addon_pypi_search_spec(),
-                timeout=20,
-            )
-
-        dlg = addons.AddonManagerDialog(
-            self, windowTitle=self.tr("Add-ons"), modal=True)
-        dlg.setAttribute(Qt.WA_DeleteOnClose)
-
-        if not hasattr(self, "__addon_items") or self.__addon_items is not None:
-            pypi_distributions = self.__f_pypi_addons.result()
-            installed = [ep.dist for ep in config.default.addon_entry_points()]
-            items = addons.installable_items(pypi_distributions, installed)
-            self.__addon_items = items
-            dlg.setItems(items)
-        else:
-            # Use the dialog's own progress dialog
-            progress = dlg.progressDialog()
-            dlg.show()
-            progress.show()
-            progress.setLabelText(
-                self.tr("Retrieving package list")
-            )
-            self.__f_pypi_addons.add_done_callback(
-                addons.method_queued(self.__on_pypi_search_done, (object,))
-            )
-            close_dialog = addons.method_queued(dlg.close, ())
-
-            self.__f_pypi_addons.add_done_callback(
-                lambda f:
-                    close_dialog() if f.exception() else None)
-
-            self.__p_addon_items_available.connect(progress.hide)
-            self.__p_addon_items_available.connect(dlg.setItems)
-
-        return dlg.exec_()
-    '''
-
-    def open_addons(self):
-        from oasys.application.addons import AddonManagerDialog, have_install_permissions
-        if not have_install_permissions():
-            QMessageBox(QMessageBox.Warning,
-                        "Add-ons: insufficient permissions",
-                        "Insufficient permissions to install add-ons. Try starting Orange "
-                        "as a system administrator or install Orange in user folders.",
-                        parent=self).exec_()
-        dlg = AddonManagerDialog(self, windowTitle=self.tr("Add-ons"))
-        dlg.setAttribute(Qt.WA_DeleteOnClose)
-        return dlg.exec_()
-
-    def closeSecondaryEvent(self, event):
-        """Close the main window.
-        """
-        document = self.current_document()
-        if document.isModifiedStrict():
-            if self.ask_save_changes() == QDialog.Rejected:
-                # Reject the event
-                event.ignore()
-                return
-
-        old_scheme = document.scheme()
-
-        # Set an empty scheme to clear the document
-        document.setScheme(config.workflow_constructor(parent=self))
-
-        QApplication.sendEvent(old_scheme, QEvent(QEvent.Close))
-
-        old_scheme.deleteLater()
-
-        config.save_config()
-
-        geometry = self.saveGeometry()
-        state = self.saveState(version=self.SETTINGS_VERSION)
-        settings = QSettings()
-        settings.beginGroup("mainwindow")
-        settings.setValue("geometry", geometry)
-        settings.setValue("state", state)
-        settings.setValue("canvasdock/expanded",
-                          self.dock_widget.expanded())
-        settings.setValue("scheme-margins-enabled",
-                          self.scheme_margins_enabled)
-
-        settings.setValue("last-scheme-dir", self.last_scheme_dir)
-        settings.setValue("widgettoolbox/state",
-                          self.widgets_tool_box.saveState())
-
-        settings.setValue("quick-help/visible",
-                          self.canvas_tool_dock.quickHelpVisible())
-
-        settings.endGroup()
-
-        event.accept()
-
-    def closeEvent(self, event):
-        if self.is_main:
-            super().closeEvent(event)
-            if event.isAccepted():
-                if self.__pypi_addons_f is not None:
-                    self.__pypi_addons_f.cancel()
-                self.__executor.shutdown(wait=True)
-        else:
-            self.closeSecondaryEvent(event)
-            if event.isAccepted():
-                if self.__pypi_addons_f is not None:
-                    self.__pypi_addons_f.cancel()
+'''

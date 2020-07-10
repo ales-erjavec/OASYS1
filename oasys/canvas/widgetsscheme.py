@@ -138,10 +138,8 @@ class OASYSWidgetManager(WidgetManager):
         Reimplemented from WidgetManager.create_widget_instance
         """
         widget = super().create_widget_instance(node)
-        if hasattr(widget, "setWorkingDirectory"):
-            widget.setWorkingDirectory(self.scheme().working_directory)
-        if hasattr(widget, "setWorkspaceUnits"):
-            widget.setWorkspaceUnits(self.scheme().workspace_units)
+        if hasattr(widget, "setWorkingDirectory"): widget.setWorkingDirectory(self.scheme().working_directory)
+        if hasattr(widget, "setWorkspaceUnits"):   widget.setWorkspaceUnits(self.scheme().workspace_units)
 
         return widget
 
