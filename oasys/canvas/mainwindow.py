@@ -486,18 +486,19 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
 
         # PUT OLD CODE HERE IN CASE OF ROLLBACK
 
-        self.new_instance_action = \
-            QAction(self.tr("New OASYS instance"), self,
-                    objectName="new-oasys-instance",
-                    toolTip=self.tr("Run a new OASYS instance"),
-                    triggered=self.new_instance,
-                    icon=canvasmain.canvas_icons("Open.svg")
-                    )
+        if platform.system() != 'Windows':
+            self.new_instance_action = \
+                QAction(self.tr("New OASYS instance"), self,
+                        objectName="new-oasys-instance",
+                        toolTip=self.tr("Run a new OASYS instance"),
+                        triggered=self.new_instance,
+                        icon=canvasmain.canvas_icons("Open.svg")
+                        )
 
-        file_menu = self.menuBar().children()[-1]
+            file_menu = self.menuBar().children()[-1]
 
-        file_menu.addSeparator()
-        file_menu.addAction(self.new_instance_action)
+            file_menu.addSeparator()
+            file_menu.addAction(self.new_instance_action)
 
     def set_secondary(self):
         self.is_main = False
