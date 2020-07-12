@@ -15,42 +15,41 @@ class CommandFailed(Exception):
         self.retcode = retcode
         self.output = output
 
-def run_command(command, raise_on_fail=True):
+def run_command(command, raise_on_fail=True, wait_for_output=True):
     """Run command in a subprocess.
 
     Return `process` return code and output once it completes.
     """
     log.info("Running %s", " ".join(command))
 
-    if command[0] == "python":
-        process = python_process(command[1:])
-    else:
-        process = create_process(command)
+    if command[0] == "python": process = python_process(command[1:])
+    else:process = create_process(command)
 
-    output = []
-    while process.poll() is None:
-        try:
-            line = process.stdout.readline()
-        except IOError as ex:
-            if ex.errno != errno.EINTR:
-                raise
-        else:
+    if wait_for_output:
+        output = []
+        while process.poll() is None:
+            try:
+                line = process.stdout.readline()
+            except IOError as ex:
+                if ex.errno != errno.EINTR:
+                    raise
+            else:
+                output.append(line)
+                print(line, end="")
+        # Read remaining output if any
+        line = process.stdout.read()
+        if line:
             output.append(line)
             print(line, end="")
-    # Read remaining output if any
-    line = process.stdout.read()
-    if line:
-        output.append(line)
-        print(line, end="")
 
-    if process.returncode != 0:
-        log.info("Command %s failed with %s",
-                 " ".join(command), process.returncode)
-        log.debug("Output:\n%s", "\n".join(output))
-        if raise_on_fail:
-            raise CommandFailed(command, process.returncode, output)
+        if process.returncode != 0:
+            log.info("Command %s failed with %s",
+                     " ".join(command), process.returncode)
+            log.debug("Output:\n%s", "\n".join(output))
+            if raise_on_fail:
+                raise CommandFailed(command, process.returncode, output)
 
-    return process.returncode, output
+        return process.returncode, output
 
 
 def python_process(args, script_name=None, **kwargs):
