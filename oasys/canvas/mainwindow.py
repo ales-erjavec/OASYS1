@@ -4,7 +4,6 @@ import platform
 import pickle
 import tempfile
 import logging
-import six
 import concurrent.futures
 from xml.etree import ElementTree
 from contextlib import contextmanager
@@ -14,7 +13,7 @@ import pkg_resources
 from PyQt5.QtWidgets import (
     QWidget, QMenu, QAction, QDialog, QMessageBox, QFileDialog,
     QHBoxLayout, QLineEdit, QPushButton, QCheckBox, QVBoxLayout, QLabel,
-    QFormLayout, QComboBox, QGridLayout, QApplication
+    QFormLayout, QComboBox, QGridLayout, QApplication, QProgressBar
 )
 from PyQt5.QtGui import (
     QKeySequence, QIcon
@@ -28,16 +27,16 @@ from orangecanvas.application import (
     canvasmain, welcomedialog, schemeinfo, settings #, addons
 )
 from orangecanvas.gui.utils import (
-    message_critical, message_warning, message_question, message_information
+    message_critical, message_information
 )
 from orangecanvas import config
 
-from oasys.widgets.gui import OptionDialog
 import oasys.application.addons as addons
 
 from . import widgetsscheme
 from .conf import oasysconf
 
+from oasys.util.oasys_util import ShowWaitDialog
 
 class OASYSUserSettings(settings.UserSettingsDialog):
     def __init__(self, *args, **kwargs):
@@ -598,9 +597,10 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
             contents = io.BytesIO(open(filename, "rb").read())
             doc  = ElementTree.parse(contents)
             root = doc.getroot()
-            workdir   = root.get("working_directory")
-            workunits = root.get("workspace_units")
-            title     = root.get("title", "untitled")
+            workdir     = root.get("working_directory", default_workdir)
+            workunits   = root.get("workspace_units", str(default_units))
+            title       = root.get("title", "untitled")
+            description = root.get("description", "")
             # First parse the contents into intermediate representation
             # to catch format errors early (will be re-parsed later).
             try:
@@ -627,6 +627,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         if not title is None: new_scheme.title = title
         new_scheme.working_directory = workdir
         new_scheme.workspace_units   = int(workunits)
+        if not description is None: new_scheme.description = description
 
         status = self.show_scheme_properties_for(new_scheme, self.tr("Properties of " + new_scheme.title))
 
@@ -640,9 +641,14 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
 
             return None
         else:
+            new_title       = new_scheme.title
+            new_description = new_scheme.description
+
             message = None
-            if workdir      != new_scheme.working_directory: message = "Workflow working directory"
-            if int(workunits) != new_scheme.workspace_units: message = "Workflow units" if message is None else (message + " and units")
+            if title          != new_scheme.title:             message = "Workflow title"
+            if workdir        != new_scheme.working_directory: message = "Workflow working directory" if message is None else (message + ", working directory")
+            if int(workunits) != new_scheme.workspace_units:   message = "Workflow units" if message is None else (message + ", units")
+            if description    != new_scheme.description:       message = "Workflow working directory" if message is None else (message + ", description")
 
             if not message is None:
                 message += " changed by user"
@@ -655,6 +661,8 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
             contents.seek(0)
             try:
                 readwrite.scheme_load(new_scheme, contents, error_handler=errors.append)
+                new_scheme.title       = new_title
+                new_scheme.description = new_description
             except Exception:
                 message_critical(
                      self.tr("Could not load an Orange Workflow file"),
@@ -687,15 +695,20 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
             return new_scheme
 
     def set_new_scheme(self, new_scheme):
-        from oasys.util.oasys_util import ShowTextDialog
 
-        dlg = ShowTextDialog("Loading Workflow...", "\nLoading Workflow " + new_scheme.title + " ...\n", label=True, button=False)
+        dlg = ShowWaitDialog("Loading Workflow...", "\nLoading Workflow " + new_scheme.title + " ...\n", parent=self)
         dlg.show()
 
-        super().set_new_scheme(new_scheme)
+        raised_exception = None
+        try:
+            super().set_new_scheme(new_scheme)
+        except Exception as exception:
+            raised_exception = exception
 
         dlg.hide()
         dlg.deleteLater()
+
+        if not raised_exception is None: raise raised_exception
 
     def getWorkspaceUnitsLabel(self, units):
         if units == 0:   return "m"
