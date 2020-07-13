@@ -655,6 +655,8 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                 log.info(message)
                 message_information(message, parent=self)
 
+                self.current_document().setModified(True)
+
             if not os.path.isdir(new_scheme.working_directory): os.mkdir(new_scheme.working_directory)
 
             errors = []
