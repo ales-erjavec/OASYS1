@@ -37,6 +37,7 @@ from . import widgetsscheme
 from .conf import oasysconf
 
 from oasys.util.oasys_util import ShowWaitDialog
+from urllib.request import urlopen
 
 class OASYSUserSettings(settings.UserSettingsDialog):
     def __init__(self, *args, **kwargs):
@@ -593,8 +594,22 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         default_workdir = QSettings().value("output/default-working-directory", os.path.expanduser("~/Oasys"), type=str)
         default_units   = QSettings().value("output/default-units", 1, type=int)
 
+        if "http" in filename: is_remote = True
+        else: is_remote = False
+
         try:
-            contents = io.BytesIO(open(filename, "rb").read())
+            try:
+                if is_remote: contents = urlopen(filename)
+                else:         contents = io.BytesIO(open(filename, "rb").read())
+            except Exception as e:
+                message_critical(
+                     self.tr("Could not load an OASYS " + ("Remote " if is_remote else "") + "Workflow file"),
+                     title=self.tr("Error"),
+                     informative_text=self.tr("An I/O error occurred while loading '%s'.") % filename + ":\n\n" + str(e),
+                     exc_info=False,
+                     parent=self)
+                return None
+
             doc  = ElementTree.parse(contents)
             root = doc.getroot()
             workdir     = root.get("working_directory", default_workdir)
@@ -660,7 +675,8 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
             if not os.path.isdir(new_scheme.working_directory): os.mkdir(new_scheme.working_directory)
 
             errors = []
-            contents.seek(0)
+            if is_remote: contents = urlopen(filename) # remote stream does not support seek operation
+            else:         contents.seek(0)
             try:
                 readwrite.scheme_load(new_scheme, contents, error_handler=errors.append)
                 new_scheme.title       = new_title
@@ -733,6 +749,10 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
             if self.open_scheme() == QDialog.Accepted:
                 dialog.accept()
 
+        def open_scheme_remote():
+            if self.open_remote_scheme() == QDialog.Accepted:
+                dialog.accept()
+
         def open_recent():
             if self.recent_scheme() == QDialog.Accepted:
                 dialog.accept()
@@ -763,6 +783,16 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                     icon=canvasmain.canvas_icons("Open.svg")
                     )
 
+        open_remote_action = \
+            QAction(self.tr("Open Remote"), dialog,
+                    objectName="welcome-action-open-remote",
+                    toolTip=self.tr("Open a remote workflow."),
+                    triggered=open_scheme_remote,
+                    shortcut=QKeySequence(Qt.ControlModifier | \
+                                          (Qt.ShiftModifier | Qt.Key_U)),
+                    icon=canvasmain.canvas_icons("Documentation.svg")
+                    )
+
         recent_action = \
             QAction(self.tr("Recent"), dialog,
                     objectName="welcome-recent-action",
@@ -778,15 +808,15 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                     objectName="get-started-action",
                     toolTip=self.tr("OASYS School"),
                     triggered=get_started,
-                    icon=canvasmain.canvas_icons("Get Started.svg")
+                    icon=canvasmain.canvas_icons("Tutorials.svg")
                     )
 
         documentation_action = \
-            QAction(self.tr("Web Site"), self,
+            QAction(self.tr("OASYS Web Site"), self,
                     objectName="documentation-action",
                     toolTip=self.tr("View reference website."),
                     triggered=documentation,
-                    icon=canvasmain.canvas_icons("Documentation.svg")
+                    icon=canvasmain.canvas_icons("Get Started.svg")
                     )
 
         icon = resource_path("icons/Install.svg")
@@ -829,7 +859,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         bottom_row = [get_started_action, documentation_action, addons_action]
 
         self.new_action.triggered.connect(dialog.accept)
-        top_row = [new_action, open_action, recent_action]
+        top_row = [new_action, open_action, open_remote_action, recent_action]
 
         dialog.addRow(top_row, background="light-grass")
         dialog.addRow(bottom_row, background="light-orange")
