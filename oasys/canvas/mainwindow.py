@@ -27,7 +27,7 @@ from orangecanvas.application import (
     canvasmain, welcomedialog, schemeinfo, settings #, addons
 )
 from orangecanvas.gui.utils import (
-    message_critical, message_information
+    message_critical, message_warning, message_information
 )
 from orangecanvas import config
 
@@ -674,7 +674,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                 return None
 
             if errors:
-                message_critical(
+                message_warning(
                     self.tr("Errors occurred while loading the workflow."),
                     title=self.tr("Problem"),
                     informative_text=self.tr(
@@ -686,8 +686,6 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                     parent=self
                 )
 
-                return None
-
             # now start the actual load with a valid working directory
             log.info("Changing current work dir to '%s'", new_scheme.working_directory)
             os.chdir(new_scheme.working_directory)
@@ -695,7 +693,6 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
             return new_scheme
 
     def set_new_scheme(self, new_scheme):
-
         dlg = ShowWaitDialog("Loading Workflow...", "\nLoading Workflow " + new_scheme.title + " ...\n", parent=self)
         dlg.show()
 

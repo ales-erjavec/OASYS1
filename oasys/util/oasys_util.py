@@ -156,7 +156,7 @@ class ShowTextDialog(QtWidgets.QDialog):
 import threading
 
 class ShowWaitDialog(QtWidgets.QDialog):
-    def __init__(self, title, text, width=500, height=80, parent=None):
+    def __init__(self, title, text, width=500, height=80, parent=None, wait=0.25):
         QtWidgets.QDialog.__init__(self, parent)
         self.setModal(True)
         self.setWindowTitle(title)
@@ -170,6 +170,7 @@ class ShowWaitDialog(QtWidgets.QDialog):
         self.__progress.setTextVisible(False)
         layout.addWidget(self.__progress)
         self.__thread = None
+        self.__wait = wait
 
     def show(self):
         def animate_progress_bar():
@@ -178,7 +179,7 @@ class ShowWaitDialog(QtWidgets.QDialog):
                 value += 10
                 if value > 100: value = 0
                 self.__progress.setValue(value)
-                time.sleep(0.25)
+                time.sleep(self.__wait)
 
         super().show()
         self.__run_progress = True
