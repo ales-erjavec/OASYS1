@@ -326,12 +326,24 @@ class OASYSSchemeInfoDialog(schemeinfo.SchemeInfoDialog):
                        "<body style=\" white-space: pre-wrap; " + \
                        "font-size:9pt; font-weight:400; font-style:normal; text-decoration:none;\">" + \
                        "<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; " +\
-                       "margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:12pt;\">Units in use in the Scheme   </p>" "</body></html>"
+                       "margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:12pt;\">Units in use in the scheme:</p>" "</body></html>"
 
         label.setText(richText)
 
         self.units_edit.layout().addWidget(label, 0, 0)
         self.units_edit.layout().addWidget(self.combo_units, 0, 1, Qt.AlignRight)
+
+        label = QLabel("")
+
+        richText = "<html><head><meta name=\"qrichtext\" content=\"1\" /></head>" + \
+                       "<body style=\" white-space: pre-wrap; " + \
+                       "font-size:9pt; font-weight:400; font-style:normal; text-decoration:none;\">" + \
+                       "<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; " +\
+                       "margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:12pt;\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(effective for ShadowOui only)</p>" "</body></html>"
+
+        label.setText(richText)
+
+        self.units_edit.layout().addWidget(label, 0, 2, Qt.AlignLeft)
 
         layout.insertRow( 2, self.tr("Units"), self.units_edit)
 
@@ -663,7 +675,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
             if title          != new_scheme.title:             message = "Workflow title"
             if workdir        != new_scheme.working_directory: message = "Workflow working directory" if message is None else (message + ", working directory")
             if int(workunits) != new_scheme.workspace_units:   message = "Workflow units" if message is None else (message + ", units")
-            if description    != new_scheme.description:       message = "Workflow working directory" if message is None else (message + ", description")
+            if description    != new_scheme.description:       message = "Workflow description" if message is None else (message + ", description")
 
             if not message is None:
                 message += " changed by user"
