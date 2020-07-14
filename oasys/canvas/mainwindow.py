@@ -812,7 +812,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                     )
 
         documentation_action = \
-            QAction(self.tr("OASYS Web Site"), self,
+            QAction(self.tr("OASYS Site"), self,
                     objectName="documentation-action",
                     toolTip=self.tr("View reference website."),
                     triggered=documentation,
