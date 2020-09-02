@@ -360,6 +360,7 @@ def select_row(view, row):
     selmodel.select(view.model().index(row, 0),
                     QItemSelectionModel.ClearAndSelect)
 
+from orangewidget.widget import OWAction
 
 class OWPythonScript(widget.OWWidget):
     name = "Python Script"
@@ -391,6 +392,10 @@ class OWPythonScript(widget.OWWidget):
 
     def __init__(self):
         super().__init__()
+
+        self.runaction = OWAction("Execute", self)
+        self.runaction.triggered.connect(self.execute)
+        self.addAction(self.runaction)
 
         self.in_data = None
         self.in_distance = None
