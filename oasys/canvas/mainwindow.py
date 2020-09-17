@@ -463,8 +463,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         self.menu_registry = None
 
         settings = QSettings()
-        updateperiod = settings.value(
-            "oasys/addon-update-check-period", defaultValue=1, type=int)
+        updateperiod = settings.value("oasys/addon-update-check-period", defaultValue=1, type=int)
         try:
             timestamp = os.stat(addons_cache_path()).st_mtime
         except OSError:
@@ -473,8 +472,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         lastdelta = datetime.now() - datetime.fromtimestamp(timestamp)
         self._log = logging.getLogger(__name__)
         self._log.info("Time from last update %s (%s)", lastdelta, timestamp)
-        check = updateperiod >= 0 and \
-                abs(lastdelta) > timedelta(days=updateperiod)
+        check = updateperiod >= 0 and abs(lastdelta) > timedelta(days=updateperiod)
 
         self.__executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self.__pypi_addons_f = None
@@ -483,8 +481,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
 
         if check:
             f = self.__executor.submit(addons.list_available_versions)
-            f.add_done_callback(
-                addons.method_queued(self.__set_pypi_addons_f, (object,)))
+            f.add_done_callback(addons.method_queued(self.__set_pypi_addons_f, (object,)))
             self.__pypi_addons_f = f
         else:
             try:

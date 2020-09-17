@@ -40,17 +40,53 @@ from PyQt5.QtCore import (
     QSettings)
 from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
-#from ..gui.utils import message_warning, message_information, \
-#                        message_critical as message_error, \
-#                        OSX_NSURL_toLocalFile
-#from ..help.manager import get_dist_meta, trim, parse_meta
+from urllib.request import urlopen
 
 from orangecanvas.gui.utils import message_warning, message_information, \
                         message_critical as message_error
 from orangecanvas.help.manager import get_dist_meta, trim, parse_meta
 
+from orangecanvas.resources import package_dirname
 
 PYPI_API_JSON = "https://pypi.org/pypi/{name}/json"
+
+#####################################################
+# MAKE INTERNAL LIBRARIES DYNAMICAL
+
+# read add-on list
+
+INTERNAL_LIBRARIES = [a.strip() for a in open(os.path.join(package_dirname("oasys.application"), "data", "INTERNAL_LIBRARIES.txt"), "rt")]
+INTERNAL_LIBRARIES = [a for a in INTERNAL_LIBRARIES if a]
+OFFICIAL_ADDONS = [a.strip() for a in open(os.path.join(package_dirname("oasys.application"), "data", "OFFICIAL_ADDONS.txt"), "rt")]
+OFFICIAL_ADDONS = [a for a in OFFICIAL_ADDONS if a]
+
+# query PyPI
+
+internal_libraries_list = []
+is_auto_update = True
+
+try:
+    for package in INTERNAL_LIBRARIES:
+        r = urlopen(PYPI_API_JSON.format(name=package)).read().decode("utf-8")
+        p = json.loads(r)
+        p["releases"] = p["releases"][p["info"]["version"]] # load only the last version
+
+        internal_libraries_list.append(p)
+except:
+    is_auto_update = False
+
+official_addons_list = []
+
+try:
+    for package in OFFICIAL_ADDONS:
+        r = urlopen(PYPI_API_JSON.format(name=package)).read().decode("utf-8")
+        p = json.loads(r)
+        p["releases"] = p["releases"][p["info"]["version"]] # load only the last version
+
+        official_addons_list.append(p)
+except:
+    is_auto_update = False
+
 OFFICIAL_ADDON_LIST = "https://raw.githubusercontent.com/oasys-kit/oasys-addons/master/list"
 OFFICIAL_ADDON_LIST_ALTERNATIVE = "https://rawcdn.githack.com/oasys-kit/oasys-addons/91dbd16c78f2ce42f4abe65e72c17abe064e0520/list"
 
@@ -736,7 +772,7 @@ def list_available_versions():
     List add-ons available.
     """
     try:
-        addons = requests.get(OFFICIAL_ADDON_LIST).json()
+        addons = official_addons_list if is_auto_update else requests.get(OFFICIAL_ADDON_LIST).json()
     except:
         addons = requests.get(OFFICIAL_ADDON_LIST_ALTERNATIVE).json()
 
