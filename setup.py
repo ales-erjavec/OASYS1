@@ -152,6 +152,7 @@ PACKAGES = (
 )
 
 PACKAGE_DATA = {
+    "oasys.application": ["data/*.txt"],
     "oasys.canvas": ["icons/*.png", "icons/*.svg"],
     "oasys.canvas.styles": ["*.qss", "orange/*.svg"],
     "oasys.widgets.tools": ["icons/*.png", "icons/*.svg", "misc/*.png"],

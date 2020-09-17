@@ -1,6 +1,7 @@
 recursive-include oasys *.py
 recursive-include oasys/canvas/styles *.qss
 recursive-include oasys/canvas *.png *.svg *.ico
+recursive-include oasys/application/data *.txt
 
 recursive-include oasys/widgets *.png *.svg
 
