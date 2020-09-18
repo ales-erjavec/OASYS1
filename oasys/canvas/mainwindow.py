@@ -552,7 +552,9 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
 
             items = addons.installable_items(
                 self.__pypi_internal_libraries,
-                [EntryPoint(internal_library.name, pkg_resources.get_distribution(internal_library.name).version) for internal_library in self.__pypi_internal_libraries])
+                [EntryPoint(internal_library.name,
+                            pkg_resources.get_distribution(internal_library.name).version)
+                 for internal_library in self.__pypi_internal_libraries])
 
             self.__internal_library_to_update = []
             for item in items:
