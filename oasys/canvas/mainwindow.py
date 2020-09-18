@@ -874,16 +874,17 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
             mbox = QMessageBox(
                 None,
                 icon=QMessageBox.Information,
-                text="OASYS needs to update its internal libraries (The application will exit automatically)",
-                standardButtons=QMessageBox.Ok,
+                text="OASYS needs to update its internal libraries.\n(Strongly recommended to avoid malfunctioning)\n\nThe application will close automatically.\nConfirm?",
+                standardButtons=QMessageBox.Ok | QMessageBox.No,
             )
             mbox.setWindowFlags(Qt.Sheet | Qt.MSWindowsFixedSizeDialogHint)
             mbox.setModal(True)
-            mbox.exec_()
+            status = mbox.exec_()
 
             try:
-                addons.update_internal_libraries(self.__internal_library_to_update)
-                is_app_to_be_closed = True
+                if status == QMessageBox.Ok:
+                    addons.update_internal_libraries(self.__internal_library_to_update)
+                    is_app_to_be_closed = True
             except Exception as err:
                 self._log.error("Error updating internal libraries", exc_info=(type(err), err, None))
 
