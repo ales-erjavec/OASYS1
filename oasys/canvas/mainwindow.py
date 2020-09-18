@@ -1,4 +1,4 @@
-import os
+import os, sys
 import io
 import platform
 import pickle
@@ -448,6 +448,9 @@ def load_pypi_packages():
         items = []
     return items
 
+def load_pypi_internal_libraries():
+    return addons.list_available_internal_librabries()
+
 def resource_path(path):
     return pkg_resources.resource_filename(__name__, path)
 
@@ -478,6 +481,13 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         self.__pypi_addons_f = None
         self.__pypi_addons = None
         self.__updatable = 0
+
+        self.__pypi_internal_libraries = None
+        self.__internal_library_to_update = None
+        self.__internal_library_updatable = 0
+
+        # AUTOMATIC UPDATE OF THE INTERNAL LIBRARIES
+        self.__set_pypi_internal_libraries(load_pypi_internal_libraries())
 
         if check:
             f = self.__executor.submit(addons.list_available_versions)
@@ -530,6 +540,24 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                 [ep.dist for ep in oasysconf.addon_entry_points()])
 
             self.__updatable = sum(addons.is_updatable(item) for item in items)
+
+    def __set_pypi_internal_libraries(self, items):
+        if not items is None:
+            self.__pypi_internal_libraries = items
+
+            class EntryPoint():
+                def __init__(self, project_name, version):
+                    self.project_name = project_name
+                    self.version = version
+
+            items = addons.installable_items(
+                self.__pypi_internal_libraries,
+                [EntryPoint(internal_library.name, pkg_resources.get_distribution(internal_library.name).version) for internal_library in self.__pypi_internal_libraries])
+
+            self.__internal_library_to_update = []
+            for item in items:
+                if addons.is_updatable(item): self.__internal_library_to_update.append(item)
+            self.__internal_library_updatable = len(self.__internal_library_to_update)
 
     def new_instance(self):
         run_command(["python", "-m", "oasys.canvas"], raise_on_fail=False, wait_for_output=False)
@@ -631,7 +659,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                 readwrite.parse_ows_etree_v_2_0(doc)
             except Exception:
                 message_critical(
-                     self.tr("Could not load an Orange Workflow file"),
+                     self.tr("Could not load an OASYS Workflow file"),
                      title=self.tr("Error"),
                      informative_text=self.tr("An unexpected error occurred "
                                               "while loading '%s'.") % filename,
@@ -692,7 +720,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                 new_scheme.description = new_description
             except Exception:
                 message_critical(
-                     self.tr("Could not load an Orange Workflow file"),
+                     self.tr("Could not load an OASYS Workflow file"),
                      title=self.tr("Error"),
                      informative_text=self.tr("An unexpected error occurred "
                                               "while loading '%s'.") % filename,
@@ -838,6 +866,25 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                     icon=QIcon(icon),
                     )
 
+        is_app_to_be_closed = False
+
+        if self.__internal_library_updatable:
+            mbox = QMessageBox(
+                None,
+                icon=QMessageBox.Information,
+                text="OASYS needs to update its internal libraries (The application will exit automatically)",
+                standardButtons=QMessageBox.Ok,
+            )
+            mbox.setWindowFlags(Qt.Sheet | Qt.MSWindowsFixedSizeDialogHint)
+            mbox.setModal(True)
+            mbox.exec_()
+
+            try:
+                addons.update_internal_libraries(self.__internal_library_to_update)
+                is_app_to_be_closed = True
+            except Exception as err:
+                self._log.error("Error updating internal libraries", exc_info=(type(err), err, None))
+
         if self.__updatable:
             addons_action.setText("Update Now")
             addons_action.setToolTip("Update or install new add-ons")
@@ -859,11 +906,8 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
             mbox.show()
             mbox.finished.connect(
                 lambda r:
-                    self.open_addons() if r == QMessageBox.Ok else None
+                    self.open_addons(is_app_to_be_closed) if r == QMessageBox.Ok else (sys.exit(0) if is_app_to_be_closed else None)
             )
-
-        #bottom_row = [self.get_started_action, self.tutorials_action,
-        #              self.documentation_action, addons_action]
 
         bottom_row = [get_started_action, documentation_action, addons_action]
 
@@ -1012,17 +1056,20 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                 print(str(exception.args[0]))
                 continue
 
-    def open_addons(self):
+    def open_addons(self, is_app_to_be_closed=False):
         from oasys.application.addons import AddonManagerDialog, have_install_permissions
         if not have_install_permissions():
             QMessageBox(QMessageBox.Warning,
                         "Add-ons: insufficient permissions",
-                        "Insufficient permissions to install add-ons. Try starting Orange "
-                        "as a system administrator or install Orange in user folders.",
+                        "Insufficient permissions to install add-ons. Try starting OASYS "
+                        "as a system administrator or install OASYS in user folders.",
                         parent=self).exec_()
         dlg = AddonManagerDialog(self, windowTitle=self.tr("Add-ons"))
         dlg.setAttribute(Qt.WA_DeleteOnClose)
-        return dlg.exec_()
+        status = dlg.exec_()
+
+        if is_app_to_be_closed: sys.exit(0)
+        else: return status
 
     def closeSecondaryEvent(self, event):
         """Close the main window.
@@ -1081,394 +1128,3 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                     self.__pypi_addons_f.cancel()
 
 
-    ###############################################
-    # REMOVED
-    ###############################################
-
-    '''
-        in __init__:
-        
-        self.new_action_on_new_window = \
-            QAction(self.tr("New on a New Window"), self,
-                    objectName="action-new-new-window",
-                    toolTip=self.tr("Open a new workflow on a new window."),
-                    triggered=self.new_scheme_on_new_window,
-                    icon=canvasmain.canvas_icons("New.svg")
-                    )
-
-        self.open_action_on_new_window = \
-            QAction(self.tr("Open on a New Window"), self,
-                    objectName="action-open-new-window",
-                    toolTip=self.tr("Open a workflow on a new window."),
-                    triggered=self.open_scheme_on_new_window,
-                    icon=canvasmain.canvas_icons("Open.svg")
-                    )
-
-        file_menu = self.menuBar().children()[-1]
-
-        file_menu.insertAction(file_menu.actions()[2], self.open_action_on_new_window)
-        file_menu.insertAction(file_menu.actions()[1], self.new_action_on_new_window)
-    '''
-
-    '''
-    
-    in new_scheme_from:
-    
-    # ensure we have a valid working directory either default or
-    # stored.
-    if not workdir or not os.path.isdir(workdir):
-        new_workdir = QFileDialog.getExistingDirectory(
-            self, "Set working directory for project '%s'" % (title or "untitled"),
-            default_workdir)
-        if new_workdir:
-            workdir = new_workdir
-        else:
-            log.info("Replacement of not existing Working Directory "
-                     "'%s' aborted by user", workdir)
-            message_information(
-                "Working directory not set by user:\n\n"
-                "project load aborted",
-                parent=self)
-            return None
-    else:
-        ret = message_question(
-            "Working directory set to:\n\n" + workdir,
-            "Working Directory",
-            informative_text="Do you want to change it?",
-            buttons=QMessageBox.Yes | QMessageBox.No,
-            default_button=QMessageBox.No,
-            parent=self)
-
-        if ret == QMessageBox.Yes:
-            new_wd = QFileDialog.getExistingDirectory(
-                self, "Set working directory for project '%s'" % (title or "untitled"),
-                default_workdir)
-            if new_wd:
-                workdir = new_wd
-                if not os.path.isdir(workdir):
-                    os.mkdir(workdir)
-            else:
-                log.info("Replacement of not existing Working Directory "
-                         "'%s' aborted by user.", workdir)
-                message_information(
-                    "Working directory not set by user:\n\n"
-                    "project load aborted",
-                    parent=self)
-                return None
-
-    # now start the actual load with a valid working directory
-    log.info("Changing current work dir to '%s'", workdir)
-    os.chdir(workdir)
-
-    # ensure we have a valid working directory either default or
-    # stored.
-    if workunits is None:
-        new_units = OptionDialog.get_option(self,
-                                            "Set user's units for project '%s'" % (title or "untitled"),
-                                            "Set user's units",
-                                            ["m", "cm", "mm"], default_units)
-        if not new_units is None:
-            workunits = new_units
-        else:
-            log.info("Replacement of not existing User's Units "
-                     "'%s' aborted by user", "")
-            message_information(
-                "Project units not set by user:\n\n"
-                "project load aborted",
-                parent=self)
-            return None
-    else:
-        workunits = int(workunits)
-        ret = message_question(
-            "User's units set to: " + self.getWorkspaceUnitsLabel(workunits),
-            "User's Units",
-            informative_text="Do you want to change it?",
-            buttons=QMessageBox.Yes | QMessageBox.No,
-            default_button=QMessageBox.No,
-            parent=self)
-
-        if ret == QMessageBox.Yes:
-            new_units = OptionDialog.get_option(self,
-                                                "Set user's units for project '%s'" % (title or "untitled"),
-                                                "Set user's units",
-                                                ["m", "cm", "mm"], workunits)
-            if not new_units is None:
-                workunits = new_units
-
-                message_information(
-                    "Project new units set by user: " + self.getWorkspaceUnitsLabel(workunits) + \
-                    "\n\nWarning: values relating to the previous units are not converted",
-                    parent=self)
-            else:
-                log.info("Replacement of existing User's Units "
-                         "'%s' aborted by user", "")
-                message_information(
-                    "Project units not set by user:\n\n"
-                    "project load aborted",
-                    parent=self)
-                return None
-    '''
-
-    '''
-    def new_scheme_on_new_window(self):
-        """New scheme. Return QDialog.Rejected if the user canceled
-        the operation and QDialog.Accepted otherwise.
-
-        """
-        window = self.instantiate_window()
-
-        document = window.current_document()
-        if document.isModifiedStrict():
-            # Ask for save changes
-            if window.ask_save_changes() == QDialog.Rejected:
-                return QDialog.Rejected
-
-        new_scheme = config.workflow_constructor(parent=self)
-
-        settings = QSettings()
-        show = settings.value("schemeinfo/show-at-new-scheme", True,
-                              type=bool)
-
-        if show:
-            status = window.show_scheme_properties_for(new_scheme, self.tr("New Workflow"))
-
-            if status == QDialog.Rejected:
-                return QDialog.Rejected
-
-        window.set_new_scheme(new_scheme)
-
-        return QDialog.Accepted
-
-    def open_scheme_on_new_window(self):
-        """Open a new scheme. Return QDialog.Rejected if the user canceled
-        the operation and QDialog.Accepted otherwise.
-
-        """
-        document = self.current_document()
-        if document.isModifiedStrict():
-            if self.ask_save_changes() == QDialog.Rejected:
-                return QDialog.Rejected
-
-        if self.last_scheme_dir is None:
-            # Get user 'Documents' folder
-            start_dir = QStandardPaths.standardLocations(
-                            QStandardPaths.DocumentsLocation)[0]
-        else:
-            start_dir = self.last_scheme_dir
-
-        # TODO: Use a dialog instance and use 'addSidebarUrls' to
-        # set one or more extra sidebar locations where Schemes are stored.
-        # Also use setHistory
-        filename = QFileDialog.getOpenFileName(
-            self, self.tr("Open Orange Workflow File"),
-            start_dir, self.tr("Orange Workflow (*.ows)"),
-        )[0]
-
-        if filename:
-            return self.load_scheme_on_window(filename, self.instantiate_window())
-        else:
-            return QDialog.Rejected
-
-    def instantiate_window(self):
-        window = OASYSMainWindow()
-        window.set_secondary()
-        window.setStyleSheet(self.styleSheet())
-        window.setWindowIcon(self.windowIcon())
-        window.set_widget_registry(self.widget_registry)
-        window.set_menu_registry(self.menu_registry)
-        window.show()
-        window.setGeometry(self.geometry().left() + 10,
-                           self.geometry().top() + 10,
-                           self.geometry().width(),
-                           self.geometry().height())
-
-        return window
-
-    def load_scheme_on_window(self, filename, window):
-        """Load a scheme from a file (`filename`) into the current
-        document updates the recent scheme list and the loaded scheme path
-        property.
-
-        """
-        filename = six.text_type(filename)
-        dirname = os.path.dirname(filename)
-
-        window.last_scheme_dir = dirname
-
-        new_scheme = window.new_scheme_from(filename)
-        if new_scheme is not None:
-            window.set_new_scheme(new_scheme)
-
-            scheme_doc_widget = window.current_document()
-            scheme_doc_widget.setPath(filename)
-
-            window.add_recent_scheme(new_scheme.title, filename)
-            return QDialog.Accepted
-        else:
-            return QDialog.Rejected
-
-    def new_scheme_from(self, filename):
-        """
-        Reimplemented from `CanvasMainWindow.new_scheme_from`.
-
-        Create and return a new :class:`WidgetsScheme` from `filename`.
-
-        Return `None` if an error occurs or the user aborts the process.
-        """
-        log = logging.getLogger(__name__)
-        default_workdir = QSettings().value(
-            "output/default-working-directory",
-            os.path.expanduser("~/Oasys"), type=str)
-        default_units = QSettings().value(
-            "output/default-units", 1, type=int)
-
-        try:
-            contents = io.BytesIO(open(filename, "rb").read())
-            doc = ElementTree.parse(contents)
-            root = doc.getroot()
-            workdir = root.get("working_directory")
-            workunits = root.get("workspace_units")
-            title = root.get("title", "untitled")
-            # First parse the contents into intermediate representation
-            # to catch format errors early (will be re-parsed later).
-            try:
-                readwrite.parse_ows_etree_v_2_0(doc)
-            except Exception:
-                message_critical(
-                     self.tr("Could not load an Orange Workflow file"),
-                     title=self.tr("Error"),
-                     informative_text=self.tr("An unexpected error occurred "
-                                              "while loading '%s'.") % filename,
-                     exc_info=True,
-                     parent=self)
-                return None
-            readwrite.parse_ows_etree_v_2_0(doc)
-        except Exception:
-            return None
-
-        # ensure we have a valid working directory either default or
-        # stored.
-        if not workdir or not os.path.isdir(workdir):
-            new_workdir = QFileDialog.getExistingDirectory(
-                self, "Set working directory for project '%s'" % (title or "untitled"),
-                default_workdir)
-            if new_workdir:
-                workdir = new_workdir
-            else:
-                log.info("Replacement of not existing Working Directory "
-                         "'%s' aborted by user", workdir)
-                message_information(
-                    "Working directory not set by user:\n\n"
-                    "project load aborted",
-                    parent=self)
-                return None
-        else:
-            ret = message_question(
-                "Working directory set to:\n\n" + workdir,
-                "Working Directory",
-                informative_text="Do you want to change it?",
-                buttons=QMessageBox.Yes | QMessageBox.No,
-                default_button=QMessageBox.No,
-                parent=self)
-
-            if ret == QMessageBox.Yes:
-                new_wd = QFileDialog.getExistingDirectory(
-                    self, "Set working directory for project '%s'" % (title or "untitled"),
-                    default_workdir)
-                if new_wd:
-                    workdir = new_wd
-                    if not os.path.isdir(workdir):
-                        os.mkdir(workdir)
-                else:
-                    log.info("Replacement of not existing Working Directory "
-                             "'%s' aborted by user.", workdir)
-                    message_information(
-                        "Working directory not set by user:\n\n"
-                        "project load aborted",
-                        parent=self)
-                    return None
-
-        # now start the actual load with a valid working directory
-        log.info("Changing current work dir to '%s'", workdir)
-        os.chdir(workdir)
-
-        # ensure we have a valid working directory either default or
-        # stored.
-        if workunits is None:
-            new_units = OptionDialog.get_option(self,
-                                                "Set user's units for project '%s'" % (title or "untitled"),
-                                                "Set user's units",
-                                                ["m", "cm", "mm"], default_units)
-            if not new_units is None:
-                workunits = new_units
-            else:
-                log.info("Replacement of not existing User's Units "
-                         "'%s' aborted by user", "")
-                message_information(
-                    "Project units not set by user:\n\n"
-                    "project load aborted",
-                    parent=self)
-                return None
-        else:
-            workunits = int(workunits)
-            ret = message_question(
-                "User's units set to: " + self.getWorkspaceUnitsLabel(workunits),
-                "User's Units",
-                informative_text="Do you want to change it?",
-                buttons=QMessageBox.Yes | QMessageBox.No,
-                default_button=QMessageBox.No,
-                parent=self)
-
-            if ret == QMessageBox.Yes:
-                new_units = OptionDialog.get_option(self,
-                                                    "Set user's units for project '%s'" % (title or "untitled"),
-                                                    "Set user's units",
-                                                    ["m", "cm", "mm"], workunits)
-                if not new_units is None:
-                    workunits = new_units
-
-                    message_information(
-                        "Project new units set by user: " + self.getWorkspaceUnitsLabel(workunits) + \
-                        "\n\nWarning: values relating to the previous units are not converted",
-                        parent=self)
-                else:
-                    log.info("Replacement of existing User's Units "
-                             "'%s' aborted by user", "")
-                    message_information(
-                        "Project units not set by user:\n\n"
-                        "project load aborted",
-                        parent=self)
-                    return None
-
-        new_scheme = widgetsscheme.OASYSWidgetsScheme(parent=self)
-        new_scheme.working_directory = workdir
-        new_scheme.workspace_units = workunits
-        errors = []
-        contents.seek(0)
-        try:
-            readwrite.scheme_load(
-                new_scheme, contents, error_handler=errors.append)
-        except Exception:
-            message_critical(
-                 self.tr("Could not load an Orange Workflow file"),
-                 title=self.tr("Error"),
-                 informative_text=self.tr("An unexpected error occurred "
-                                          "while loading '%s'.") % filename,
-                 exc_info=True,
-                 parent=self)
-            return None
-
-        if errors:
-            message_warning(
-                self.tr("Errors occurred while loading the workflow."),
-                title=self.tr("Problem"),
-                informative_text=self.tr(
-                     "There were problems loading some "
-                     "of the widgets/links in the "
-                     "workflow."
-                ),
-                details="\n".join(map(repr, errors)),
-                parent=self
-            )
-        return new_scheme
-'''

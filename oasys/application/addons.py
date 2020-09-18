@@ -700,7 +700,6 @@ class AddonManagerDialog(QDialog):
 
     ADDON_EXTENSIONS = ('.zip', '.whl', '.tar.gz')
 
-
     def dragEnterEvent(self, event):
         urls = event.mimeData().urls()
         if any((OSX_NSURL_toLocalFile(url) or url.toLocalFile())
@@ -767,14 +766,35 @@ class AddonManagerDialog(QDialog):
         self.accept()
         sys.exit(0)
 
+def list_available_internal_librabries():
+    if is_auto_update:
+        packages = []
+        for library in internal_libraries_list:
+            try:
+                info = library["info"]
+                packages.append(
+                    Installable(info["name"], info["version"],
+                                info["summary"], info["description"],
+                                info["package_url"],
+                                info["package_url"])
+                )
+            except (TypeError, KeyError):
+                continue  # skip invalid packages
+
+        return packages
+
 def list_available_versions():
     """
     List add-ons available.
     """
-    try:
-        addons = official_addons_list if is_auto_update else requests.get(OFFICIAL_ADDON_LIST).json()
-    except:
-        addons = requests.get(OFFICIAL_ADDON_LIST_ALTERNATIVE).json()
+
+    if is_auto_update:
+        addons = official_addons_list
+    else:
+        try:
+            addons = requests.get(OFFICIAL_ADDON_LIST).json()
+        except:
+            addons = requests.get(OFFICIAL_ADDON_LIST_ALTERNATIVE).json()
 
     # query pypi.org for installed add-ons that are not in our list
     installed = list_installed_addons()
@@ -932,6 +952,20 @@ def installable_items(pypipackages, installed=[]):
         items.append(item)
     return items
 
+def update_internal_libraries(internal_libraries_to_update=None):
+    try:
+        pip = PipInstaller()
+
+        if not internal_libraries_to_update is None:
+            to_update_list = [item.installable for item in internal_libraries_to_update]
+        else:
+            to_update_list = list_available_internal_librabries()
+
+        for installable in to_update_list:
+            pip.upgrade(installable)
+            print("Updated: " + installable.name)
+    except Exception as ex:
+        print("Internal libraries update failed")
 
 Install, Upgrade, Uninstall = 1, 2, 3
 
