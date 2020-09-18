@@ -58,8 +58,8 @@ INSTALL_REQUIRES = (
     'silx>=0.11.0',
     'hdf5plugin',
     'srxraylib>=1.0.28',
-    'syned>=1.0.17',
-    'wofry>=1.0.22',
+    'syned>=1.0.20',
+    'wofry>=1.0.25',
 )
 
 
