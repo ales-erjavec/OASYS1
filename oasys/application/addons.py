@@ -1040,7 +1040,7 @@ class PipInstaller:
         self.arguments = shlex.split(arguments)
 
     def install(self, pkg):
-        cmd = ["python", "-m", "pip", "install"]
+        cmd = ["python", "-m", "pip", "install", "--user"]
         cmd.extend(self.arguments)
         if pkg.package_url.startswith("http://") or pkg.package_url.startswith("https://"):
             cmd.append(pkg.name)
@@ -1057,7 +1057,7 @@ class PipInstaller:
         self.install(package)
 
     def upgrade_no_deps(self, package):
-        cmd = ["python", "-m", "pip", "install", "--upgrade", "--no-cache-dir"]
+        cmd = ["python", "-m", "pip", "install", "--upgrade", "--user", "--no-cache-dir"]
         cmd.extend(self.arguments)
         cmd.append(package.name)
 
@@ -1070,8 +1070,8 @@ class PipInstaller:
 
 class CondaInstaller:
     def __init__(self):
-        enabled = QSettings().value('add-ons/allow-conda',
-                                    True, type=bool)
+        enabled = QSettings().value('add-ons/allow-conda', True, type=bool)
+
         if enabled:
             self.conda = self._find_conda()
         else:
