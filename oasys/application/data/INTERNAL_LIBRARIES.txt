@@ -2,4 +2,5 @@ srxraylib
 syned
 wofry
 OASYS1
+PyQt5
 pip
