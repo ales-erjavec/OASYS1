@@ -911,6 +911,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                 lambda r:
                     self.open_addons(is_app_to_be_closed) if r == QMessageBox.Ok else (sys.exit(0) if is_app_to_be_closed else None)
             )
+        elif is_app_to_be_closed: sys.exit(0)
 
         bottom_row = [get_started_action, documentation_action, addons_action]
 
@@ -1060,6 +1061,8 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                 continue
 
     def open_addons(self, is_app_to_be_closed=False):
+        if is_app_to_be_closed: sys.exit(0)
+
         from oasys.application.addons import AddonManagerDialog, have_install_permissions
         if not have_install_permissions():
             QMessageBox(QMessageBox.Warning,
@@ -1071,8 +1074,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         dlg.setAttribute(Qt.WA_DeleteOnClose)
         status = dlg.exec_()
 
-        if is_app_to_be_closed: sys.exit(0)
-        else: return status
+        return status
 
     def closeSecondaryEvent(self, event):
         """Close the main window.
