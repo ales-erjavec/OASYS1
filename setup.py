@@ -9,7 +9,7 @@ from setuptools import setup
 
 NAME = 'OASYS1'
 
-VERSION = '1.2.51'
+VERSION = '1.2.52'
 
 ISRELEASED = True
 
@@ -52,10 +52,10 @@ INSTALL_REQUIRES = (
     'numpy>=1.18.0',
     'PyQt5>=5.15',
     'scipy>=1.4.1',
-    'matplotlib>=3.1.2',
+    'matplotlib>=3.3.2',
     'oasys-canvas-core>=1.0.6',
     'oasys-widget-core>=1.0.0',
-    'silx>=0.11.0',
+    'silx>=0.13.2',
     'hdf5plugin',
     'srxraylib>=1.0.28',
     'syned>=1.0.20',
