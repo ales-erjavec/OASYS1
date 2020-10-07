@@ -456,7 +456,7 @@ def load_pypi_packages():
     return items
 
 def load_pypi_internal_libraries():
-    return addons.list_available_internal_librabries()
+    return addons.list_available_internal_libraries()
 
 def resource_path(path):
     return pkg_resources.resource_filename(__name__, path)

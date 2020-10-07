@@ -766,13 +766,21 @@ class AddonManagerDialog(QDialog):
         self.accept()
         sys.exit(0)
 
-def list_available_internal_librabries():
+
+import platform
+
+def list_available_internal_libraries():
     if is_auto_update:
+
+        system, node, release, version, machine, processor = platform.uname()
+
         packages = []
         for library in internal_libraries_list:
             try:
                 info = library["info"]
-                packages.append(
+
+                if not ("Debian 3" in version and info["name"]=="PyQt5"):
+                    packages.append(
                     Installable(info["name"], info["version"],
                                 info["summary"], info["description"],
                                 info["package_url"],
@@ -959,10 +967,10 @@ def update_internal_libraries(internal_libraries_to_update=None):
         if not internal_libraries_to_update is None:
             to_update_list = [item.installable for item in internal_libraries_to_update]
         else:
-            to_update_list = list_available_internal_librabries()
+            to_update_list = list_available_internal_libraries()
 
         for installable in to_update_list:
-            pip.upgrade(installable, deep=True)
+            pip.upgrade(installable)
             print("Updated: " + installable.name)
     except Exception as ex:
         print("Internal libraries update failed")
@@ -1039,8 +1047,10 @@ class PipInstaller:
         arguments = QSettings().value('add-ons/pip-install-arguments', '', type=str)
         self.arguments = shlex.split(arguments)
 
-    def install(self, pkg):
-        cmd = ["python", "-m", "pip", "install", "--user"]
+    def install(self, pkg, deep=True):
+        if deep: cmd = ["python", "-m", "pip", "install"]
+        else:    cmd = ["python", "-m", "pip", "install", "--user"]
+
         cmd.extend(self.arguments)
         if pkg.package_url.startswith("http://") or pkg.package_url.startswith("https://"):
             cmd.append(pkg.name)
@@ -1050,23 +1060,16 @@ class PipInstaller:
 
         run_command(cmd)
 
-    def upgrade(self, package, deep=False):
+    def upgrade(self, package, deep=True):
         # This is done in two steps to avoid upgrading
         # all of the dependencies - faster
-        if deep:self.upgrade_deep(package)
-        else:   self.upgrade_no_deps(package)
+        self.upgrade_no_deps(package, deep)
 
         self.install(package)
 
-    def upgrade_no_deps(self, package):
-        cmd = ["python", "-m", "pip", "install", "--upgrade", "--user", "--no-cache-dir"]
-        cmd.extend(self.arguments)
-        cmd.append(package.name)
-
-        run_command(cmd)
-
-    def upgrade_deep(self, package):
-        cmd = ["python", "-m", "pip", "install", "--upgrade", "--no-cache-dir"]
+    def upgrade_no_deps(self, package, deep=True):
+        if deep: cmd = ["python", "-m", "pip", "install", "--upgrade", "--no-cache-dir"]
+        else:    cmd = ["python", "-m", "pip", "install", "--upgrade", "--user", "--no-cache-dir"]
         cmd.extend(self.arguments)
         cmd.append(package.name)
 
