@@ -35,6 +35,7 @@ from orangecanvas.gui.splashscreen import SplashScreen
 from orangecanvas.utils.redirect import redirect_stdout, redirect_stderr
 from orangecanvas.utils.qtcompat import QSettings
 from orangecanvas import config
+from orangecanvas.utils.settings import config_slot
 
 from orangecanvas.registry import cache, qt
 from orangecanvas.registry import WidgetRegistry, set_global_registry
@@ -136,6 +137,9 @@ def main(argv=None):
         parser.add_option("--qt",
                           help="Additional arguments for QApplication",
                           type="str", default=None)
+        parser.add_option("--no-update",
+                          action="store_true",
+                          help="Stop automatic update internal libraries")
 
         (options, args) = parser.parse_args(argv[1:])
 
@@ -186,6 +190,9 @@ def main(argv=None):
 
         log.debug("Starting CanvasApplicaiton with argv = %r.", qt_argv)
         app = CanvasApplication(qt_argv)
+
+        t = ("startup/no-update-inner-libraries", bool, False, "No auto-update inner libraries")
+        config.spec.append(config_slot(*t))
 
         # NOTE: config.init() must be called after the QApplication constructor
         config.init()
@@ -256,7 +263,9 @@ def main(argv=None):
         dirpath = os.path.abspath(os.path.dirname(orangecanvas.__file__))
         QDir.addSearchPath("canvas_icons", os.path.join(dirpath, "icons"))
 
-        canvas_window = OASYSMainWindow()
+        no_update = QSettings().value("startup/no-update-inner-libraries", False, type=bool) or options.no_update
+
+        canvas_window = OASYSMainWindow(parent=None, no_update=no_update)
         canvas_window.setWindowIcon(config.application_icon())
 
         if stylesheet_string is not None:

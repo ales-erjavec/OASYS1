@@ -962,7 +962,7 @@ def update_internal_libraries(internal_libraries_to_update=None):
             to_update_list = list_available_internal_librabries()
 
         for installable in to_update_list:
-            pip.upgrade(installable)
+            pip.upgrade(installable, deep=True)
             print("Updated: " + installable.name)
     except Exception as ex:
         print("Internal libraries update failed")
@@ -1050,14 +1050,23 @@ class PipInstaller:
 
         run_command(cmd)
 
-    def upgrade(self, package):
+    def upgrade(self, package, deep=False):
         # This is done in two steps to avoid upgrading
         # all of the dependencies - faster
-        self.upgrade_no_deps(package)
+        if deep:self.upgrade_deep(package)
+        else:   self.upgrade_no_deps(package)
+
         self.install(package)
 
     def upgrade_no_deps(self, package):
         cmd = ["python", "-m", "pip", "install", "--upgrade", "--user", "--no-cache-dir"]
+        cmd.extend(self.arguments)
+        cmd.append(package.name)
+
+        run_command(cmd)
+
+    def upgrade_deep(self, package):
+        cmd = ["python", "-m", "pip", "install", "--upgrade", "--no-cache-dir"]
         cmd.extend(self.arguments)
         cmd.append(package.name)
 

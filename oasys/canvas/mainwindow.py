@@ -88,7 +88,6 @@ class OASYSUserSettings(settings.UserSettingsDialog):
         layout2.addWidget(self.combo_units)
         box2.setLayout(layout2)
 
-
         box3 = QWidget(self, objectName="automatic-save-container")
 
         layout3 = QVBoxLayout()
@@ -205,6 +204,14 @@ class OASYSUserSettings(settings.UserSettingsDialog):
 
         layout11.addWidget(self.combo_default_automatic_wonder)
         box11.setLayout(layout11)
+
+        for i in range(generaltab.layout().count()):
+            if generaltab.layout().itemAt(i).widget().objectName() == "startup-group":
+                widget = generaltab.layout().itemAt(i).widget()
+
+                cb_update = QCheckBox(self.tr("No auto-update inner libraries"), self, objectName="no-update-inner-libraries")
+                self.bind(cb_update, "checked", "startup/no-update-inner-libraries")
+                widget.layout().addWidget(cb_update)
 
         generaltab.layout().insertRow(
             0, self.tr("Add Numeral on New/Duplicate"), box1)
@@ -460,7 +467,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
 
     automatic_save = pyqtSignal()
 
-    def __init__(self, parent=None, **kwargs):
+    def __init__(self, parent=None, no_update=False, **kwargs):
         super().__init__(parent, **kwargs)
         self.is_main = True
         self.menu_registry = None
@@ -487,7 +494,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         self.__internal_library_updatable = 0
 
         # AUTOMATIC UPDATE OF THE INTERNAL LIBRARIES
-        self.__set_pypi_internal_libraries(load_pypi_internal_libraries())
+        if not no_update: self.__set_pypi_internal_libraries(load_pypi_internal_libraries())
 
         if check:
             f = self.__executor.submit(addons.list_available_versions)
