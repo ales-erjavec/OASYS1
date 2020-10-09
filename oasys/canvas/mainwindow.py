@@ -786,6 +786,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
 
         dialog = welcomedialog.WelcomeDialog(self)
         dialog.setWindowTitle(self.tr("Welcome to OASYS"))
+        dialog.setModal(True)
 
         def new_scheme():
             if self.new_scheme() == QDialog.Accepted:
@@ -914,10 +915,16 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
             mbox.setModal(True)
             dialog.show()
             mbox.show()
+
+            def no_add_ons(is_app_to_be_closed):
+                if is_app_to_be_closed: sys.exit(0)
+                else: return None
+
             mbox.finished.connect(
                 lambda r:
-                    self.open_addons(is_app_to_be_closed) if r == QMessageBox.Ok else (sys.exit(0) if is_app_to_be_closed else None)
+                    self.open_addons() if r == QMessageBox.Ok else no_add_ons(is_app_to_be_closed)
             )
+
         elif is_app_to_be_closed: sys.exit(0)
 
         bottom_row = [get_started_action, documentation_action, addons_action]
@@ -1061,15 +1068,12 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
 
                 self.menuBar().addMenu(custom_menu)
 
-
             except Exception as exception:
                 print("Error in creating Customized Menu: " + str(menu_instance))
                 print(str(exception.args[0]))
                 continue
 
-    def open_addons(self, is_app_to_be_closed=False):
-        if is_app_to_be_closed: sys.exit(0)
-
+    def open_addons(self):
         from oasys.application.addons import AddonManagerDialog, have_install_permissions
         if not have_install_permissions():
             QMessageBox(QMessageBox.Warning,
