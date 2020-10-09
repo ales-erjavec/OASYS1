@@ -491,7 +491,7 @@ class AddonManagerDialog(QDialog):
         addmore.clicked.connect(self.__run_add_package_dialog)
 
         buttons.accepted.connect(self.__accepted)
-        buttons.rejected.connect(self.reject)
+        buttons.rejected.connect(self.__rejected)
 
         empty = QWidget()
         empty.setFixedHeight(1)
@@ -516,6 +516,11 @@ class AddonManagerDialog(QDialog):
 
         if not self._f_pypi_addons.done():
             self.__progressDialog()
+
+        self.__is_app_to_be_closed = False
+
+    def set_is_app_to_be_closed(self, is_app_to_be_closed=True):
+        self.__is_app_to_be_closed = is_app_to_be_closed
 
     def __run_add_package_dialog(self):
         dlg = QDialog(self, windowTitle="Add add-on by name")
@@ -724,6 +729,10 @@ class AddonManagerDialog(QDialog):
         future.set_result((AddonManagerDialog._packages or []) + packages)
         self._set_packages(future)
         self.addonwidget.set_install_projects(names)
+
+    def __rejected(self):
+        self.reject()
+        if self.__is_app_to_be_closed: sys.exit(0)
 
     def __accepted(self):
         steps = self.addonwidget.item_state()

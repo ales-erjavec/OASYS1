@@ -482,7 +482,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         lastdelta = datetime.now() - datetime.fromtimestamp(timestamp)
         self._log = logging.getLogger(__name__)
         self._log.info("Time from last update %s (%s)", lastdelta, timestamp)
-        check = updateperiod >= 0 and abs(lastdelta) > timedelta(days=updateperiod)
+        check = updateperiod >= 0 and abs(lastdelta) > timedelta(minutes=updateperiod)
 
         self.__executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self.__pypi_addons_f = None
@@ -922,7 +922,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
 
             mbox.finished.connect(
                 lambda r:
-                    self.open_addons() if r == QMessageBox.Ok else no_add_ons(is_app_to_be_closed)
+                    self.open_addons(is_app_to_be_closed) if r == QMessageBox.Ok else no_add_ons(is_app_to_be_closed)
             )
 
         elif is_app_to_be_closed: sys.exit(0)
@@ -1073,7 +1073,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                 print(str(exception.args[0]))
                 continue
 
-    def open_addons(self):
+    def open_addons(self, is_app_to_be_closed=False):
         from oasys.application.addons import AddonManagerDialog, have_install_permissions
         if not have_install_permissions():
             QMessageBox(QMessageBox.Warning,
@@ -1082,6 +1082,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                         "as a system administrator or install OASYS in user folders.",
                         parent=self).exec_()
         dlg = AddonManagerDialog(self, windowTitle=self.tr("Add-ons"))
+        dlg.set_is_app_to_be_closed(is_app_to_be_closed)
         dlg.setAttribute(Qt.WA_DeleteOnClose)
         status = dlg.exec_()
 
