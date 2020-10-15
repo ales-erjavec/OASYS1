@@ -192,10 +192,15 @@ def plotWindow(parent=None, backend=None,
     if backend is None:
         backend = OasysBackendMatplotlibQt
 
-    return PlotWindow(parent=parent, backend=backend,
+    plot_window = PlotWindow(parent=parent, backend=backend,
                       resetzoom=resetzoom, autoScale=autoScale, logScale=logScale, grid=grid,
                       curveStyle=curveStyle, colormap=colormap,
                       aspectRatio=aspectRatio, yInverted=yInverted,
                       copy=copy, save=save, print_=print_,
                       control=control, position=position,
                       roi=roi, mask=mask, fit=fit)
+
+    plot_window._backend.ax.ticklabel_format(axis='y', style='sci')
+
+    return plot_window
+
