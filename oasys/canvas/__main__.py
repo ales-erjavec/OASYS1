@@ -85,6 +85,10 @@ def fix_win_pythonw_std_stream():
         if sys.stdout is not None and sys.stderr.fileno() < 0:
             sys.stderr = open(os.devnull, "wb")
 
+import warnings
+from matplotlib import MatplotlibDeprecationWarning
+
+warnings.filterwarnings("ignore",category=MatplotlibDeprecationWarning)
 
 def main(argv=None):
 
