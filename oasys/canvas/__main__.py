@@ -89,6 +89,7 @@ import warnings
 from matplotlib import MatplotlibDeprecationWarning
 
 warnings.filterwarnings("ignore",category=MatplotlibDeprecationWarning)
+warnings.filterwarnings("ignore",category=RuntimeWarning)
 
 def main(argv=None):
 
