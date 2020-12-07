@@ -747,19 +747,19 @@ class OWAbstractMultipleHeightProfileSimulatorT(OWWidget):
 
             self.axis.clear()
 
-            x_to_plot, y_to_plot = numpy.meshgrid(self.xx[0], self.yy[0])
-            z_to_plot = self.zz[0] * 1e9 / self.si_to_user_units #nm
+            x_to_plot, y_to_plot = numpy.meshgrid(self.xx[-1], self.yy[-1])
+            z_to_plot = self.zz[-1] * 1e9 / self.si_to_user_units #nm
 
             self.axis.plot_surface(x_to_plot, y_to_plot, z_to_plot,
                                    rstride=1, cstride=1, cmap=cm.autumn, linewidth=0.5, antialiased=True)
 
-            sloperms = profiles_simulation.slopes(self.zz[0].T, self.xx[0], self.yy[0], return_only_rms=1)
+            sloperms = profiles_simulation.slopes(self.zz[-1].T, self.xx[-1], self.yy[-1], return_only_rms=1)
 
             title = ' First Profile: \n' + \
                     ' Slope error rms in X direction: %f $\mu$rad' % (sloperms[0]*1e6) + '\n' + \
                     ' Slope error rms in Y direction: %f $\mu$rad' % (sloperms[1]*1e6) + '\n' + \
-                    ' Figure error rms in X direction: %f nm' % (round(self.zz[0][0, :].std()*1e9/self.si_to_user_units, 6)) + '\n' + \
-                    ' Figure error rms in Y direction: %f nm' % (round(self.zz[0][:, 0].std()*1e9/self.si_to_user_units, 6))
+                    ' Figure error rms in X direction: %f nm' % (round(self.zz[-1][0, :].std()*1e9/self.si_to_user_units, 6)) + '\n' + \
+                    ' Figure error rms in Y direction: %f nm' % (round(self.zz[-1][:, 0].std()*1e9/self.si_to_user_units, 6))
 
             self.axis.set_xlabel("X [" + self.get_axis_um()+ "]")
             self.axis.set_ylabel("Y [" + self.get_axis_um() + "]")
