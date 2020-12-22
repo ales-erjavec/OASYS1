@@ -876,34 +876,31 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                     icon=QIcon(icon),
                     )
 
-        self.__is_app_to_be_closed = False
-        self.__is_dialog_shown = False
+        # -------------------------------------------------------------
+        # AUTOMATIC UPDATES
+        # -------------------------------------------------------------
 
-        message = ""
-        show_message = False
-
-        if self.__internal_library_updatable:
-            message += "OASYS needs to update its internal libraries"
-            show_message = True
-
-        if self.__updatable:
-            addons_action.setText("Update Now")
-            addons_action.setToolTip("Update or install new add-ons")
-            addons_action.setIcon(QIcon(resource_path("icons/Update.svg")))
+        if self.__internal_library_updatable or self.__updatable:
+            message = ""
 
             if self.__internal_library_updatable:
-                message += " and "
-                one = "one"
-            else:
-                one = "One"
+                message += "OASYS needs to update its internal libraries"
 
-            message += "{} add-on{} {} a newer version.".format(one if self.__updatable == 1 else self.__updatable,
-                                                                "s" if self.__updatable > 1 else "",
-                                                                "has" if self.__updatable == 1 else "have")
+            if self.__updatable:
+                addons_action.setText("Update Now")
+                addons_action.setToolTip("Update or install new add-ons")
+                addons_action.setIcon(QIcon(resource_path("icons/Update.svg")))
 
-            show_message = True
+                if self.__internal_library_updatable:
+                    message += " and "
+                    one = "one"
+                else:
+                    one = "One"
 
-        if show_message:
+                message += "{} add-on{} {} a newer version.".format(one if self.__updatable == 1 else self.__updatable,
+                                                                    "s" if self.__updatable > 1 else "",
+                                                                    "has" if self.__updatable == 1 else "have")
+
             message += "\n\nWould you like to update now (recommended)?"
 
             mbox = QMessageBox(dialog, icon=QMessageBox.Information, text=message, standardButtons=QMessageBox.Ok | QMessageBox.No)
@@ -922,6 +919,8 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
             def do_nothing(): pass
 
             mbox.finished.connect(lambda r: do_update() if r == QMessageBox.Ok else do_nothing())
+
+        # -------------------------------------------------------------
 
         bottom_row = [get_started_action, documentation_action, addons_action]
 
