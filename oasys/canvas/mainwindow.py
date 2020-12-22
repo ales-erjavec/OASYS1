@@ -13,18 +13,18 @@ import pkg_resources
 from PyQt5.QtWidgets import (
     QWidget, QMenu, QAction, QDialog, QMessageBox, QFileDialog,
     QHBoxLayout, QLineEdit, QPushButton, QCheckBox, QVBoxLayout, QLabel,
-    QFormLayout, QComboBox, QGridLayout, QApplication, QProgressBar
+    QFormLayout, QComboBox, QGridLayout, QApplication, QDialogButtonBox
 )
 from PyQt5.QtGui import (
     QKeySequence, QIcon
 )
-from PyQt5.QtCore import Qt, QSettings, QEvent, QStandardPaths
+from PyQt5.QtCore import Qt, QSettings, QEvent
 from PyQt5.QtCore import pyqtSlot as Slot
 from PyQt5.QtCore import pyqtSignal as pyqtSignal
 
 from orangecanvas.scheme import readwrite
 from orangecanvas.application import (
-    canvasmain, welcomedialog, schemeinfo, settings #, addons
+    canvasmain, welcomedialog, schemeinfo, settings
 )
 from orangecanvas.gui.utils import (
     message_critical, message_warning, message_information
@@ -876,56 +876,52 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                     icon=QIcon(icon),
                     )
 
-        is_app_to_be_closed = False
+        self.__is_app_to_be_closed = False
+        self.__is_dialog_shown = False
+
+        message = ""
+        show_message = False
 
         if self.__internal_library_updatable:
-            mbox = QMessageBox(
-                None,
-                icon=QMessageBox.Information,
-                text="OASYS needs to update its internal libraries.\n(Strongly recommended to avoid malfunctioning)\n\nThe application will close automatically.\nConfirm?",
-                standardButtons=QMessageBox.Ok | QMessageBox.No,
-            )
-            mbox.setWindowFlags(Qt.Sheet | Qt.MSWindowsFixedSizeDialogHint)
-            mbox.setModal(True)
-            status = mbox.exec_()
-
-            try:
-                if status == QMessageBox.Ok:
-                    addons.update_internal_libraries(self.__internal_library_to_update)
-                    is_app_to_be_closed = True
-            except Exception as err:
-                self._log.error("Error updating internal libraries", exc_info=(type(err), err, None))
+            message += "OASYS needs to update its internal libraries"
+            show_message = True
 
         if self.__updatable:
             addons_action.setText("Update Now")
             addons_action.setToolTip("Update or install new add-ons")
             addons_action.setIcon(QIcon(resource_path("icons/Update.svg")))
 
-            mbox = QMessageBox(
-                dialog,
-                icon=QMessageBox.Information,
-                text="{} add-on{} {} a newer version.\n"
-                     "Would you like to update now?"
-                     .format("One" if self.__updatable == 1 else self.__updatable,
-                             "s" if self.__updatable > 1 else "",
-                             "has" if self.__updatable == 1 else "have"),
-                standardButtons=QMessageBox.Ok | QMessageBox.No,
-            )
+            if self.__internal_library_updatable:
+                message += " and "
+                one = "one"
+            else:
+                one = "One"
+
+            message += "{} add-on{} {} a newer version.".format(one if self.__updatable == 1 else self.__updatable,
+                                                                "s" if self.__updatable > 1 else "",
+                                                                "has" if self.__updatable == 1 else "have")
+
+            show_message = True
+
+        if show_message:
+            message += "\n\nWould you like to update now (recommended)?"
+
+            mbox = QMessageBox(dialog, icon=QMessageBox.Information, text=message, standardButtons=QMessageBox.Ok | QMessageBox.No)
             mbox.setWindowFlags(Qt.Sheet | Qt.MSWindowsFixedSizeDialogHint)
             mbox.setModal(True)
             dialog.show()
             mbox.show()
 
-            def no_add_ons(is_app_to_be_closed):
-                if is_app_to_be_closed: sys.exit(0)
-                else: return None
+            def do_update():
+                is_app_to_be_closed = False
+                if self.__internal_library_updatable:
+                    is_app_to_be_closed = self.open_internal_libraries(is_app_to_be_closed=not self.__updatable) > 0
+                if self.__updatable:
+                    self.open_addons(is_app_to_be_closed=is_app_to_be_closed)
 
-            mbox.finished.connect(
-                lambda r:
-                    self.open_addons(is_app_to_be_closed) if r == QMessageBox.Ok else no_add_ons(is_app_to_be_closed)
-            )
+            def do_nothing(): pass
 
-        elif is_app_to_be_closed: sys.exit(0)
+            mbox.finished.connect(lambda r: do_update() if r == QMessageBox.Ok else do_nothing())
 
         bottom_row = [get_started_action, documentation_action, addons_action]
 
@@ -1072,6 +1068,23 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                 print("Error in creating Customized Menu: " + str(menu_instance))
                 print(str(exception.args[0]))
                 continue
+
+
+    def open_internal_libraries(self, is_app_to_be_closed=False):
+        from oasys.application.internal_libraries import InternalLibrariesManagerDialog
+        from oasys.application.addons import have_install_permissions
+        if not have_install_permissions():
+            QMessageBox(QMessageBox.Warning,
+                        "Add-ons: insufficient permissions",
+                        "Insufficient permissions to install add-ons. Try starting OASYS "
+                        "as a system administrator or install OASYS in user folders.",
+                        parent=self).exec_()
+        dlg = InternalLibrariesManagerDialog(self, windowTitle=self.tr("Internal Libraries"))
+        dlg.set_is_app_to_be_closed(is_app_to_be_closed)
+        dlg.setAttribute(Qt.WA_DeleteOnClose)
+        status = dlg.exec_()
+
+        return status
 
     def open_addons(self, is_app_to_be_closed=False):
         from oasys.application.addons import AddonManagerDialog, have_install_permissions

@@ -57,8 +57,6 @@ PYPI_API_JSON = "https://pypi.org/pypi/{name}/json"
 
 INTERNAL_LIBRARIES = [a.strip() for a in open(os.path.join(package_dirname("oasys.application"), "data", "INTERNAL_LIBRARIES.txt"), "rt")]
 INTERNAL_LIBRARIES = [a for a in INTERNAL_LIBRARIES if a]
-OFFICIAL_ADDONS = [a.strip() for a in open(os.path.join(package_dirname("oasys.application"), "data", "OFFICIAL_ADDONS.txt"), "rt")]
-OFFICIAL_ADDONS = [a for a in OFFICIAL_ADDONS if a]
 
 # query PyPI
 
@@ -75,155 +73,20 @@ try:
 except:
     is_auto_update = False
 
-official_addons_list = []
-
-try:
-    for package in OFFICIAL_ADDONS:
-        r = urlopen(PYPI_API_JSON.format(name=package)).read().decode("utf-8")
-        p = json.loads(r)
-        p["releases"] = p["releases"][p["info"]["version"]] # load only the last version
-
-        official_addons_list.append(p)
-except:
-    is_auto_update = False
-
-OFFICIAL_ADDON_LIST = "https://raw.githubusercontent.com/oasys-kit/oasys-addons/master/list"
-OFFICIAL_ADDON_LIST_ALTERNATIVE = "https://rawcdn.githack.com/oasys-kit/oasys-addons/91dbd16c78f2ce42f4abe65e72c17abe064e0520/list"
 
 log = logging.getLogger(__name__)
 
-Installable = namedtuple(
-    "Installable",
-    ["name",
-     "version",
-     "summary",
-     "description",
-     "package_url",
-     "release_urls"]
-)
+from oasys.application.addons import Uninstall, Upgrade, Install
+from oasys.application.addons import OSX_NSURL_toLocalFile, Installer
+from oasys.application.addons import get_meta_from_archive, cleanup, TristateCheckItemDelegate, is_updatable, method_queued, unique
+from oasys.application.addons import Installed, Installable, Available
 
-ReleaseUrl = namedtuple(
-    "ReleaseUrl",
-    ["filename",
-     "url",
-     "size",
-     "python_version",
-     "package_type"
-    ]
-)
-
-Available = namedtuple(
-    "Available",
-    ["installable"]
-)
-
-Installed = namedtuple(
-    "Installed",
-    ["installable",
-     "local"]
-)
-
-
-def is_updatable(item):
-    if isinstance(item, Available) or item.installable is None:
-        return False
-    inst, dist = item
-    try:
-        return version.StrictVersion(dist.version) < version.StrictVersion(inst.version)
-    except ValueError:
-        return version.LooseVersion(dist.version) < version.LooseVersion(inst.version)
-
-
-class TristateCheckItemDelegate(QStyledItemDelegate):
-    """
-    A QStyledItemDelegate which properly toggles Qt.ItemIsTristate check
-    state transitions on user interaction.
-    """
-    def editorEvent(self, event, model, option, index):
-        flags = model.flags(index)
-        if not flags & Qt.ItemIsUserCheckable or \
-                not option.state & QStyle.State_Enabled or \
-                not flags & Qt.ItemIsEnabled:
-            return False
-
-        checkstate = model.data(index, Qt.CheckStateRole)
-        if checkstate is None:
-            return False
-
-        widget = option.widget
-        style = widget.style() if widget else QApplication.style()
-        if event.type() in {QEvent.MouseButtonPress, QEvent.MouseButtonRelease,
-                            QEvent.MouseButtonDblClick}:
-            pos = event.pos()
-            opt = QStyleOptionViewItem(option)
-            self.initStyleOption(opt, index)
-            rect = style.subElementRect(
-                QStyle.SE_ItemViewItemCheckIndicator, opt, widget)
-
-            if event.button() != Qt.LeftButton or not rect.contains(pos):
-                return False
-
-            if event.type() in {QEvent.MouseButtonPress,
-                                QEvent.MouseButtonDblClick}:
-                return True
-
-        elif event.type() == QEvent.KeyPress:
-            if event.key() != Qt.Key_Space and event.key() != Qt.Key_Select:
-                return False
-        else:
-            return False
-
-        if model.flags(index) & Qt.ItemIsTristate:
-            checkstate = (checkstate + 1) % 3
-        else:
-            checkstate = \
-                Qt.Unchecked if checkstate == Qt.Checked else Qt.Checked
-
-        return model.setData(index, checkstate, Qt.CheckStateRole)
-
-
-def get_meta_from_archive(path):
-    """Return project name, version and summary extracted from
-    sdist or wheel metadata in a ZIP or tar.gz archive, or None if metadata
-    can't be found."""
-
-    def is_metadata(fname):
-        return fname.endswith(('PKG-INFO', 'METADATA'))
-
-    meta = None
-    if path.endswith(('.zip', '.whl')):
-        from zipfile import ZipFile
-        with ZipFile(path) as archive:
-            meta = next(filter(is_metadata, archive.namelist()), None)
-            if meta:
-                meta = archive.read(meta).decode('utf-8')
-    elif path.endswith(('.tar.gz', '.tgz')):
-        import tarfile
-        with tarfile.open(path) as archive:
-            meta = next(filter(is_metadata, archive.getnames()), None)
-            if meta:
-                meta = archive.extractfile(meta).read().decode('utf-8')
-    if meta:
-        meta = parse_meta(meta)
-        return [meta.get(key, '')
-                for key in ('Name', 'Version', 'Description', 'Summary')]
-
-
-def cleanup(name, sep="-"):
-    """Used for sanitizing addon names. The function removes Orange/Orange3
-    from the name and adds spaces before upper letters of the leftover to
-    separate its words."""
-    prefix, separator, postfix = name.partition(sep)
-    name = postfix if separator == sep else prefix
-    return "".join(re.findall("[A-Z][a-z]*", name[0].upper() + name[1:]))
-
-
-class AddonManagerWidget(QWidget):
+class InternalLibrariesManagerWidget(QWidget):
 
     statechanged = Signal()
 
     def __init__(self, parent=None, **kwargs):
-        super(AddonManagerWidget, self).__init__(parent, **kwargs)
+        super(InternalLibrariesManagerWidget, self).__init__(parent, **kwargs)
         self.__items = []
         self.setLayout(QVBoxLayout())
 
@@ -306,9 +169,10 @@ class AddonManagerWidget(QWidget):
             item1.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable |
                            Qt.ItemIsUserCheckable |
                            (Qt.ItemIsTristate if updatable else 0))
+            item1.setEnabled(False)
 
             if installed and updatable:
-                item1.setCheckState(Qt.PartiallyChecked)
+                item1.setCheckState(Qt.Checked)
             elif installed:
                 item1.setCheckState(Qt.Checked)
             else:
@@ -328,6 +192,9 @@ class AddonManagerWidget(QWidget):
 
             item4 = QStandardItem()
             item4.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
+
+            if updatable:
+                item4.setText("Update")
 
             model.appendRow([item1, item2, item3, item4])
 
@@ -440,20 +307,7 @@ class AddonManagerWidget(QWidget):
     def sizeHint(self):
         return QSize(480, 420)
 
-
-def method_queued(method, sig, conntype=Qt.QueuedConnection):
-    name = method.__name__
-    obj = method.__self__
-    assert isinstance(obj, QObject)
-
-    def call(*args):
-        args = [Q_ARG(atype, arg) for atype, arg in zip(sig, args)]
-        return QMetaObject.invokeMethod(obj, name, conntype, *args)
-
-    return call
-
-
-class AddonManagerDialog(QDialog):
+class InternalLibrariesManagerDialog(QDialog):
     _packages = None
 
     def __init__(self, parent=None, **kwargs):
@@ -461,8 +315,8 @@ class AddonManagerDialog(QDialog):
         self.setLayout(QVBoxLayout())
         self.layout().setContentsMargins(0, 0, 0, 0)
 
-        self.addonwidget = AddonManagerWidget()
-        self.layout().addWidget(self.addonwidget)
+        self.internallibrarieswidget = InternalLibrariesManagerWidget()
+        self.layout().addWidget(self.internallibrarieswidget)
 
         info_bar = QWidget()
         info_layout = QHBoxLayout()
@@ -483,13 +337,6 @@ class AddonManagerDialog(QDialog):
         container.layout().addWidget(buttons)
         container.layout().addWidget(empty)
 
-        addmore = QPushButton(
-            "Add more...", toolTip="Add an add-on not listed below",
-            autoDefault=False
-        )
-        self.addonwidget.tophlayout.addWidget(addmore)
-        addmore.clicked.connect(self.__run_add_package_dialog)
-
         buttons.accepted.connect(self.__accepted)
         buttons.rejected.connect(self.__rejected)
 
@@ -500,11 +347,11 @@ class AddonManagerDialog(QDialog):
         self.layout().addWidget(empty)
 
         self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-        if AddonManagerDialog._packages is None:
+        if InternalLibrariesManagerDialog._packages is None:
             self._f_pypi_addons = self._executor.submit(list_available_versions)
         else:
             self._f_pypi_addons = concurrent.futures.Future()
-            self._f_pypi_addons.set_result(AddonManagerDialog._packages)
+            self._f_pypi_addons.set_result(InternalLibrariesManagerDialog._packages)
 
         self._f_pypi_addons.add_done_callback(
             method_queued(self._set_packages, (object,))
@@ -521,69 +368,6 @@ class AddonManagerDialog(QDialog):
 
     def set_is_app_to_be_closed(self, is_app_to_be_closed=True):
         self.__is_app_to_be_closed = is_app_to_be_closed
-
-    def __run_add_package_dialog(self):
-        dlg = QDialog(self, windowTitle="Add add-on by name")
-        dlg.setAttribute(Qt.WA_DeleteOnClose)
-
-        vlayout = QVBoxLayout()
-        form = QFormLayout()
-        form.setContentsMargins(0, 0, 0, 0)
-        nameentry = QLineEdit(
-            placeholderText="Package name",
-            toolTip="Enter a package name as displayed on "
-                    "PyPI (capitalization is not important)")
-        nameentry.setMinimumWidth(250)
-        form.addRow("Name:", nameentry)
-        vlayout.addLayout(form)
-        buttons = QDialogButtonBox(
-            standardButtons=QDialogButtonBox.Ok | QDialogButtonBox.Cancel
-        )
-        okb = buttons.button(QDialogButtonBox.Ok)
-        okb.setEnabled(False)
-        okb.setText("Add")
-
-        def changed(name):
-            okb.setEnabled(bool(name))
-        nameentry.textChanged.connect(changed)
-        vlayout.addWidget(buttons)
-        vlayout.setSizeConstraint(QVBoxLayout.SetFixedSize)
-        dlg.setLayout(vlayout)
-        f = None
-
-        def query():
-            nonlocal f
-            name = nameentry.text()
-            f = self._executor.submit(pypi_json_query_project_meta, [name])
-            okb.setDisabled(True)
-
-            def ondone(f):
-                error_text = ""
-                error_details = ""
-                try:
-                    pkgs = f.result()
-                except Exception:
-                    log.error("Query error:", exc_info=True)
-                    error_text = "Failed to query package index"
-                    error_details = traceback.format_exc()
-                    pkg = None
-                else:
-                    pkg = pkgs[0]
-                    if pkg is None:
-                        error_text = "'{}' not was not found".format(name)
-                if pkg:
-                    method_queued(self.add_package, (object,))(pkg)
-                    method_queued(dlg.accept, ())()
-                else:
-                    method_queued(self.__show_error_for_query, (str, str)) \
-                        (error_text, error_details)
-                    method_queued(dlg.reject, ())()
-
-            f.add_done_callback(ondone)
-
-        buttons.accepted.connect(query)
-        buttons.rejected.connect(dlg.reject)
-        dlg.exec_()
 
     @Slot(str, str)
     def __show_error_for_query(self, text, error_details):
@@ -632,7 +416,7 @@ class AddonManagerDialog(QDialog):
             log.error(str(err), exc_info=True)
             packages = []
         else:
-            AddonManagerDialog._packages = packages
+            InternalLibrariesManagerDialog._packages = packages
 
         self.set_packages(packages)
 
@@ -640,7 +424,7 @@ class AddonManagerDialog(QDialog):
     def set_packages(self, installable):
         # type: (List[Installable]) -> None
         self._packages = packages = installable  # type: List[Installable]
-        installed = list_installed_addons()
+        installed = list_installed_internal_libraries()
         dists = {dist.project_name: dist for dist in installed}
         packages = {pkg.name: pkg for pkg in packages}
 
@@ -676,7 +460,7 @@ class AddonManagerDialog(QDialog):
                 assert False
             items.append(item)
 
-        self.addonwidget.set_items(items)
+        self.internallibrarieswidget.set_items(items)
 
     def showEvent(self, event):
         super().showEvent(event)
@@ -726,19 +510,15 @@ class AddonManagerDialog(QDialog):
                     Installable(name, vers, summary,
                                 descr or summary, path, [path]))
         future = concurrent.futures.Future()
-        future.set_result((AddonManagerDialog._packages or []) + packages)
+        future.set_result((InternalLibrariesManagerDialog._packages or []) + packages)
         self._set_packages(future)
-        self.addonwidget.set_install_projects(names)
+        self.internallibrarieswidget.set_install_projects(names)
 
     def __rejected(self):
         self.reject()
-        if self.__is_app_to_be_closed:
-            message = "Click Ok to restart OASYS for changes to take effect."
-            message_information(message, parent=self)
-            sys.exit(0)
 
     def __accepted(self):
-        steps = self.addonwidget.item_state()
+        steps = self.internallibrarieswidget.item_state()
 
         if steps:
             # Move all uninstall steps to the front
@@ -759,7 +539,6 @@ class AddonManagerDialog(QDialog):
             progress.setLabelText("Installing")
 
             self.__installer.start()
-
         else:
             self.accept()
 
@@ -773,11 +552,13 @@ class AddonManagerDialog(QDialog):
         self.reject()
 
     def __on_installer_finished(self):
-        message = "Click Ok to restart OASYS for changes to take effect."
-        message_information(message, parent=self)
-        self.accept()
-        sys.exit(0)
-
+        if self.__is_app_to_be_closed:
+            message = "Click Ok to restart OASYS for changes to take effect."
+            message_information(message, parent=self)
+            self.accept()
+            sys.exit(0)
+        else:
+            self.accept()
 
 import platform
 
@@ -809,27 +590,24 @@ def list_available_versions():
     """
 
     if is_auto_update:
-        addons = official_addons_list
+        internal_libraries = internal_libraries_list
     else:
-        try:
-            addons = requests.get(OFFICIAL_ADDON_LIST).json()
-        except:
-            addons = requests.get(OFFICIAL_ADDON_LIST_ALTERNATIVE).json()
+        internal_libraries = []
 
     # query pypi.org for installed add-ons that are not in our list
-    installed = list_installed_addons()
+    installed = list_installed_internal_libraries()
     missing = set(dist.project_name for dist in installed) - \
-              set(a.get("info", {}).get("name", "") for a in addons)
+              set(a.get("info", {}).get("name", "") for a in internal_libraries)
     for p in missing:
         response = requests.get(PYPI_API_JSON.format(name=p))
         if response.status_code != 200:
             continue
-        addons.append(response.json())
+        internal_libraries.append(response.json())
 
     packages = []
-    for addon in addons:
+    for internal_library in internal_libraries:
         try:
-            info = addon["info"]
+            info = internal_library["info"]
             packages.append(
                 Installable(info["name"], info["version"],
                             info["summary"], info["description"],
@@ -841,318 +619,7 @@ def list_available_versions():
 
     return packages
 
-
-def pypi_json_query_project_meta(projects, session=None):
-    # type: (List[str], str, Optional[requests.Session]) -> List[Installable]
-    """
-    Parameters
-    ----------
-    projects : List[str]
-        List of project names to query
-    session : Optional[requests.Session]
-    """
-    if session is None:
-        session = requests.Session()
-
-    rval = []
-    for name in projects:
-        r = session.get(PYPI_API_JSON.format(name=name))
-        if r.status_code != 200:
-            rval.append(None)
-        else:
-            try:
-                meta = r.json()
-            except json.JSONDecodeError:
-                rval.append(None)
-            else:
-                try:
-                    rval.append(installable_from_json_response(meta))
-                except (TypeError, KeyError):
-                    rval.append(None)
-    return rval
-
-
-def installable_from_json_response(meta):
-    # type: (dict) -> Installable
-    """
-    Extract relevant project meta data from a PyPiJSONRPC response
-
-    Parameters
-    ----------
-    meta : dict
-        JSON response decoded into python native dict.
-
-    Returns
-    -------
-    installable : Installable
-    """
-    info = meta["info"]
-    name = info["name"]
-    version = info.get("version", "0")
-    summary = info.get("summary", "")
-    description = info.get("description", "")
-    package_url = info.get("package_url", "")
-
-    return Installable(name, version, summary, description, package_url, [])
-
-
-def list_installed_addons():
-    from oasys.canvas.conf import ADDONS_ENTRY
+def list_installed_internal_libraries():
     workingset = pkg_resources.WorkingSet(sys.path)
-    return [ep.dist for ep in workingset.iter_entry_points(ADDONS_ENTRY)]
 
-def unique(iterable):
-    seen = set()
-
-    def observed(el):
-        observed = el in seen
-        seen.add(el)
-        return observed
-
-    return (el for el in iterable if not observed(el))
-
-
-def have_install_permissions():
-    """Check if we can create a file in the site-packages folder.
-    This works on a Win7 miniconda install, where os.access did not. """
-    try:
-        fn = os.path.join(sysconfig.get_path("purelib"), "test_write_" + str(os.getpid()))
-        with open(fn, "w"):
-            pass
-        os.remove(fn)
-        return True
-    except OSError:
-        return False
-
-
-def installable_items(pypipackages, installed=[]):
-    """
-    Return a list of installable items.
-
-    Parameters
-    ----------
-    pypipackages : list of Installable
-    installed : list of pkg_resources.Distribution
-    """
-
-    dists = {dist.project_name: dist for dist in installed}
-    packages = {pkg.name: pkg for pkg in pypipackages}
-
-    # For every pypi available distribution not listed by
-    # `installed`, check if it is actually already installed.
-    ws = pkg_resources.WorkingSet()
-    for pkg_name in set(packages.keys()).difference(set(dists.keys())):
-        try:
-            d = ws.find(pkg_resources.Requirement.parse(pkg_name))
-        except pkg_resources.VersionConflict:
-            pass
-        except ValueError:
-            # Requirements.parse error ?
-            pass
-        else:
-            if d is not None:
-                dists[d.project_name] = d
-
-    project_names = unique(
-        itertools.chain(packages.keys(), dists.keys())
-    )
-
-    items = []
-    for name in project_names:
-        if name in dists and name in packages:
-            item = Installed(packages[name], dists[name])
-        elif name in dists:
-            item = Installed(None, dists[name])
-        elif name in packages:
-            item = Available(packages[name])
-        else:
-            assert False
-        items.append(item)
-    return items
-
-def update_internal_libraries(internal_libraries_to_update=None):
-    try:
-        pip = PipInstaller()
-
-        if not internal_libraries_to_update is None:
-            to_update_list = [item.installable for item in internal_libraries_to_update]
-        else:
-            to_update_list = list_available_internal_libraries()
-
-        for installable in to_update_list:
-            pip.upgrade(installable)
-            print("Updated: " + installable.name)
-    except Exception as ex:
-        print("Internal libraries update failed")
-
-Install, Upgrade, Uninstall = 1, 2, 3
-
-from oasys.util.external_command import CommandFailed, run_command
-
-IS_WINDOW = sys.platform == "win32"
-
-class Installer(QObject):
-    installStatusChanged = Signal(str)
-    started = Signal()
-    finished = Signal()
-    error = Signal(str, object, int, list)
-
-    def __init__(self, parent=None, steps=[], use_conda = False):
-        QObject.__init__(self, parent)
-        self.__interupt = False
-        self.__queue = deque(steps)
-        self.pip = PipInstaller()
-        if use_conda: self.conda = CondaInstaller()
-        else: self.conda = None
-
-    def start(self):
-        QTimer.singleShot(0, self._next)
-
-    def interupt(self):
-        self.__interupt = True
-
-    def setStatusMessage(self, message):
-        self.__statusMessage = message
-        self.installStatusChanged.emit(message)
-
-    @Slot()
-    def _next(self):
-        command, pkg = self.__queue.popleft()
-        try:
-            if command == Install:
-                self.setStatusMessage(
-                    "Installing {}".format(cleanup(pkg.installable.name)))
-                if self.conda: self.conda.install(pkg.installable, raise_on_fail=False)
-                self.pip.install(pkg.installable, deep=not IS_WINDOW)
-            elif command == Upgrade:
-                self.setStatusMessage(
-                    "Upgrading {}".format(cleanup(pkg.installable.name)))
-                if self.conda:
-                    self.conda.upgrade(pkg.installable, raise_on_fail=False)
-                self.pip.upgrade(pkg.installable, deep=not IS_WINDOW)
-            elif command == Uninstall:
-                self.setStatusMessage(
-                    "Uninstalling {}".format(cleanup(pkg.local.project_name)))
-                if self.conda:
-                    try:
-                        self.conda.uninstall(pkg.local, raise_on_fail=True)
-                    except CommandFailed:
-                        self.pip.uninstall(pkg.local)
-                else:
-                    self.pip.uninstall(pkg.local)
-        except CommandFailed as ex:
-            self.error.emit(
-                "Command failed: python {}".format(ex.cmd),
-                pkg, ex.retcode, ex.output
-            )
-            return
-
-        if self.__queue:
-            QTimer.singleShot(0, self._next)
-        else:
-            self.finished.emit()
-
-
-class PipInstaller:
-
-    def __init__(self):
-        arguments = QSettings().value('add-ons/pip-install-arguments', '', type=str)
-        self.arguments = shlex.split(arguments)
-
-    def install(self, pkg, deep=True):
-        if deep: cmd = ["python", "-m", "pip", "install"]
-        else:    cmd = ["python", "-m", "pip", "install", "--user"]
-
-        cmd.extend(self.arguments)
-        if pkg.package_url.startswith("http://") or pkg.package_url.startswith("https://"):
-            cmd.append(pkg.name)
-        else:
-            # Package url is path to the (local) wheel
-            cmd.append(pkg.package_url)
-
-        run_command(cmd)
-
-    def upgrade(self, package, deep=True):
-        # This is done in two steps to avoid upgrading
-        # all of the dependencies - faster
-        self.upgrade_no_deps(package, deep)
-
-        self.install(package)
-
-    def upgrade_no_deps(self, package, deep=True):
-        if deep: cmd = ["python", "-m", "pip", "install", "--upgrade", "--no-cache-dir"]
-        else:    cmd = ["python", "-m", "pip", "install", "--upgrade", "--user", "--no-cache-dir"]
-        cmd.extend(self.arguments)
-        cmd.append(package.name)
-
-        run_command(cmd)
-
-    def uninstall(self, dist):
-        cmd = ["python", "-m", "pip", "uninstall", "--yes", dist.project_name]
-        run_command(cmd)
-
-
-class CondaInstaller:
-    def __init__(self):
-        enabled = QSettings().value('add-ons/allow-conda', True, type=bool)
-
-        if enabled:
-            self.conda = self._find_conda()
-        else:
-            self.conda = None
-
-    def _find_conda(self):
-        executable = sys.executable
-        bin = os.path.dirname(executable)
-
-        # posix
-        conda = os.path.join(bin, "conda")
-        if os.path.exists(conda):
-            return conda
-
-        # windows
-        conda = os.path.join(bin, "Scripts", "conda.bat")
-        if os.path.exists(conda):
-            # "activate" conda environment orange is running in
-            os.environ["CONDA_PREFIX"] = bin
-            os.environ["CONDA_DEFAULT_ENV"] = bin
-            return conda
-
-    def install(self, pkg, raise_on_fail=False):
-        cmd = [self.conda, "install", "--yes", "--quiet",
-               self._normalize(pkg.name)]
-        run_command(cmd, raise_on_fail=raise_on_fail)
-
-    def upgrade(self, pkg, raise_on_fail=False):
-        cmd = [self.conda, "upgrade", "--yes", "--quiet",
-               self._normalize(pkg.name)]
-        run_command(cmd, raise_on_fail=raise_on_fail)
-
-    def uninstall(self, dist, raise_on_fail=False):
-        cmd = [self.conda, "uninstall", "--yes",
-               self._normalize(dist.project_name)]
-        run_command(cmd, raise_on_fail=raise_on_fail)
-
-    def _normalize(self, name):
-        # Conda 4.3.30 is inconsistent, upgrade command is case sensitive
-        # while install and uninstall are not. We assume that all conda
-        # package names are lowercase which fixes the problems (for now)
-        return name.lower()
-
-    def __bool__(self):
-        return bool(self.conda)
-
-
-
-from PyQt5.QtCore import QPointF, QUrl
-
-def OSX_NSURL_toLocalFile(url):
-    """Return OS X NSURL file reference as local file path or '' if not NSURL"""
-    if isinstance(url, QUrl):
-        url = url.toString()
-    if not url.startswith('file:///.file/id='):
-        return ''
-    from subprocess import Popen, PIPE, DEVNULL
-    cmd = ['osascript', '-e', 'get POSIX path of POSIX file "{}"'.format(url)]
-    with Popen(cmd, stdout=PIPE, stderr=DEVNULL) as p:
-        return p.stdout.read().strip().decode()
+    return [workingset.by_key[internal_library.lower()] for internal_library in INTERNAL_LIBRARIES]
