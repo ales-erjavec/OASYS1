@@ -1,5 +1,3 @@
-import numpy
-
 class OasysSurfaceData(object):
     def __init__(self,
                  xx=None,

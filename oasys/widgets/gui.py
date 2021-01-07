@@ -1,6 +1,4 @@
-import os, sys, platform
-
-from PyQt5.QtCore import Qt, QCoreApplication
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget, QGridLayout, QFileDialog, QMessageBox, QLabel, QComboBox, QTextEdit
 
 from orangewidget import gui as orange_gui
@@ -204,3 +202,12 @@ def plotWindow(parent=None, backend=None,
 
     return plot_window
 
+from silx.gui.plot import ImageView
+
+def imageWiew(parent=None):
+    image_view = ImageView(parent=parent)
+    image_view._toolbar.setVisible(False)
+    image_view._toolbar = image_view._createToolBar("", parent=image_view)
+    image_view.insertToolBar(image_view._interactiveModeToolBar, image_view._toolbar)
+
+    return image_view
