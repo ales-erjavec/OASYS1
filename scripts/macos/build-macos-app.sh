@@ -8,14 +8,13 @@ Create (build) an macOS application bundle
 
 Options:
     --python-version VERSION
-        Python version to install in the application bundle (default: 3.7.3)
+        Python version to install in the application bundle (default: 3.7.5)
 
     --pip-arg  ARG
         Pip install arguments to populate the python environemnt in the
         application bundle. Can be used multiple times.
-        If not supplied then by default the latest PyPi published Orange3 and
-        requirements as recorded in scripts/macos/requirements.txt are
-        installed.
+        If not supplied then by default the latest PyPi published Orange3 is
+        used.
 
     -h|--help
         Print this help
@@ -24,7 +23,7 @@ Examples
     build-macos-app.sh ~/Applications/Oasys1.2.app
         Build the application using the latest published version on pypi
 
-    build-macos-app.sh --pip-arg={Orange3==3.3.12,PyQt5} ~/Applications/Oasys1.2.app
+    build-macos-app.sh --pip-arg={Oasys1.2==3.3.12,PyQt5} ~/Applications/Oasys1.2.app
         Build the application using the specified Orange version
 
     build-macos-app.sh --pip-arg=path-tolocal-checkout ~/Applications/Oasys1.2-Dev.app
@@ -73,7 +72,7 @@ APPDIR=${1:?"Target APPDIR argument is missing"}
 PYVER=${PYTHON_VERSION%.*}  # Major.Minor
 
 if [[ ${#PIP_REQ_ARGS[@]} -eq 0 ]]; then
-    PIP_REQ_ARGS+=( Oasys1 -r "${DIR}"/requirements.txt )
+    PIP_REQ_ARGS+=( Oasys1 'PyQt5~=5.12.0' 'PyQtWebEngine~=5.12.0' Oasys1-ShadowOui Oasys1-SRW Oasys1-XOPPY)
 fi
 
 mkdir -p "${APPDIR}"/Contents/MacOS
@@ -83,16 +82,11 @@ mkdir -p "${APPDIR}"/Contents/Resources
 cp -a "${DIR}"/skeleton.app/Contents/{Resources,Info.plist.in} \
     "${APPDIR}"/Contents
 
-cp -R "${DIR}"/skeleton.app/Contents/Frameworks/lib \
-"${APPDIR}"/Contents/Frameworks
-
-cp -f "${DIR}"/skeleton.app/Contents/MacOS/ENV \
-"${APPDIR}"/Contents/MacOS
-
-
 # Layout a 'relocatable' python framework in the app directory
 "${DIR}"/python-framework.sh \
     --version "${PYTHON_VERSION}" \
+    --macos 10.9 \
+    --install-certifi \
     "${APPDIR}"/Contents/Frameworks
 
 ln -fs ../Frameworks/Python.framework/Versions/${PYVER}/Resources/Python.app/Contents/MacOS/Python \
@@ -102,32 +96,12 @@ ln -fs ../Frameworks/Python.framework/Versions/${PYVER}/bin/python${PYVER} \
     "${APPDIR}"/Contents/MacOS/python
 
 "${APPDIR}"/Contents/MacOS/python -m ensurepip
-"${APPDIR}"/Contents/MacOS/python -m pip install pip~=19.1.1 wheel
-
-# Python 3.6 on macOS no longer links the obsolete system libssl.
-# Instead it builds/ships a it's own which expects a cert.pem in hardcoded
-# /Library/Python.framework/3.6/etc/openssl/ path (but does no actually ship
-# the file in the framework installer). Instead a user is prompted during
-# .pkg install to run a script that pip install's certifi and links its
-# cacert.pem to the etc/openssl dir. We do the same but must also patch
-# ssl.py to load the cert store from a python prefix relative path (this is
-# done by python-framework.sh script). Another option would be to export system
-# certificates at runtime using the 'security' command line tool.
-"${APPDIR}"/Contents/MacOS/python -m pip install certifi
-# link the certifi supplied cert store to ${prefix}/etc/openssl/cert.pem
-ln -fs ../../lib/python${PYVER}/site-packages/certifi/cacert.pem \
-    "${APPDIR}"/Contents/Frameworks/Python.framework/Versions/${PYVER}/etc/openssl/cert.pem
-# sanity check
-test -r "${APPDIR}"/Contents/Frameworks/Python.framework/Versions/${PYVER}/etc/openssl/cert.pem
-
-cp -f "${DIR}"/skeleton.app/Contents/Frameworks/xraylib/*.* \
-"${APPDIR}"/Contents/Frameworks/Python.framework/Versions/3.7/lib/python3.7/site-packages
+"${APPDIR}"/Contents/MacOS/python -m pip install pip~=20.3 wheel
 
 cat <<'EOF' > "${APPDIR}"/Contents/MacOS/Oasys1
 #!/bin/bash
 
 DIR=$(dirname "$0")
-source "$DIR"/ENV
 
 # LaunchServices passes the Carbon process identifier to the application with
 # -psn parameter - we do not want it
@@ -146,7 +120,6 @@ cat <<'EOF' > "${APPDIR}"/Contents/MacOS/pip
 #!/bin/bash
 
 DIR=$(dirname "$0")
-source "$DIR"/ENV
 
 # Disable user site packages
 export PYTHONNOUSERSITE=1
@@ -157,7 +130,7 @@ chmod +x "${APPDIR}"/Contents/MacOS/pip
 
 PYTHON="${APPDIR}"/Contents/MacOS/python
 
-"${PYTHON}" -m pip install "${PIP_REQ_ARGS[@]}"
+"${PYTHON}" -m pip install --no-warn-script-location "${PIP_REQ_ARGS[@]}"
 
 VERSION=$("${PYTHON}" -m pip show oasys1 | grep -E '^Version:' |
           cut -d " " -f 2)
@@ -173,6 +146,6 @@ rm "${APPDIR}"/Contents/Info.plist.in
     cleanup() { rm -r "${tempdir}"; }
     trap cleanup EXIT
     cd "${tempdir}"
-    "${PYTHON}" -m pip install --no-cache-dir --no-index oasys1
+    "${PYTHON}" -m pip install --no-cache-dir --no-index oasys1 PyQt5
     "${PYTHON}" -m oasys.canvas --help > /dev/null
 )
