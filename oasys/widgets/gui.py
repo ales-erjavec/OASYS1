@@ -202,12 +202,41 @@ def plotWindow(parent=None, backend=None,
 
     return plot_window
 
-from silx.gui.plot import ImageView
+from silx.gui.plot import ImageView, PlotToolButtons
+import silx.gui.qt as qt
 
 def imageWiew(parent=None):
     image_view = ImageView(parent=parent)
     image_view._toolbar.setVisible(False)
-    image_view._toolbar = image_view._createToolBar("", parent=image_view)
+
+    def _createToolBar(image_view, title, parent):
+        image_view.keepDataAspectRatioButton = PlotToolButtons.AspectToolButton(parent=image_view, plot=image_view)
+        image_view.keepDataAspectRatioButton.setVisible(True)
+
+        image_view.yAxisInvertedButton = PlotToolButtons.YAxisOriginToolButton(parent=image_view, plot=image_view)
+        image_view.yAxisInvertedButton.setVisible(True)
+
+        toolbar = qt.QToolBar(title, parent)
+
+        objects = image_view.group.actions()
+        index = objects.index(image_view.colormapAction)
+        objects.insert(index + 1, image_view.keepDataAspectRatioButton)
+        objects.insert(index + 2, image_view.yAxisInvertedButton)
+
+        for obj in objects:
+            if isinstance(obj, qt.QAction):
+                toolbar.addAction(obj)
+            else:
+                if obj is image_view.keepDataAspectRatioButton:
+                    image_view.keepDataAspectRatioAction = toolbar.addWidget(obj)
+                elif obj is image_view.yAxisInvertedButton:
+                    image_view.yAxisInvertedAction = toolbar.addWidget(obj)
+                else:
+                    raise RuntimeError()
+
+        return toolbar
+
+    image_view._toolbar = _createToolBar(image_view, title='Plot', parent=image_view)
     image_view.insertToolBar(image_view._interactiveModeToolBar, image_view._toolbar)
 
     return image_view
