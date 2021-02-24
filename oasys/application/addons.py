@@ -57,6 +57,7 @@ OFFICIAL_ADDONS = [a for a in OFFICIAL_ADDONS if a]
 
 # query PyPI
 official_addons_list = []
+is_auto_update = True
 
 try:
     for package in OFFICIAL_ADDONS:

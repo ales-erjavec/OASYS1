@@ -3,4 +3,4 @@ syned
 wofry
 OASYS1
 PyQt5==5.15.2
-pip
+pip==21.0.1
