@@ -67,7 +67,7 @@ for a in open(os.path.join(package_dirname("oasys.application"), "data", "INTERN
         if len(a) == 2:
             MAX_VERSION[library_name] = a[1]
         else:
-            MAX_VERSION[library_name] = "-1"
+            MAX_VERSION[library_name] = None
 
 # query PyPI
 
@@ -98,10 +98,12 @@ def is_updatable(item):
     inst, dist = item
     try:
         if version.StrictVersion(dist.version) < version.StrictVersion(inst.version):
-            return MAX_VERSION[dist.project_name] >= version.StrictVersion(inst.version)
+            if MAX_VERSION[dist.project_name] is None: return True
+            else: return version.StrictVersion(MAX_VERSION[dist.project_name]) >= version.StrictVersion(inst.version)
     except ValueError:
         if version.LooseVersion(dist.version) < version.LooseVersion(inst.version):
-            return MAX_VERSION[dist.project_name] >= version.LooseVersion(inst.version)
+            if MAX_VERSION[dist.project_name] is None: return True
+            else: return version.LooseVersion(MAX_VERSION[dist.project_name]) >= version.LooseVersion(inst.version)
 
 class InternalLibrariesManagerWidget(QWidget):
 
