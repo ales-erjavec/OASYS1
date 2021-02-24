@@ -55,8 +55,19 @@ PYPI_API_JSON = "https://pypi.org/pypi/{name}/json"
 
 # read add-on list
 
-INTERNAL_LIBRARIES = [a.strip() for a in open(os.path.join(package_dirname("oasys.application"), "data", "INTERNAL_LIBRARIES.txt"), "rt")]
-INTERNAL_LIBRARIES = [a for a in INTERNAL_LIBRARIES if a]
+INTERNAL_LIBRARIES = []
+MAX_VERSION        = {}
+
+for a in open(os.path.join(package_dirname("oasys.application"), "data", "INTERNAL_LIBRARIES.txt"), "rt"):
+    a = a.strip()
+    if a:
+        a = a.split(sep="==")
+        library_name = a[0]
+        INTERNAL_LIBRARIES.append(library_name)
+        if len(a) == 2:
+            MAX_VERSION[library_name] = a[1]
+        else:
+            MAX_VERSION[library_name] = "-1"
 
 # query PyPI
 
@@ -78,8 +89,19 @@ log = logging.getLogger(__name__)
 
 from oasys.application.addons import Uninstall, Upgrade, Install
 from oasys.application.addons import OSX_NSURL_toLocalFile, Installer
-from oasys.application.addons import get_meta_from_archive, cleanup, TristateCheckItemDelegate, is_updatable, method_queued, unique
+from oasys.application.addons import get_meta_from_archive, cleanup, TristateCheckItemDelegate, method_queued, unique
 from oasys.application.addons import Installed, Installable, Available
+
+def is_updatable(item):
+    if isinstance(item, Available) or item.installable is None:
+        return False
+    inst, dist = item
+    try:
+        if version.StrictVersion(dist.version) < version.StrictVersion(inst.version):
+            return MAX_VERSION[dist.project_name] >= version.StrictVersion(inst.version)
+    except ValueError:
+        if version.LooseVersion(dist.version) < version.LooseVersion(inst.version):
+            return MAX_VERSION[dist.project_name] >= version.LooseVersion(inst.version)
 
 class InternalLibrariesManagerWidget(QWidget):
 

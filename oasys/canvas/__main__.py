@@ -268,7 +268,8 @@ def main(argv=None):
         dirpath = os.path.abspath(os.path.dirname(orangecanvas.__file__))
         QDir.addSearchPath("canvas_icons", os.path.join(dirpath, "icons"))
 
-        no_update = QSettings().value("startup/no-update-inner-libraries", False, type=bool) or options.no_update
+        if not options.no_update is None: no_update = options.no_update
+        else: no_update = QSettings().value("startup/no-update-inner-libraries", False, type=bool)
 
         canvas_window = OASYSMainWindow(parent=None, no_update=no_update)
         canvas_window.setWindowIcon(config.application_icon())

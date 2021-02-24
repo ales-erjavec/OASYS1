@@ -32,6 +32,7 @@ from orangecanvas.gui.utils import (
 from orangecanvas import config
 
 import oasys.application.addons as addons
+import oasys.application.internal_libraries as internal_libraries
 
 from . import widgetsscheme
 from .conf import oasysconf
@@ -456,7 +457,7 @@ def load_pypi_packages():
     return items
 
 def load_pypi_internal_libraries():
-    return addons.list_available_internal_libraries()
+    return internal_libraries.list_available_internal_libraries()
 
 def resource_path(path):
     return pkg_resources.resource_filename(__name__, path)
@@ -565,7 +566,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
 
             self.__internal_library_to_update = []
             for item in items:
-                if addons.is_updatable(item): self.__internal_library_to_update.append(item)
+                if internal_libraries.is_updatable(item): self.__internal_library_to_update.append(item)
             self.__internal_library_updatable = len(self.__internal_library_to_update)
 
     def new_instance(self):
@@ -1067,7 +1068,6 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                 print("Error in creating Customized Menu: " + str(menu_instance))
                 print(str(exception.args[0]))
                 continue
-
 
     def open_internal_libraries(self, is_app_to_be_closed=False):
         from oasys.application.internal_libraries import InternalLibrariesManagerDialog

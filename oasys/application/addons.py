@@ -50,31 +50,12 @@ from orangecanvas.resources import package_dirname
 
 PYPI_API_JSON = "https://pypi.org/pypi/{name}/json"
 
-#####################################################
-# MAKE INTERNAL LIBRARIES DYNAMICAL
-
 # read add-on list
 
-INTERNAL_LIBRARIES = [a.strip() for a in open(os.path.join(package_dirname("oasys.application"), "data", "INTERNAL_LIBRARIES.txt"), "rt")]
-INTERNAL_LIBRARIES = [a for a in INTERNAL_LIBRARIES if a]
 OFFICIAL_ADDONS = [a.strip() for a in open(os.path.join(package_dirname("oasys.application"), "data", "OFFICIAL_ADDONS.txt"), "rt")]
 OFFICIAL_ADDONS = [a for a in OFFICIAL_ADDONS if a]
 
 # query PyPI
-
-internal_libraries_list = []
-is_auto_update = True
-
-try:
-    for package in INTERNAL_LIBRARIES:
-        r = urlopen(PYPI_API_JSON.format(name=package)).read().decode("utf-8")
-        p = json.loads(r)
-        p["releases"] = p["releases"][p["info"]["version"]] # load only the last version
-
-        internal_libraries_list.append(p)
-except:
-    is_auto_update = False
-
 official_addons_list = []
 
 try:
@@ -781,28 +762,6 @@ class AddonManagerDialog(QDialog):
 
 import platform
 
-def list_available_internal_libraries():
-    if is_auto_update:
-
-        system, node, release, version, machine, processor = platform.uname()
-
-        packages = []
-        for library in internal_libraries_list:
-            try:
-                info = library["info"]
-
-                if not ("Debian 3" in version and info["name"]=="PyQt5"):
-                    packages.append(
-                    Installable(info["name"], info["version"],
-                                info["summary"], info["description"],
-                                info["package_url"],
-                                info["package_url"])
-                )
-            except (TypeError, KeyError):
-                continue  # skip invalid packages
-
-        return packages
-
 def list_available_versions():
     """
     List add-ons available.
@@ -969,21 +928,6 @@ def installable_items(pypipackages, installed=[]):
             assert False
         items.append(item)
     return items
-
-def update_internal_libraries(internal_libraries_to_update=None):
-    try:
-        pip = PipInstaller()
-
-        if not internal_libraries_to_update is None:
-            to_update_list = [item.installable for item in internal_libraries_to_update]
-        else:
-            to_update_list = list_available_internal_libraries()
-
-        for installable in to_update_list:
-            pip.upgrade(installable)
-            print("Updated: " + installable.name)
-    except Exception as ex:
-        print("Internal libraries update failed")
 
 Install, Upgrade, Uninstall = 1, 2, 3
 

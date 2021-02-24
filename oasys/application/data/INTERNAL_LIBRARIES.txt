@@ -2,5 +2,5 @@ srxraylib
 syned
 wofry
 OASYS1
-PyQt5
+PyQt5==5.15.2
 pip
