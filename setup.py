@@ -9,7 +9,7 @@ from setuptools import setup
 
 NAME = 'OASYS1'
 
-VERSION = '1.2.71'
+VERSION = '1.2.72'
 
 ISRELEASED = True
 
@@ -50,7 +50,7 @@ INSTALL_REQUIRES = (
     'setuptools',
     'requests',
     'numpy>=1.18.0',
-    'PyQt5>=5.15',
+    'PyQt5==5.15.2',
     'scipy>=1.4.1',
     'matplotlib>=3.3.2',
     'oasys-canvas-core>=1.0.6',
