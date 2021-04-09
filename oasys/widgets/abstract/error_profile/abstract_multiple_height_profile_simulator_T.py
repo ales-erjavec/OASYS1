@@ -75,13 +75,13 @@ class OWAbstractMultipleHeightProfileSimulatorT(OWWidget):
     want_control_area = 1
 
     MAX_WIDTH = 1320
-    MAX_HEIGHT = 700
+    MAX_HEIGHT = 800
 
-    IMAGE_WIDTH = 860
-    IMAGE_HEIGHT = 645
+    IMAGE_WIDTH = 890
+    IMAGE_HEIGHT = 785
 
     CONTROL_AREA_WIDTH = 405
-    TABS_AREA_HEIGHT = 618
+    TABS_AREA_HEIGHT = 718
 
     xx = None
     yy = None
@@ -90,11 +90,11 @@ class OWAbstractMultipleHeightProfileSimulatorT(OWWidget):
     kind_of_profile_x = Setting(0)
     kind_of_profile_y = Setting(0)
 
-    step_x = Setting(0.001)
-    step_y = Setting(0.01)
+    step_x = Setting(0.0)
+    step_y = Setting(0.0)
 
-    dimension_x = Setting(0.021)
-    dimension_y = Setting(0.201)
+    dimension_x = Setting(0.0)
+    dimension_y = Setting(0.0)
 
     power_law_exponent_beta_x = Setting(3.0)
     power_law_exponent_beta_y = Setting(3.0)
@@ -122,7 +122,7 @@ class OWAbstractMultipleHeightProfileSimulatorT(OWWidget):
 
     center_x = Setting(1)
     modify_x = Setting(0)
-    new_length_x = Setting(20.1)
+    new_length_x = Setting(0.0)
     filler_value_x = Setting(0.0)
 
     renormalize_x = Setting(0)
@@ -134,12 +134,12 @@ class OWAbstractMultipleHeightProfileSimulatorT(OWWidget):
 
     center_y = Setting(1)
     modify_y = Setting(0)
-    new_length_y = Setting(200.1)
+    new_length_y = Setting(0.0)
     filler_value_y = Setting(0.0)
 
     renormalize_y = 1
 
-    heigth_profile_file_name = Setting('height_error_profile')
+    heigth_profile_file_name = Setting('height_error_profile.hdf5')
 
     inputs=[("DABAM 1D Profile", numpy.ndarray, "receive_dabam_profile")]
 
@@ -424,12 +424,12 @@ class OWAbstractMultipleHeightProfileSimulatorT(OWWidget):
 
         self.shadow_output = oasysgui.textArea()
 
-        out_box = oasysgui.widgetBox(tab_out, "System Output", addSpace=True, orientation="horizontal", height=580)
+        out_box = oasysgui.widgetBox(tab_out, "System Output", addSpace=True, orientation="horizontal", height=680)
         out_box.layout().addWidget(self.shadow_output)
 
         gui.rubber(self.controlArea)
 
-        self.figure = Figure(figsize=(600, 600))
+        self.figure = Figure(figsize=(10, 7))
         self.figure.patch.set_facecolor('white')
 
         self.axis = self.figure.add_subplot(111, projection='3d')
@@ -437,6 +437,9 @@ class OWAbstractMultipleHeightProfileSimulatorT(OWWidget):
         self.axis.set_zlabel("Z [nm]")
 
         self.figure_canvas = FigureCanvasQTAgg(self.figure)
+        self.figure_canvas.setFixedWidth(self.IMAGE_WIDTH)
+        self.figure_canvas.setFixedHeight(self.IMAGE_HEIGHT)
+
         self.mainArea.layout().addWidget(self.figure_canvas)
 
         gui.rubber(self.mainArea)

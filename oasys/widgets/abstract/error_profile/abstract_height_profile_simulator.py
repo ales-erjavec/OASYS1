@@ -29,13 +29,13 @@ class OWAbstractHeightErrorProfileSimulator(OWWidget):
     want_control_area = 1
 
     MAX_WIDTH = 1320
-    MAX_HEIGHT = 700
+    MAX_HEIGHT = 800
 
-    IMAGE_WIDTH = 860
-    IMAGE_HEIGHT = 645
+    IMAGE_WIDTH = 890
+    IMAGE_HEIGHT = 785
 
     CONTROL_AREA_WIDTH = 405
-    TABS_AREA_HEIGHT = 618
+    TABS_AREA_HEIGHT = 718
 
     xx = None
     yy = None
@@ -44,11 +44,11 @@ class OWAbstractHeightErrorProfileSimulator(OWWidget):
     kind_of_profile_x = Setting(0)
     kind_of_profile_y = Setting(0)
 
-    step_x = Setting(0.001)
-    step_y = Setting(0.01)
+    step_x = Setting(0.0)
+    step_y = Setting(0.0)
 
-    dimension_x = Setting(0.021)
-    dimension_y = Setting(0.201)
+    dimension_x = Setting(0.0)
+    dimension_y = Setting(0.0)
 
     power_law_exponent_beta_x = Setting(3.0)
     power_law_exponent_beta_y = Setting(3.0)
@@ -65,14 +65,14 @@ class OWAbstractHeightErrorProfileSimulator(OWWidget):
     rms_y = Setting(1)
     montecarlo_seed_y = Setting(8788)
 
-    heigth_profile_1D_file_name_x= Setting("mirror_1D_x.dat")
+    heigth_profile_1D_file_name_x= Setting("mirror_1D_x.datdat")
     delimiter_x = Setting(0)
     conversion_factor_x_x = Setting(0.001)
     conversion_factor_x_y = Setting(1e-6)
 
     center_x = Setting(1)
     modify_x = Setting(0)
-    new_length_x = Setting(0.201)
+    new_length_x = Setting(0.0)
     filler_value_x = Setting(0.0)
 
     renormalize_x = Setting(0)
@@ -84,7 +84,7 @@ class OWAbstractHeightErrorProfileSimulator(OWWidget):
 
     center_y = Setting(1)
     modify_y = Setting(0)
-    new_length_y = Setting(2.001)
+    new_length_y = Setting(0.0)
     filler_value_y = Setting(0.0)
 
     renormalize_y = Setting(0)
@@ -362,12 +362,12 @@ class OWAbstractHeightErrorProfileSimulator(OWWidget):
 
         self.shadow_output = oasysgui.textArea()
 
-        out_box = oasysgui.widgetBox(tab_out, "System Output", addSpace=True, orientation="horizontal", height=580)
+        out_box = oasysgui.widgetBox(tab_out, "System Output", addSpace=True, orientation="horizontal", height=680)
         out_box.layout().addWidget(self.shadow_output)
 
         gui.rubber(self.controlArea)
 
-        self.figure = Figure(figsize=(600, 600))
+        self.figure = Figure(figsize=(10, 7))
         self.figure.patch.set_facecolor('white')
 
         self.axis = self.figure.add_subplot(111, projection='3d')
@@ -375,6 +375,9 @@ class OWAbstractHeightErrorProfileSimulator(OWWidget):
         self.axis.set_zlabel("Z [nm]")
 
         self.figure_canvas = FigureCanvasQTAgg(self.figure)
+        self.figure_canvas.setFixedWidth(self.IMAGE_WIDTH)
+        self.figure_canvas.setFixedHeight(self.IMAGE_HEIGHT)
+
         self.mainArea.layout().addWidget(self.figure_canvas)
 
         gui.rubber(self.mainArea)

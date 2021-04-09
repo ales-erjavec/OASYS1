@@ -30,13 +30,13 @@ class OWAbstractDabamHeightProfile(OWWidget):
     want_control_area = 1
 
     MAX_WIDTH = 1320
-    MAX_HEIGHT = 700
+    MAX_HEIGHT = 820
 
-    IMAGE_WIDTH = 860
-    IMAGE_HEIGHT = 645
+    IMAGE_WIDTH = 880
+    IMAGE_HEIGHT = 770
 
     CONTROL_AREA_WIDTH = 405
-    TABS_AREA_HEIGHT = 618
+    TABS_AREA_HEIGHT = 738
 
     xx = None
     yy = None
@@ -48,12 +48,12 @@ class OWAbstractDabamHeightProfile(OWWidget):
     slope_error_from = Setting(0.0)
     slope_error_to = Setting(1.5)
     dimension_y_from = Setting(0.0)
-    dimension_y_to = Setting(2.0)
+    dimension_y_to = Setting(0.0)
 
     use_undetrended = Setting(0)
 
-    step_x = Setting(0.01)
-    dimension_x = Setting(0.1)
+    step_x = Setting(0.0)
+    dimension_x = Setting(0.0)
 
     kind_of_profile_x = Setting(3)
 
@@ -73,14 +73,14 @@ class OWAbstractDabamHeightProfile(OWWidget):
 
     center_x = Setting(1)
     modify_x = Setting(0)
-    new_length_x = Setting(0.201)
+    new_length_x = Setting(0.0)
     filler_value_x = Setting(0.0)
 
     renormalize_x = Setting(0)
 
     center_y = Setting(1)
     modify_y = Setting(0)
-    new_length_y = Setting(0.2)
+    new_length_y = Setting(0.0)
     filler_value_y = Setting(0.0)
 
     renormalize_y = Setting(1)
@@ -95,7 +95,6 @@ class OWAbstractDabamHeightProfile(OWWidget):
 
     tab=[]
 
-    plotted = False
 
     def __init__(self):
         super().__init__()
@@ -214,7 +213,7 @@ class OWAbstractDabamHeightProfile(OWWidget):
         self.le_dimension_y_to = oasysgui.lineEdit(input_box_2, self, "dimension_y_to", "To",
                            labelWidth=60, valueType=float, orientation="horizontal")
 
-        table_box = oasysgui.widgetBox(tab_input, "Search Results", addSpace=True, orientation="vertical", height=250)
+        table_box = oasysgui.widgetBox(tab_input, "Search Results", addSpace=True, orientation="vertical", height=350)
 
         self.overlay_search = Overlay(table_box, self.search_profiles)
         self.overlay_search.hide()
@@ -390,8 +389,6 @@ class OWAbstractDabamHeightProfile(OWWidget):
 
         ##----------------------------------
 
-
-
         output_box = oasysgui.widgetBox(tab_gener, "Outputs", addSpace=True, orientation="vertical")
 
         select_file_box = oasysgui.widgetBox(output_box, "", addSpace=True, orientation="horizontal")
@@ -419,7 +416,7 @@ class OWAbstractDabamHeightProfile(OWWidget):
         self.server_box = oasysgui.textArea(height=400)
 
         ##----------------------------------
-        out_box = oasysgui.widgetBox(tab_out, "System Output", addSpace=True, orientation="horizontal", height=500)
+        out_box = oasysgui.widgetBox(tab_out, "System Output", addSpace=True, orientation="horizontal", height=680)
         out_box.layout().addWidget(self.shadow_output)
 
         gui.rubber(self.controlArea)
@@ -539,13 +536,15 @@ class OWAbstractDabamHeightProfile(OWWidget):
         self.plot_canvas[4].setGraphTitle("Autocovariance Function of Heights Profile")
         self.plot_canvas[4].setInteractiveMode(mode='zoom')
 
-        self.figure = Figure(figsize=(self.IMAGE_HEIGHT, self.IMAGE_HEIGHT)) # QUADRATA!
+        self.figure = Figure(figsize=(10, 7))
         self.figure.patch.set_facecolor('white')
 
         self.axis = self.figure.add_subplot(111, projection='3d')
         self.axis.set_zlabel("Z [nm]")
 
         self.plot_canvas[5] = FigureCanvasQTAgg(self.figure)
+        self.plot_canvas[5].setFixedWidth(self.IMAGE_WIDTH)
+        self.plot_canvas[5].setFixedHeight(self.IMAGE_HEIGHT)
 
         self.profileInfo = oasysgui.textArea(height=self.IMAGE_HEIGHT-5, width=400)
 
@@ -975,8 +974,7 @@ class OWAbstractDabamHeightProfile(OWWidget):
             if not not_interactive_mode:
                 self.tabs.setCurrentIndex(6)
 
-                if self.plotted: self.plot_canvas[5].draw()
-                else: self.plotted = True
+                self.plot_canvas[5].draw()
 
                 QMessageBox.information(self, "QMessageBox.information()",
                                         "Height Profile calculated: if the result is satisfactory,\nclick \'Generate Height Profile File\' to complete the operation ",
