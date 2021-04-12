@@ -934,7 +934,7 @@ Install, Upgrade, Uninstall = 1, 2, 3
 
 from oasys.util.external_command import CommandFailed, run_command
 
-IS_WINDOW = sys.platform == "win32"
+IS_WINDOW = (sys.platform == "win32")
 
 class Installer(QObject):
     installStatusChanged = Signal(str)
@@ -968,21 +968,18 @@ class Installer(QObject):
                 self.setStatusMessage(
                     "Installing {}".format(cleanup(pkg.installable.name)))
                 if self.conda: self.conda.install(pkg.installable, raise_on_fail=False)
-                self.pip.install(pkg.installable, deep=not IS_WINDOW)
+                self.pip.install(pkg.installable, admin=not IS_WINDOW)
             elif command == Upgrade:
                 self.setStatusMessage(
                     "Upgrading {}".format(cleanup(pkg.installable.name)))
-                if self.conda:
-                    self.conda.upgrade(pkg.installable, raise_on_fail=False)
-                self.pip.upgrade(pkg.installable, deep=not IS_WINDOW)
+                if self.conda: self.conda.upgrade(pkg.installable, raise_on_fail=False)
+                self.pip.upgrade(pkg.installable, admin=not IS_WINDOW)
             elif command == Uninstall:
                 self.setStatusMessage(
                     "Uninstalling {}".format(cleanup(pkg.local.project_name)))
                 if self.conda:
-                    try:
-                        self.conda.uninstall(pkg.local, raise_on_fail=True)
-                    except CommandFailed:
-                        self.pip.uninstall(pkg.local)
+                    try:                  self.conda.uninstall(pkg.local, raise_on_fail=True)
+                    except CommandFailed: self.pip.uninstall(pkg.local)
                 else:
                     self.pip.uninstall(pkg.local)
         except CommandFailed as ex:
@@ -1004,37 +1001,25 @@ class PipInstaller:
         arguments = QSettings().value('add-ons/pip-install-arguments', '', type=str)
         self.arguments = shlex.split(arguments)
 
-    def install(self, pkg, deep=True):
-        if deep: cmd = ["python", "-m", "pip", "install"]
-        else:    cmd = ["python", "-m", "pip", "install", "--user"]
-
+    def install(self, pkg, admin=True):
+        if admin: cmd = ["python", "-m", "pip", "install"]
+        else:     cmd = ["python", "-m", "pip", "install", "--user"]
         cmd.extend(self.arguments)
-        if pkg.package_url.startswith("http://") or pkg.package_url.startswith("https://"):
-            cmd.append(pkg.name)
-        else:
-            # Package url is path to the (local) wheel
-            cmd.append(pkg.package_url)
+        if pkg.package_url.startswith("http://") or pkg.package_url.startswith("https://"): cmd.append(pkg.name)
+        else: cmd.append(pkg.package_url) # Package url is path to the (local) wheel
 
         run_command(cmd)
 
-    def upgrade(self, package, deep=True):
-        # This is done in two steps to avoid upgrading
-        # all of the dependencies - faster
-        self.upgrade_no_deps(package, deep)
-
-        self.install(package)
-
-    def upgrade_no_deps(self, package, deep=True):
-        if deep: cmd = ["python", "-m", "pip", "install", "--upgrade", "--no-cache-dir"]
-        else:    cmd = ["python", "-m", "pip", "install", "--upgrade", "--user", "--no-cache-dir"]
+    def upgrade(self, package, admin=True):
+        if admin: cmd = ["python", "-m", "pip", "install", "--upgrade", "--no-cache-dir"]
+        else:     cmd = ["python", "-m", "pip", "install", "--upgrade", "--no-cache-dir", "--user"]
         cmd.extend(self.arguments)
         cmd.append(package.name)
 
         run_command(cmd)
 
     def uninstall(self, dist):
-        cmd = ["python", "-m", "pip", "uninstall", "--yes", dist.project_name]
-        run_command(cmd)
+        run_command(["python", "-m", "pip", "uninstall", "--yes", dist.project_name])
 
 
 class CondaInstaller:
@@ -1064,19 +1049,13 @@ class CondaInstaller:
             return conda
 
     def install(self, pkg, raise_on_fail=False):
-        cmd = [self.conda, "install", "--yes", "--quiet",
-               self._normalize(pkg.name)]
-        run_command(cmd, raise_on_fail=raise_on_fail)
+        run_command([self.conda, "install", "--yes", "--quiet", self._normalize(pkg.name)], raise_on_fail=raise_on_fail)
 
     def upgrade(self, pkg, raise_on_fail=False):
-        cmd = [self.conda, "upgrade", "--yes", "--quiet",
-               self._normalize(pkg.name)]
-        run_command(cmd, raise_on_fail=raise_on_fail)
+        run_command([self.conda, "upgrade", "--yes", "--quiet", self._normalize(pkg.name)], raise_on_fail=raise_on_fail)
 
     def uninstall(self, dist, raise_on_fail=False):
-        cmd = [self.conda, "uninstall", "--yes",
-               self._normalize(dist.project_name)]
-        run_command(cmd, raise_on_fail=raise_on_fail)
+        run_command([self.conda, "uninstall", "--yes", self._normalize(dist.project_name)], raise_on_fail=raise_on_fail)
 
     def _normalize(self, name):
         # Conda 4.3.30 is inconsistent, upgrade command is case sensitive
