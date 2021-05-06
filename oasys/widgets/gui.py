@@ -204,10 +204,15 @@ def plotWindow(parent=None, backend=None,
 
 from silx.gui.plot import ImageView, PlotToolButtons
 import silx.gui.qt as qt
+from silx.gui.plot.Profile import ProfileToolBar
 
 def imageWiew(parent=None):
     image_view = ImageView(parent=parent)
     image_view._toolbar.setVisible(False)
+
+    image_view.removeToolBar(image_view.profile)
+    image_view.profile = ProfileToolBar(plot=image_view)
+    image_view.addToolBar(image_view.profile)
 
     def _createToolBar(image_view, title, parent):
         image_view.keepDataAspectRatioButton = PlotToolButtons.AspectToolButton(parent=image_view, plot=image_view)
