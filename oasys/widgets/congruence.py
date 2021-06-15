@@ -68,10 +68,10 @@ def checkFileName(fileName):
     if os.path.isabs(fileName):
         filePath = fileName
     else:
-        if fileName.startswith('/'):
+        if fileName.startswith(os.path.sep):
             filePath =  os.getcwd() + fileName
         else:
-            filePath = os.getcwd() + '/' + fileName
+            filePath = os.getcwd() + os.path.sep + fileName
 
     return filePath
 
