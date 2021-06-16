@@ -91,7 +91,12 @@ from matplotlib import MatplotlibDeprecationWarning
 warnings.filterwarnings("ignore",category=MatplotlibDeprecationWarning)
 warnings.filterwarnings("ignore",category=RuntimeWarning)
 
+import sys
+
 def main(argv=None):
+
+    # prevents OASYS to crash on large worskpaces (too many widgets)
+    sys.setrecursionlimit(10000)
 
     # PREVENTS MESSAGING FROM THREADING PROBLEMS IN MATPLOTLIB:
     # The process has forked and you cannot use this CoreFoundation functionality safely. You MUST exec().
