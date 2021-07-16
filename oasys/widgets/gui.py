@@ -75,6 +75,14 @@ def selectFileFromDialog(widget, previous_file_path="", message="Select File", s
     else:
         return previous_file_path
 
+def selectSaveFileFromDialog(widget, message="Save File", default_file_name="", file_extension_filter="*.*"):
+    file_path = QFileDialog.getSaveFileName(widget, message, default_file_name, file_extension_filter)[0]
+
+    if not file_path is None and not file_path.strip() == "":
+        return file_path
+    else:
+        return None
+
 def selectDirectoryFromDialog(widget, previous_directory_path="", message="Select Directory", start_directory="."):
     directory_path = QFileDialog.getExistingDirectory(widget, message, start_directory)
     if not directory_path is None and not directory_path.strip() == "":
