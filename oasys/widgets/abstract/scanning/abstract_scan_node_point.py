@@ -167,6 +167,8 @@ class AbstractScanLoopPoint(widget.OWWidget):
         gui.rubber(self.controlArea)
 
     def startLoop(self):
+        if self.has_variable_list(): self.set_VariableName()
+
         self.current_new_object = 1
 
         if self.initialize_start_loop():
@@ -254,3 +256,4 @@ class AbstractScanLoopPoint(widget.OWWidget):
     def create_specific_loop_box(self, box): raise NotImplementedError("This method is abstract")
     def initialize_start_loop(self): raise NotImplementedError("This method is abstract")
     def keep_looping(self): raise NotImplementedError("This method is abstract")
+    def set_VariableName(self): raise NotImplementedError("This method is abstract")
