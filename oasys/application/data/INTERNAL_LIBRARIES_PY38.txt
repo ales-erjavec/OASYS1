@@ -1,0 +1,9 @@
+numpy==1.18.1
+fabio==0.11.0
+srxraylib
+syned
+wofry
+OASYS1
+silx==0.15.0
+PyQt5==5.15.2
+pip==21.0.1

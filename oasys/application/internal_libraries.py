@@ -58,7 +58,10 @@ PYPI_API_JSON = "https://pypi.org/pypi/{name}/json"
 INTERNAL_LIBRARIES = []
 MAX_VERSION        = {}
 
-for a in open(os.path.join(package_dirname("oasys.application"), "data", "INTERNAL_LIBRARIES.txt"), "rt"):
+if sys.version[:3]=="3.8": internal_libraries_file = "INTERNAL_LIBRARIES_PY38.txt"
+else: internal_libraries_file = "INTERNAL_LIBRARIES_PY37.txt"
+
+for a in open(os.path.join(package_dirname("oasys.application"), "data", internal_libraries_file), "rt"):
     a = a.strip()
     if a:
         a = a.split(sep="==")
