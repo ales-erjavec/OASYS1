@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+echo
 set -e
 
 usage() {
@@ -40,7 +40,7 @@ Examples
 DIR=$(dirname "$0")
 
 # Python version in the bundled framework
-PYTHON_VERSION=3.7.3
+PYTHON_VERSION=3.8.8
 
 # Pip arguments used to populate the python environment in the application
 # bundle
@@ -72,7 +72,7 @@ APPDIR=${1:?"Target APPDIR argument is missing"}
 PYVER=${PYTHON_VERSION%.*}  # Major.Minor
 
 if [[ ${#PIP_REQ_ARGS[@]} -eq 0 ]]; then
-    PIP_REQ_ARGS+=( Oasys1 'PyQt5~=5.12.0' 'PyQtWebEngine~=5.12.0' Oasys1-ShadowOui Oasys1-SRW Oasys1-XOPPY)
+    PIP_REQ_ARGS+=('numpy==1.18.1' 'fabio==0.11.0' 'PyQt5==5.15.2' 'PyQtWebEngine~=5.15' 'oasys1')
 fi
 
 mkdir -p "${APPDIR}"/Contents/MacOS
@@ -96,7 +96,7 @@ ln -fs ../Frameworks/Python.framework/Versions/${PYVER}/bin/python${PYVER} \
     "${APPDIR}"/Contents/MacOS/python
 
 "${APPDIR}"/Contents/MacOS/python -m ensurepip
-"${APPDIR}"/Contents/MacOS/python -m pip install pip~=20.3 wheel
+"${APPDIR}"/Contents/MacOS/python -m pip install pip~=21.0.1 wheel
 
 cat <<'EOF' > "${APPDIR}"/Contents/MacOS/Oasys1
 #!/bin/bash
@@ -146,6 +146,6 @@ rm "${APPDIR}"/Contents/Info.plist.in
     cleanup() { rm -r "${tempdir}"; }
     trap cleanup EXIT
     cd "${tempdir}"
-    "${PYTHON}" -m pip install --no-cache-dir --no-index oasys1 PyQt5
+    "${PYTHON}" -m pip install --no-cache-dir --no-index oasys1 PyQt5==5.15.2
     "${PYTHON}" -m oasys.canvas --help > /dev/null
 )

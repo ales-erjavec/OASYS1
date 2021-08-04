@@ -34,7 +34,10 @@ class oasysconf(owconfig.orangeconfig):
     if sys.platform == 'darwin' and sys.version_info[1] <= 6:
         ApplicationVersion = "1.1"
     else:
-        ApplicationVersion = "1.2"
+        if sys.version[:3]=="3.8":
+            ApplicationVersion = "1.3"
+        else:
+            ApplicationVersion = "1.2"
 
     @staticmethod
     def splash_screen():
