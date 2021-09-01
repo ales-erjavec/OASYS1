@@ -182,13 +182,12 @@ class StatisticalDataCollection(object):
     def get_relative_integral_intensity(self, index):
         return self.data[4, index]/self.data[4, 0]
 
-
 class DoublePlotWidget(QWidget):
 
     def __init__(self, parent=None):
         super(QWidget, self).__init__(parent=parent)
 
-        self.plot_canvas = oasysgui.plotWindow(roi=False, control=False, position=True, logScale=False)
+        self.plot_canvas = oasysgui.plotWindow(roi=False, control=False, position=True, logScale=False, fit=True)
         self.plot_canvas.setFixedWidth(700)
         self.plot_canvas.setFixedHeight(520)
 
