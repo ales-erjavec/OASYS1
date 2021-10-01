@@ -697,7 +697,6 @@ class OWAbstractDabamHeightProfile(OWWidget):
                                                       length_from=self.dimension_y_from / self.si_to_user_units,
                                                       length_to=self.dimension_y_to / self.si_to_user_units,
                                                       server=self.server_address)
-            print(profiles)
 
             for index in range(0, len(profiles)):
                 self.table.insertRow(0)

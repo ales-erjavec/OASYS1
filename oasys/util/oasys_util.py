@@ -1,5 +1,9 @@
 import os, numpy
-from PyQt5 import QtCore, QtWidgets, QtGui
+
+try:
+    from PyQt5 import QtCore, QtWidgets, QtGui
+except:
+    pass
 
 class TriggerOut:
     def __init__(self, new_object=False, additional_parameters={}):
@@ -54,14 +58,17 @@ class TTYGrabber:
         os.close(self.outfile)
         os.remove(self.tmpFileName)
 
-class EmittingStream(QtCore.QObject):
-    textWritten = QtCore.pyqtSignal(str)
+try:
+    class EmittingStream(QtCore.QObject):
+        textWritten = QtCore.pyqtSignal(str)
 
-    def write(self, text):
-        self.textWritten.emit(str(text))
+        def write(self, text):
+            self.textWritten.emit(str(text))
 
-    def flush(self):
-        pass
+        def flush(self):
+            pass
+except:
+    pass
 
 import h5py, time
 
@@ -118,131 +125,132 @@ def write_surface_file(zz, xx, yy, file_name, overwrite=True):
 
     file.close()
 
+try:
+    class ShowTextDialog(QtWidgets.QDialog):
 
-class ShowTextDialog(QtWidgets.QDialog):
+        def __init__(self, title, text, width=650, height=400, parent=None, label=False, button=True):
+            QtWidgets.QDialog.__init__(self, parent)
+            self.setModal(True)
+            self.setWindowTitle(title)
+            layout = QtWidgets.QVBoxLayout(self)
 
-    def __init__(self, title, text, width=650, height=400, parent=None, label=False, button=True):
-        QtWidgets.QDialog.__init__(self, parent)
-        self.setModal(True)
-        self.setWindowTitle(title)
-        layout = QtWidgets.QVBoxLayout(self)
+            if label:
+                text_area = QtWidgets.QLabel(text)
+            else:
+                text_edit = QtWidgets.QTextEdit("", self)
+                text_edit.append(text)
+                text_edit.setReadOnly(True)
 
-        if label:
-            text_area = QtWidgets.QLabel(text)
-        else:
-            text_edit = QtWidgets.QTextEdit("", self)
-            text_edit.append(text)
-            text_edit.setReadOnly(True)
+                text_area = QtWidgets.QScrollArea(self)
+                text_area.setWidget(text_edit)
+                text_area.setWidgetResizable(False)
+                text_area.setFixedHeight(height)
+                text_area.setFixedWidth(width)
 
-            text_area = QtWidgets.QScrollArea(self)
-            text_area.setWidget(text_edit)
-            text_area.setWidgetResizable(False)
-            text_area.setFixedHeight(height)
-            text_area.setFixedWidth(width)
+            layout.addWidget(text_area)
 
-        layout.addWidget(text_area)
+            if button:
+                bbox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok)
+                bbox.accepted.connect(self.accept)
+                layout.addWidget(bbox)
 
-        if button:
-            bbox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok)
-            bbox.accepted.connect(self.accept)
-            layout.addWidget(bbox)
+        @classmethod
+        def show_text(cls, title, text, width=650, height=400, parent=None, label=False, button=True):
+            dialog = ShowTextDialog(title, text, width, height, parent, label, button)
+            dialog.show()
 
-    @classmethod
-    def show_text(cls, title, text, width=650, height=400, parent=None, label=False, button=True):
-        dialog = ShowTextDialog(title, text, width, height, parent, label, button)
-        dialog.show()
+    import threading
 
+    class ShowWaitDialog(QtWidgets.QDialog):
+        def __init__(self, title, text, width=500, height=80, parent=None, wait=0.25):
+            QtWidgets.QDialog.__init__(self, parent)
+            self.setModal(True)
+            self.setWindowTitle(title)
+            layout = QtWidgets.QVBoxLayout(self)
+            layout.addWidget(QtWidgets.QLabel(text))
+            self.setFixedWidth(width)
+            self.setFixedHeight(height)
+            self.__progress = QtWidgets.QProgressBar(self)
+            self.__progress.setFixedWidth(width*0.95)
+            self.__progress.setFixedHeight(20)
+            self.__progress.setTextVisible(False)
+            layout.addWidget(self.__progress)
+            self.__thread = None
+            self.__wait = wait
 
-import threading
+        def show(self):
+            def animate_progress_bar():
+                value = 0
+                while (self.__run_progress):
+                    value += 10
+                    if value > 100: value = 0
+                    self.__progress.setValue(value)
+                    time.sleep(self.__wait)
 
-class ShowWaitDialog(QtWidgets.QDialog):
-    def __init__(self, title, text, width=500, height=80, parent=None, wait=0.25):
-        QtWidgets.QDialog.__init__(self, parent)
-        self.setModal(True)
-        self.setWindowTitle(title)
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.addWidget(QtWidgets.QLabel(text))
-        self.setFixedWidth(width)
-        self.setFixedHeight(height)
-        self.__progress = QtWidgets.QProgressBar(self)
-        self.__progress.setFixedWidth(width*0.95)
-        self.__progress.setFixedHeight(20)
-        self.__progress.setTextVisible(False)
-        layout.addWidget(self.__progress)
-        self.__thread = None
-        self.__wait = wait
+            super().show()
+            self.__run_progress = True
+            self.__thread = threading.Thread(target=animate_progress_bar).start()
 
-    def show(self):
-        def animate_progress_bar():
-            value = 0
-            while (self.__run_progress):
-                value += 10
-                if value > 100: value = 0
-                self.__progress.setValue(value)
+        def hide(self):
+            self.__run_progress = False
+            if not self.__thread is None: self.__thread.join()
+            super().hide()
+
+    from PyQt5.QtWidgets import QWidget
+    from PyQt5.QtGui import QPainter, QPalette, QBrush, QPen, QColor
+    from PyQt5.QtCore import Qt
+
+    class Overlay(QWidget):
+
+        def __init__(self, container_widget=None, target_method=None, wait=0.001):
+
+            QWidget.__init__(self, container_widget)
+            self.container_widget = container_widget
+            self.target_method = target_method
+            palette = QPalette(self.palette())
+            palette.setColor(palette.Background, Qt.transparent)
+            self.setPalette(palette)
+            self.__wait = wait
+
+        def paintEvent(self, event):
+            painter = QPainter()
+            painter.begin(self)
+            painter.setRenderHint(QPainter.Antialiasing)
+            painter.fillRect(event.rect(), QBrush(QColor(255, 255, 255, 127)))
+            painter.setPen(QPen(Qt.NoPen))
+
+            for i in range(1, 7):
+                if self.position_index == i:
+                    painter.setBrush(QBrush(QColor(255, 165, 0)))
+                else:
+                    painter.setBrush(QBrush(QColor(127, 127, 127)))
+                painter.drawEllipse(
+                    self.width()/2 + 30 * numpy.cos(2 * numpy.pi * i / 6.0) - 10,
+                    self.height()/2 + 30 * numpy.sin(2 * numpy.pi * i / 6.0) - 10,
+                    20, 20)
+
                 time.sleep(self.__wait)
 
-        super().show()
-        self.__run_progress = True
-        self.__thread = threading.Thread(target=animate_progress_bar).start()
+            painter.end()
 
-    def hide(self):
-        self.__run_progress = False
-        if not self.__thread is None: self.__thread.join()
-        super().hide()
+        def showEvent(self, event):
+            self.timer = self.startTimer(0)
+            self.counter = 0
+            self.position_index = 0
+            if not self.target_method is None:
+                t = threading.Thread(target=self.target_method)
+                t.start()
 
-from PyQt5.QtWidgets import QWidget
-from PyQt5.QtGui import QPainter, QPalette, QBrush, QPen, QColor
-from PyQt5.QtCore import Qt
+        def hideEvent(self, QHideEvent):
+            self.killTimer(self.timer)
 
-class Overlay(QWidget):
-
-    def __init__(self, container_widget=None, target_method=None, wait=0.001):
-
-        QWidget.__init__(self, container_widget)
-        self.container_widget = container_widget
-        self.target_method = target_method
-        palette = QPalette(self.palette())
-        palette.setColor(palette.Background, Qt.transparent)
-        self.setPalette(palette)
-        self.__wait = wait
-
-    def paintEvent(self, event):
-        painter = QPainter()
-        painter.begin(self)
-        painter.setRenderHint(QPainter.Antialiasing)
-        painter.fillRect(event.rect(), QBrush(QColor(255, 255, 255, 127)))
-        painter.setPen(QPen(Qt.NoPen))
-
-        for i in range(1, 7):
-            if self.position_index == i:
-                painter.setBrush(QBrush(QColor(255, 165, 0)))
-            else:
-                painter.setBrush(QBrush(QColor(127, 127, 127)))
-            painter.drawEllipse(
-                self.width()/2 + 30 * numpy.cos(2 * numpy.pi * i / 6.0) - 10,
-                self.height()/2 + 30 * numpy.sin(2 * numpy.pi * i / 6.0) - 10,
-                20, 20)
-
-            time.sleep(self.__wait)
-
-        painter.end()
-
-    def showEvent(self, event):
-        self.timer = self.startTimer(0)
-        self.counter = 0
-        self.position_index = 0
-        if not self.target_method is None:
-            t = threading.Thread(target=self.target_method)
-            t.start()
-
-    def hideEvent(self, QHideEvent):
-        self.killTimer(self.timer)
-
-    def timerEvent(self, event):
-        self.counter += 1
-        self.position_index += 1
-        if self.position_index == 7: self.position_index = 1
-        self.update()
+        def timerEvent(self, event):
+            self.counter += 1
+            self.position_index += 1
+            if self.position_index == 7: self.position_index = 1
+            self.update()
+except:
+    pass
 
 class ElementInFormula(object):
     def __init__(self, element, atomic_number, n_atoms, molecular_weight):
