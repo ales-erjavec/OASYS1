@@ -64,6 +64,7 @@ from oasys.widgets import gui as oasysgui
 from oasys.widgets import congruence
 from oasys.widgets.gui import ConfirmDialog
 from oasys.util.oasys_util import EmittingStream
+from oasys.util.error_profile_util import ErrorProfileInputParameters, calculate_heigth_profile
 
 try:
     from mpl_toolkits.mplot3d import Axes3D  # necessario per caricare i plot 3D
@@ -109,6 +110,7 @@ class OWAbstractMultipleHeightProfileSimulatorT(OWWidget):
 
     montecarlo_seed_x = Setting(8787)
 
+    rms_y = None # for calculations
     rms_y_from = Setting(1.0)
     rms_y_to = Setting(10.0)
     rms_y_step = Setting(1.0)
@@ -549,200 +551,10 @@ class OWAbstractMultipleHeightProfileSimulatorT(OWWidget):
             self.zz = []
 
             for rms_y in rms_y_values:
-                #### LENGTH
+                input_parameters = ErrorProfileInputParameters(widget=self)
+                input_parameters.rms_y = rms_y
 
-                if self.kind_of_profile_y == 2:
-                    combination = "E"
-
-                    if self.delimiter_y == 1:
-                        profile_1D_y_x, profile_1D_y_y = numpy.loadtxt(self.heigth_profile_1D_file_name_y, delimiter='\t', unpack=True)
-                    else:
-                        profile_1D_y_x, profile_1D_y_y = numpy.loadtxt(self.heigth_profile_1D_file_name_y, unpack=True)
-
-                    profile_1D_y_x *= self.conversion_factor_y_x
-                    profile_1D_y_y *= self.conversion_factor_y_y
-
-                    first_coord = profile_1D_y_x[0]
-                    second_coord  = profile_1D_y_x[1]
-                    last_coord = profile_1D_y_x[-1]
-                    step = numpy.abs(second_coord - first_coord)
-                    length = numpy.abs(last_coord - first_coord)
-                    n_points_old = len(profile_1D_y_x)
-
-                    if self.modify_y == 2:
-                        profile_1D_y_x_temp = profile_1D_y_x
-                        profile_1D_y_y_temp = profile_1D_y_y
-
-                        if self.new_length_y > length:
-                            difference = self.new_length_y - length
-
-                            n_added_points = int(difference/step)
-                            if difference % step == 0:
-                                n_added_points += 1
-                            if n_added_points % 2 != 0:
-                                n_added_points += 1
-
-                            profile_1D_y_x = numpy.arange(n_added_points + n_points_old) * step
-                            profile_1D_y_y = numpy.ones(n_added_points + n_points_old) * self.filler_value_y * 1e-9 * self.si_to_user_units
-                            profile_1D_y_y[int(n_added_points/2) : n_points_old + int(n_added_points/2)] = profile_1D_y_y_temp
-                        elif self.new_length_y < length:
-                            difference = length - self.new_length_y
-
-                            n_removed_points = int(difference/step)
-                            if difference % step == 0:
-                                n_removed_points -= 1
-                            if n_removed_points % 2 != 0:
-                                n_removed_points -= 1
-
-                            if n_removed_points >= 2:
-                                profile_1D_y_x = profile_1D_y_x_temp[0 : (n_points_old - n_removed_points)]
-                                profile_1D_y_y = profile_1D_y_y_temp[(int(n_removed_points/2) - 1) : (n_points_old - int(n_removed_points/2) - 1)]
-
-                            else:
-                                profile_1D_y_x = profile_1D_y_x_temp
-                                profile_1D_y_y = profile_1D_y_y_temp
-                        else:
-                            profile_1D_y_x = profile_1D_y_x_temp
-                            profile_1D_y_y = profile_1D_y_y_temp
-
-                    elif self.modify_y == 1:
-                        scale_factor_y = self.new_length_y/length
-                        profile_1D_y_x *= scale_factor_y
-
-                    if self.center_y:
-                        first_coord = profile_1D_y_x[0]
-                        last_coord = profile_1D_y_x[-1]
-                        length = numpy.abs(last_coord - first_coord)
-
-                        profile_1D_y_x_temp = numpy.linspace(-length/2, length/2, len(profile_1D_y_x))
-                        profile_1D_y_x = profile_1D_y_x_temp
-
-                    if self.renormalize_y == 0:
-                        rms_y = None
-                    else:
-                        if self.error_type_y == profiles_simulation.FIGURE_ERROR:
-                            rms_y *= 1e-9 * self.si_to_user_units # from nm to m
-                        else:
-                            rms_y *= 1e-6 # from urad to rad
-                else:
-                    if self.kind_of_profile_y == 0: combination = "F"
-                    else: combination = "G"
-
-                    profile_1D_y_x = None
-                    profile_1D_y_y = None
-
-                    if self.error_type_y == profiles_simulation.FIGURE_ERROR:
-                        rms_y *= 1e-9 * self.si_to_user_units # from nm to m
-                    else:
-                        rms_y *= 1e-6 # from urad to rad
-
-                #### WIDTH
-
-                if self.kind_of_profile_x == 2:
-                    combination += "E"
-
-                    if self.delimiter_x == 1:
-                        profile_1D_x_x, profile_1D_x_y = numpy.loadtxt(self.heigth_profile_1D_file_name_x, delimiter='\t', unpack=True)
-                    else:
-                        profile_1D_x_x, profile_1D_x_y = numpy.loadtxt(self.heigth_profile_1D_file_name_x, unpack=True)
-
-                    profile_1D_x_x *= self.conversion_factor_x_x
-                    profile_1D_x_y *= self.conversion_factor_x_y
-
-                    first_coord = profile_1D_x_x[0]
-                    second_coord  = profile_1D_x_x[1]
-                    last_coord = profile_1D_x_x[-1]
-                    step = numpy.abs(second_coord - first_coord)
-                    length = numpy.abs(last_coord - first_coord)
-                    n_points_old = len(profile_1D_x_x)
-
-                    if self.modify_x == 2:
-                        profile_1D_x_x_temp = profile_1D_x_x
-                        profile_1D_x_y_temp = profile_1D_x_y
-
-                        if self.new_length_x > length:
-                            difference = self.new_length_x - length
-
-                            n_added_points = int(difference/step)
-                            if difference % step == 0:
-                                n_added_points += 1
-                            if n_added_points % 2 != 0:
-                                n_added_points += 1
-
-                            profile_1D_x_x = numpy.arange(n_added_points + n_points_old) * step
-                            profile_1D_x_y = numpy.ones(n_added_points + n_points_old) * self.filler_value_x * 1e-9 * self.si_to_user_units
-                            profile_1D_x_y[int(n_added_points/2) : n_points_old + int(n_added_points/2)] = profile_1D_x_y_temp
-                        elif self.new_length_x < length:
-                            difference = length - self.new_length_x
-
-                            n_removed_points = int(difference/step)
-                            if difference % step == 0:
-                                n_removed_points -= 1
-                            if n_removed_points % 2 != 0:
-                                n_removed_points -= 1
-
-                            if n_removed_points >= 2:
-                                profile_1D_x_x = profile_1D_x_x_temp[0 : (n_points_old - n_removed_points)]
-                                profile_1D_x_y = profile_1D_x_y_temp[(int(n_removed_points/2) - 1) : (n_points_old - int(n_removed_points/2) - 1)]
-
-                            else:
-                                profile_1D_x_x = profile_1D_x_x_temp
-                                profile_1D_x_y = profile_1D_x_y_temp
-                        else:
-                            profile_1D_x_x = profile_1D_x_x_temp
-                            profile_1D_x_y = profile_1D_x_y_temp
-
-                    elif self.modify_x == 1:
-                        scale_factor_x = self.new_length_x/length
-                        profile_1D_x_x *= scale_factor_x
-
-                    if self.center_x:
-                        first_coord = profile_1D_x_x[0]
-                        last_coord = profile_1D_x_x[-1]
-                        length = numpy.abs(last_coord - first_coord)
-
-                        profile_1D_x_x_temp = numpy.linspace(-length/2, length/2, len(profile_1D_x_x))
-                        profile_1D_x_x = profile_1D_x_x_temp
-
-                    if self.renormalize_x == 0:
-                        rms_x = None
-                    else:
-                        if self.error_type_x == profiles_simulation.FIGURE_ERROR:
-                            rms_x = self.rms_x * 1e-9 * self.si_to_user_units # from nm to m
-                        else:
-                            rms_x = self.rms_x * 1e-6 # from urad to rad
-
-                else:
-                    profile_1D_x_x = None
-                    profile_1D_x_y = None
-
-                    if self.kind_of_profile_x == 0: combination += "F"
-                    else: combination += "G"
-
-                    if self.error_type_x == profiles_simulation.FIGURE_ERROR:
-                        rms_x = self.rms_x * 1e-9 * self.si_to_user_units # from nm to m
-                    else:
-                        rms_x = self.rms_x * 1e-6 # from urad to rad
-
-                xx, yy, zz = profiles_simulation.simulate_profile_2D(combination = combination,
-                                                                     mirror_length = self.dimension_y,
-                                                                     step_l = self.step_y,
-                                                                     random_seed_l = self.montecarlo_seed_y,
-                                                                     error_type_l = self.error_type_y,
-                                                                     rms_l = rms_y,
-                                                                     power_law_exponent_beta_l = self.power_law_exponent_beta_y,
-                                                                     correlation_length_l = self.correlation_length_y,
-                                                                     x_l = profile_1D_y_x,
-                                                                     y_l = profile_1D_y_y,
-                                                                     mirror_width = self.dimension_x,
-                                                                     step_w = self.step_x,
-                                                                     random_seed_w = self.montecarlo_seed_x,
-                                                                     error_type_w = self.error_type_x,
-                                                                     rms_w = rms_x,
-                                                                     power_law_exponent_beta_w = self.power_law_exponent_beta_x,
-                                                                     correlation_length_w = self.correlation_length_x,
-                                                                     x_w = profile_1D_x_x,
-                                                                     y_w = profile_1D_x_y)
+                xx, yy, zz = calculate_heigth_profile(input_parameters)
 
                 self.xx.append(xx) # to user units
                 self.yy.append(yy) # to user units
