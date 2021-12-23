@@ -176,8 +176,7 @@ class OWAbstractDabamHeightProfile(OWWidget):
         manual_box = oasysgui.widgetBox(tab_input, "Manual Entry", addSpace=True, orientation="vertical")
 
         manual_box_1 = oasysgui.widgetBox(manual_box, "", addSpace=True, orientation="horizontal")
-        oasysgui.lineEdit(manual_box_1, self, "entry_number", "Entry Number",
-                           labelWidth=300, valueType=int, orientation="horizontal")
+        oasysgui.lineEdit(manual_box_1, self, "entry_number", "Entry Number", labelWidth=200, valueType=int, orientation="horizontal")
         button = gui.button(manual_box_1, self, "-1", callback=self.retrieve_profile_minus_one)
         button.setFixedWidth(35)
         button = gui.button(manual_box_1, self, "+1", callback=self.retrieve_profile_plus_one)
