@@ -71,6 +71,7 @@ class OpticalElementsColors:
     MIRROR = (0, 0, 1, 0.1)
     CRYSTAL = (0, 1, 0, 0.1)
     GRATING = (1, 0, 0, 0.1)
+    SLITS = (165/255, 42/255, 42/255, 0.1)
 
 class Orientations:
     UP = 0
@@ -99,6 +100,7 @@ class AbstractBeamlineRenderer(widget.OWWidget):
 
     initial_height = Setting(1000.0)
     use_labels = Setting(1)
+    draw_source = Setting(1)
 
     element_expansion_factor =  Setting(1.0)
     distance_compression_factor = Setting(1.0)
@@ -142,10 +144,11 @@ class AbstractBeamlineRenderer(widget.OWWidget):
 
         gui.checkBox(gen_box, self, "is_interactive", "Real time refresh active", labelWidth=200)
 
-        beamline_box = oasysgui.widgetBox(gen_box, "Beamline", addSpace=False, orientation="vertical", height=90)
+        beamline_box = oasysgui.widgetBox(gen_box, "Beamline", addSpace=False, orientation="vertical", height=110)
 
         oasysgui.lineEdit(beamline_box, self, "initial_height", "Beam vertical baseline [user units]", labelWidth=230, valueType=float, orientation="horizontal", callback=self.refresh)
         gui.checkBox(beamline_box, self, "use_labels", "Show labels", labelWidth=200, callback=self.refresh)
+        gui.checkBox(beamline_box, self, "draw_source", "Draw Source", labelWidth=200, callback=self.refresh)
 
         oe_exp_box = oasysgui.widgetBox(gen_box, "Expansion/Compression (aesthetic)", addSpace=False, orientation="vertical", height=110)
 
@@ -247,8 +250,7 @@ class AbstractBeamlineRenderer(widget.OWWidget):
         limits[0, 0, :] = numpy.array([0, 0])
         limits[0, 1, :] = numpy.array([numpy.min([0, length / 2 + canting]), numpy.max([0, length / 2 + canting])])
         limits[0, 2, :] = numpy.array([0, height])
-    
-    
+
     def add_optical_element(self, centers, limits, oe_index,
                             width, length, thickness, inclination,
                             distance, height, shift,
@@ -315,8 +317,6 @@ class AbstractBeamlineRenderer(widget.OWWidget):
         else:
             center = numpy.array([(vertexes[4, 0] + vertexes[0, 0]) / 2, (vertexes[4, 1] + vertexes[0, 1]) / 2, (vertexes[1, 2] + vertexes[0, 2]) / 2])
 
-        print(center)
-
         edges = [[vertexes[0], vertexes[1], vertexes[3], vertexes[2]],
                  [vertexes[0], vertexes[1], vertexes[5], vertexes[4]],
                  [vertexes[2], vertexes[3], vertexes[7], vertexes[6]],
@@ -337,10 +337,7 @@ class AbstractBeamlineRenderer(widget.OWWidget):
         limits[oe_index, 0, :] = numpy.array([numpy.min(vertexes[:, 0]), numpy.max(vertexes[:, 0])])
         limits[oe_index, 1, :] = numpy.array([numpy.min(vertexes[:, 1]), numpy.max(vertexes[:, 1])])
         limits[oe_index, 2, :] = numpy.array([numpy.min(vertexes[:, 2]), numpy.max(vertexes[:, 2])])
-    
-        return center, limits
-    
-    
+
     def add_point(self, centers, limits, oe_index, distance, height, shift, label="Sample", aspect_ratio_modifier=AspectRatioModifier()):
         distance *= aspect_ratio_modifier.layout_reduction_factor[0]
         shift *= aspect_ratio_modifier.layout_reduction_factor[1]
@@ -353,8 +350,41 @@ class AbstractBeamlineRenderer(widget.OWWidget):
         limits[oe_index, 0, :] = numpy.array([shift, shift])
         limits[oe_index, 1, :] = numpy.array([distance, distance])
         limits[oe_index, 2, :] = numpy.array([height, height])
-    
-    
+
+    def add_slits_filter(self, centers, limits, oe_index, distance, height, shift, aperture=None, label="Slits", aspect_ratio_modifier=AspectRatioModifier()):
+        distance *= aspect_ratio_modifier.layout_reduction_factor[0]
+        shift *= aspect_ratio_modifier.layout_reduction_factor[1]
+        height *= aspect_ratio_modifier.layout_reduction_factor[2]
+
+        basic_aperture = 100/self.workspace_units_to_mm
+
+        vertexes = [[shift - basic_aperture/2, distance, height - basic_aperture/2],  # surface
+                    [shift + basic_aperture/2, distance, height - basic_aperture/2],  # surface
+                    [shift - basic_aperture / 2, distance, height + basic_aperture / 2],  # surface
+                    [shift + basic_aperture / 2, distance, height + basic_aperture / 2]
+                    ]
+        vertexes = numpy.array(vertexes)
+
+        edges = [[vertexes[0], vertexes[1], vertexes[3], vertexes[2]]]
+
+        faces = Poly3DCollection(edges, linewidths=1, edgecolors='k')
+        faces.set_facecolor(OpticalElementsColors.SLITS)
+
+        self.axis.add_collection3d(faces)
+
+        self.axis.scatter(vertexes[:, 0], vertexes[:, 1], vertexes[:, 2], s=0)
+        if self.use_labels:
+            label = "Slits" if label is None else label
+            if not (aperture is None or len(aperture) == 0): label += ": " + str(aperture[0]) + " x " + str(aperture[1])
+
+            self.axis.text(shift, distance, height, label)
+
+        centers[oe_index, :] = numpy.array([shift, distance, height])
+        limits[oe_index, 0, :] = numpy.array([shift, shift])
+        limits[oe_index, 1, :] = numpy.array([distance, distance])
+        limits[oe_index, 2, :] = numpy.array([height, height])
+
+
     def draw_radiation_lines(self, coords, color='b', rng=None):
         if not rng is None:
             cursor = numpy.where(numpy.logical_and(coords[:, 1] >= rng[0], coords[:, 1] <= rng[1]))
