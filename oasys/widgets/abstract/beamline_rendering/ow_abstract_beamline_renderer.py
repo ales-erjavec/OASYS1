@@ -46,7 +46,6 @@
 # ----------------------------------------------------------------------- #
 import numpy
 
-from orangewidget.widget import OWAction
 from oasys.widgets import widget
 
 from matplotlib.pyplot import rcParams
@@ -98,16 +97,18 @@ class AbstractBeamlineRenderer(widget.OWWidget):
 
     is_interactive = Setting(1)
 
-    initial_height = Setting(1000.0)
+    initial_height = Setting(0.0)
+    use_axis = Setting(1)
     use_labels = Setting(1)
     draw_source = Setting(1)
+    draw_optical_axis = Setting(1)
 
     element_expansion_factor =  Setting(1.0)
     distance_compression_factor = Setting(1.0)
 
     use_range = Setting(0)
     range_min = Setting(0.0)
-    range_max = Setting(200000.0)
+    range_max = Setting(0.0)
 
     def __init__(self):
         super().__init__()
@@ -144,11 +145,13 @@ class AbstractBeamlineRenderer(widget.OWWidget):
 
         gui.checkBox(gen_box, self, "is_interactive", "Real time refresh active", labelWidth=200)
 
-        beamline_box = oasysgui.widgetBox(gen_box, "Beamline", addSpace=False, orientation="vertical", height=110)
+        beamline_box = oasysgui.widgetBox(gen_box, "Beamline", addSpace=False, orientation="vertical", height=150)
 
-        oasysgui.lineEdit(beamline_box, self, "initial_height", "Beam vertical baseline [user units]", labelWidth=230, valueType=float, orientation="horizontal", callback=self.refresh)
+        gui.checkBox(beamline_box, self, "use_axis", "Show axis", labelWidth=200, callback=self.refresh)
         gui.checkBox(beamline_box, self, "use_labels", "Show labels", labelWidth=200, callback=self.refresh)
-        gui.checkBox(beamline_box, self, "draw_source", "Draw Source", labelWidth=200, callback=self.refresh)
+        gui.checkBox(beamline_box, self, "draw_source", "Draw source", labelWidth=200, callback=self.refresh)
+        gui.checkBox(beamline_box, self, "draw_optical_axis", "Draw optical axis", labelWidth=200, callback=self.refresh)
+        oasysgui.lineEdit(beamline_box, self, "initial_height", "Beam vertical baseline [user units]", labelWidth=230, valueType=float, orientation="horizontal", callback=self.refresh)
 
         oe_exp_box = oasysgui.widgetBox(gen_box, "Expansion/Compression (aesthetic)", addSpace=False, orientation="vertical", height=110)
 
@@ -162,6 +165,8 @@ class AbstractBeamlineRenderer(widget.OWWidget):
                      callback=self.set_range, sendSelectedValue=False, orientation="horizontal")
 
         gui.separator(range_box, height=5)
+
+        #TODO: replace with sliders
 
         self.range_box_1 = oasysgui.widgetBox(range_box, "", addSpace=False, orientation="vertical")
         oasysgui.lineEdit(self.range_box_1, self, "range_min", "Range Min [user units]", labelWidth=200, valueType=float, orientation="horizontal", callback=self.refresh)
@@ -192,12 +197,9 @@ class AbstractBeamlineRenderer(widget.OWWidget):
         if do_refresh: self.refresh()
 
     def reset_default(self):
-        self.initial_height = 1000.0
         self.element_expansion_factor = 1.0
         self.distance_compression_factor = 1.0
         self.use_range = 0
-        self.range_min = 0.0
-        self.range_max = 200000.0
         self.set_range(do_refresh=False)
         self.reset_all()
 
@@ -231,6 +233,22 @@ class AbstractBeamlineRenderer(widget.OWWidget):
 
     def render_beamline(self, reset_rotation=True):
         raise NotImplementedError()
+
+    def format_axis(self):
+        if self.use_axis:
+            self.axis.set_axis_on()
+
+            self.axis.set_ylabel("\n\n\n\n\nDistance along beam direction [user units]")
+            self.axis.axes.xaxis.set_ticklabels([])
+            self.axis.axes.zaxis.set_ticklabels([])
+            for line in self.axis.axes.xaxis.get_ticklines(): line.set_color(color='w')
+            for line in self.axis.axes.zaxis.get_ticklines(): line.set_color(color='w')
+            self.axis.axes.xaxis.set_pane_color(color=(1, 1, 1, 1.0))
+            self.axis.axes.yaxis.set_pane_color(color=(1, 1, 1, 1.0))
+            self.axis.axes.zaxis.set_pane_color(color=(1, 1, 1, 1.0))
+            self.axis.grid(False)
+        else:
+            self.axis.set_axis_off()
 
     def add_source(self, centers, limits, length=2.3, height=0.0, canting=0.0, aspect_ration_modifier=AspectRatioModifier()):
         length *= aspect_ration_modifier.element_expansion_factor[0]
