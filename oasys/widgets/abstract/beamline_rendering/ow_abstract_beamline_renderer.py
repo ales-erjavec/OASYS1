@@ -55,14 +55,15 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 from matplotlib.figure import Figure
 from oasys.widgets.gui import FigureCanvas3D
-
 from oasys.widgets import gui as oasysgui
+from oasys.widgets import congruence
 
 from orangewidget import gui
 from orangewidget.settings import Setting
 
 from PyQt5.QtCore import QRect
 from PyQt5.Qt import QApplication
+from PyQt5.QtWidgets import QMessageBox
 
 pixels_to_inches = 1/rcParams['figure.dpi']
 
@@ -80,7 +81,7 @@ class Orientations:
 class AspectRatioModifier:
     def __init__(self,
                  element_expansion_factor  = [1.0, 1.0, 1.0], # length,   width, thickness
-                 layout_reduction_factor = [1.0, 1.0, 1.0]  # distance, shift, height
+                 layout_reduction_factor   = [1.0, 1.0, 1.0]  # distance, shift, height
                  ):
         self.element_expansion_factor  = element_expansion_factor
         self.layout_reduction_factor = layout_reduction_factor
@@ -89,7 +90,6 @@ DEFAULT_AZIM = -23.1
 DEFAULT_ELEV = 27.9
 
 class AbstractBeamlineRenderer(widget.OWWidget):
-
     want_main_area = 1
 
     WIDGET_WIDTH = 1900
@@ -98,14 +98,10 @@ class AbstractBeamlineRenderer(widget.OWWidget):
     is_interactive = Setting(1)
 
     initial_height = Setting(1000.0)
+    use_labels = Setting(1)
 
-    element_expansion_factor_lenght = Setting(1.0)
-    element_expansion_factor_width = Setting(1.0)
-    element_expansion_factor_thickness = Setting(1.0)
-
-    layout_reduction_factor_distance = Setting(1.0)
-    layout_reduction_factor_shift = Setting(1.0)
-    layout_reduction_factor_height = Setting(1.0)
+    element_expansion_factor =  Setting(1.0)
+    distance_compression_factor = Setting(1.0)
 
     use_range = Setting(0)
     range_min = Setting(0.0)
@@ -113,10 +109,6 @@ class AbstractBeamlineRenderer(widget.OWWidget):
 
     def __init__(self):
         super().__init__()
-
-        action = OWAction("Render Beamline", self)
-        action.triggered.connect(self.render_beamline)
-        self.addAction(action)
 
         self.build_layout()
 
@@ -153,18 +145,12 @@ class AbstractBeamlineRenderer(widget.OWWidget):
         beamline_box = oasysgui.widgetBox(gen_box, "Beamline", addSpace=False, orientation="vertical", height=90)
 
         oasysgui.lineEdit(beamline_box, self, "initial_height", "Beam vertical baseline [user units]", labelWidth=230, valueType=float, orientation="horizontal", callback=self.refresh)
+        gui.checkBox(beamline_box, self, "use_labels", "Show labels", labelWidth=200, callback=self.refresh)
 
-        oe_exp_box = oasysgui.widgetBox(gen_box, "O.E. expansion (aesthetic)", addSpace=False, orientation="vertical", height=110)
+        oe_exp_box = oasysgui.widgetBox(gen_box, "Expansion/Compression (aesthetic)", addSpace=False, orientation="vertical", height=110)
 
-        oasysgui.lineEdit(oe_exp_box, self, "element_expansion_factor_lenght", "O.E. lenght factor (\u22651)", labelWidth=230, valueType=float, orientation="horizontal", callback=self.refresh)
-        oasysgui.lineEdit(oe_exp_box, self, "element_expansion_factor_width", "O.E. width factor (\u22651)", labelWidth=230, valueType=float, orientation="horizontal", callback=self.refresh)
-        oasysgui.lineEdit(oe_exp_box, self, "element_expansion_factor_thickness", "O.E. thickness factor (\u22651)", labelWidth=230, valueType=float, orientation="horizontal", callback=self.refresh)
-
-        oe_exp_box = oasysgui.widgetBox(gen_box, "Layout compression (aesthetic)", addSpace=False, orientation="vertical", height=110)
-
-        oasysgui.lineEdit(oe_exp_box, self, "layout_reduction_factor_distance", "Layout distance factor (\u22641)", labelWidth=230, valueType=float, orientation="horizontal", callback=self.refresh)
-        oasysgui.lineEdit(oe_exp_box, self, "layout_reduction_factor_shift", "Layout shift factor (\u22641)", labelWidth=230, valueType=float, orientation="horizontal", callback=self.refresh)
-        oasysgui.lineEdit(oe_exp_box, self, "layout_reduction_factor_height", "Layout height factor (\u22641)", labelWidth=230, valueType=float, orientation="horizontal", callback=self.refresh)
+        oasysgui.lineEdit(oe_exp_box, self, "element_expansion_factor", "O.E. expansion factor (\u22651)", labelWidth=230, valueType=float, orientation="horizontal", callback=self.refresh)
+        oasysgui.lineEdit(oe_exp_box, self, "distance_compression_factor", "Length compression factor (\u22651)", labelWidth=230, valueType=float, orientation="horizontal", callback=self.refresh)
 
         range_box = oasysgui.widgetBox(gen_box, "Range", addSpace=False, orientation="vertical", height=140)
 
@@ -204,20 +190,16 @@ class AbstractBeamlineRenderer(widget.OWWidget):
 
     def reset_default(self):
         self.initial_height = 1000.0
-        self.element_expansion_factor_lenght = 1.0
-        self.element_expansion_factor_width = 1.0
-        self.element_expansion_factor_thickness = 1.0
-        self.layout_reduction_factor_distance = 1.0
-        self.layout_reduction_factor_shift = 1.0
-        self.layout_reduction_factor_height = 1.0
+        self.element_expansion_factor = 1.0
+        self.distance_compression_factor = 1.0
         self.use_range = 0
         self.range_min = 0.0
         self.range_max = 200000.0
-
+        self.set_range(do_refresh=False)
         self.reset_all()
 
     def reset_zoom_shift(self):
-        self.render_beamline(reset_rotation=False)
+        self.render(reset_rotation=False)
         self.figure_canvas.draw()
 
     def reset_rotation(self):
@@ -225,8 +207,24 @@ class AbstractBeamlineRenderer(widget.OWWidget):
         self.figure_canvas.draw()
 
     def reset_all(self):
-        self.render_beamline(reset_rotation=True)
+        self.render(reset_rotation=True)
 
+    def check_fields(self):
+        congruence.checkNumber(self.initial_height, "Beam vertical baseline")
+        congruence.checkStrictlyPositiveNumber(self.element_expansion_factor, "O.E. Expansion Factor")
+        congruence.checkStrictlyPositiveNumber(self.distance_compression_factor, "Layout compression factor")
+        if self.use_range:
+            congruence.checkGreaterThan(self.range_max, self.range_min, "Range Max", "Range min")
+
+    def render(self, reset_rotation=True):
+        try:
+            self.check_fields()
+
+            self.render_beamline(reset_rotation)
+        except Exception as e:
+            QMessageBox.critical(self, "Error", str(e), QMessageBox.Ok)
+
+            if self.IS_DEVELOP: raise e
 
     def render_beamline(self, reset_rotation=True):
         raise NotImplementedError()
@@ -240,10 +238,10 @@ class AbstractBeamlineRenderer(widget.OWWidget):
     
         if canting != 0.0:
             self.axis.scatter(0, 0, height, s=30, c='c', marker='x')
-            self.axis.text(0, 0, height, "Section Center")
+            if self.use_labels: self.axis.text(0, 0, height, "Section Center")
     
         self.axis.scatter(center[0], center[1], center[2], s=30, c='r')
-        self.axis.text(center[0], center[1], center[2], "Source Center")
+        if self.use_labels: self.axis.text(center[0], center[1], center[2], "Source Center")
     
         centers[0, :] = center
         limits[0, 0, :] = numpy.array([0, 0])
@@ -255,7 +253,7 @@ class AbstractBeamlineRenderer(widget.OWWidget):
                             width, length, thickness, inclination,
                             distance, height, shift,
                             orientation=Orientations.UP, color=OpticalElementsColors.MIRROR,
-                            aspect_ration_modifier=AspectRatioModifier()):
+                            aspect_ration_modifier=AspectRatioModifier(), label=None):
         length *= aspect_ration_modifier.element_expansion_factor[0]
         width *= aspect_ration_modifier.element_expansion_factor[1]
         thickness *= aspect_ration_modifier.element_expansion_factor[2]
@@ -311,9 +309,14 @@ class AbstractBeamlineRenderer(widget.OWWidget):
         vertexes[:, 0] += shift
         vertexes[:, 1] += distance
         vertexes[:, 2] += height
-    
-        center = numpy.array([(vertexes[1, 0] + vertexes[0, 0]) / 2, (vertexes[4, 1] + vertexes[0, 1]) / 2, (vertexes[4, 2] + vertexes[0, 2]) / 2])
-    
+
+        if orientation in [Orientations.UP, Orientations.DOWN]:
+            center = numpy.array([(vertexes[1, 0] + vertexes[0, 0]) / 2, (vertexes[4, 1] + vertexes[0, 1]) / 2, (vertexes[4, 2] + vertexes[0, 2]) / 2])
+        else:
+            center = numpy.array([(vertexes[4, 0] + vertexes[0, 0]) / 2, (vertexes[4, 1] + vertexes[0, 1]) / 2, (vertexes[1, 2] + vertexes[0, 2]) / 2])
+
+        print(center)
+
         edges = [[vertexes[0], vertexes[1], vertexes[3], vertexes[2]],
                  [vertexes[0], vertexes[1], vertexes[5], vertexes[4]],
                  [vertexes[2], vertexes[3], vertexes[7], vertexes[6]],
@@ -327,9 +330,9 @@ class AbstractBeamlineRenderer(widget.OWWidget):
     
         self.axis.add_collection3d(faces)
     
-        # Plot the points themselves to force the scaling of the self.axises
         self.axis.scatter(vertexes[:, 0], vertexes[:, 1], vertexes[:, 2], s=0)
-    
+        if label and self.use_labels: self.axis.text(center[0], center[1], center[2], label)
+
         centers[oe_index, :] = center
         limits[oe_index, 0, :] = numpy.array([numpy.min(vertexes[:, 0]), numpy.max(vertexes[:, 0])])
         limits[oe_index, 1, :] = numpy.array([numpy.min(vertexes[:, 1]), numpy.max(vertexes[:, 1])])
@@ -344,9 +347,9 @@ class AbstractBeamlineRenderer(widget.OWWidget):
         height *= aspect_ratio_modifier.layout_reduction_factor[2]
     
         self.axis.scatter(shift, distance, height, s=30, c='g', marker='x')
-        self.axis.text(shift, distance, height, label)
+        if self.use_labels: self.axis.text(shift, distance, height, label)
     
-        centers[oe_index, :] = numpy.array([shift, distance, height])
+        centers[oe_index, :]   = numpy.array([shift, distance, height])
         limits[oe_index, 0, :] = numpy.array([shift, shift])
         limits[oe_index, 1, :] = numpy.array([distance, distance])
         limits[oe_index, 2, :] = numpy.array([height, height])
