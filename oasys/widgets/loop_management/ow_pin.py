@@ -14,7 +14,7 @@ class Pin(widget.OWWidget):
     description = "Tools: Pin"
     icon = "icons/pin.png"
     maintainer = "Luca Rebuffi"
-    maintainer_email = "luca.rebuffi(@at@)elettra.eu"
+    maintainer_email = "lrebuffi(@at@)anl.gov"
     priority = 3
     category = "User Defined"
     keywords = ["data", "file", "load", "read"]

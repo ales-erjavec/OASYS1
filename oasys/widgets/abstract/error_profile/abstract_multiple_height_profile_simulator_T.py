@@ -53,7 +53,7 @@ from PyQt5.QtWidgets import QApplication, QMessageBox, QLabel, QSizePolicy
 from PyQt5.QtGui import QTextCursor, QFont, QPalette, QColor, QPixmap
 from srxraylib.metrology import profiles_simulation
 from matplotlib import cm
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+from oasys.widgets.gui import FigureCanvas3D
 from matplotlib.figure import Figure
 
 from orangewidget import gui, widget
@@ -438,7 +438,7 @@ class OWAbstractMultipleHeightProfileSimulatorT(OWWidget):
 
         self.axis.set_zlabel("Z [nm]")
 
-        self.figure_canvas = FigureCanvasQTAgg(self.figure)
+        self.figure_canvas = FigureCanvas3D(ax=self.axis, fig=self.figure)
         self.figure_canvas.setFixedWidth(self.IMAGE_WIDTH)
         self.figure_canvas.setFixedHeight(self.IMAGE_HEIGHT)
 

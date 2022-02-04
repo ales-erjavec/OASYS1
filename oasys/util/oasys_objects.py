@@ -9,7 +9,6 @@ class OasysSurfaceData(object):
         self.zz = zz
         self.surface_data_file=surface_data_file
 
-
 class OasysErrorProfileData(object):
 
     def __init__(self,

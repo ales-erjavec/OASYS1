@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QApplication, QMessageBox, QScrollArea, QTableWidget
 from PyQt5.QtGui import QTextCursor,QFont, QPalette, QColor, QPixmap
 
 from matplotlib import cm
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+from oasys.widgets.gui import FigureCanvas3D
 from matplotlib.figure import Figure
 
 from orangewidget import gui, widget
@@ -542,7 +542,7 @@ class OWAbstractDabamHeightProfile(OWWidget):
         self.axis = self.figure.add_subplot(111, projection='3d')
         self.axis.set_zlabel("Z [nm]")
 
-        self.plot_canvas[5] = FigureCanvasQTAgg(self.figure)
+        self.plot_canvas[5] = FigureCanvas3D(ax=self.axis, fig=self.figure)
         self.plot_canvas[5].setFixedWidth(self.IMAGE_WIDTH)
         self.plot_canvas[5].setFixedHeight(self.IMAGE_HEIGHT)
 

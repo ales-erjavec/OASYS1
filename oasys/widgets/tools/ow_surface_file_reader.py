@@ -5,7 +5,7 @@ from PyQt5.QtCore import QRect
 from PyQt5.QtWidgets import QApplication, QMessageBox
 
 from matplotlib import cm
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+from oasys.widgets.gui import FigureCanvas3D
 from matplotlib.figure import Figure
 
 from orangewidget import gui
@@ -101,7 +101,7 @@ class OWSurfaceFileReader(OWWidget):
 
         self.axis.set_zlabel("Z [m]")
 
-        self.figure_canvas = FigureCanvasQTAgg(self.figure)
+        self.figure_canvas = FigureCanvas3D(ax=self.axis, fig=self.figure)
 
         self.mainArea.layout().addWidget(self.figure_canvas)
 

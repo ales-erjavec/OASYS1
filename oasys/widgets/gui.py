@@ -1,3 +1,5 @@
+import numpy
+
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget, QGridLayout, QFileDialog, QMessageBox, QLabel, QComboBox, QTextEdit
 
@@ -161,6 +163,67 @@ class OptionDialog(QMessageBox):
         else:
             return None
 
+from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d import art3d
+
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+
+class FigureCanvas3D(FigureCanvas):
+
+    def __init__(self, fig, ax):
+        super().__init__(fig)
+        self.ax = ax
+        self.size_x, self.size_y = fig.get_size_inches() * fig.dpi
+        self.x_c = int(self.size_x / 2)
+        self.y_c = int(self.size_y / 2)
+
+        self.last_pos_x = self.x_c
+        self.last_pos_y = self.y_c
+
+    def mouseMoveEvent(self, event):
+        pos_x = event.pos().x() - self.x_c
+        pos_y = -(event.pos().y() - self.y_c)
+
+        dx = pos_x - self.last_pos_x
+        dy = pos_y - self.last_pos_y
+
+        if dx == 0 and dy == 0: return
+
+        if int(event.buttons()) == 1: # left button
+            self.ax.view_init(azim=art3d._norm_angle(self.ax.azim - (dx/self.size_x)*180),
+                              elev=art3d._norm_angle(self.ax.elev - (dy/self.size_y)*180))
+        elif int(event.buttons())==2: # right button
+            minx, maxx, miny, maxy, minz, maxz = self.ax.get_w_lims()
+            df = 1-((self.size_y - dy)/self.size_y)
+            dx = (maxx-minx)*df
+            dy = (maxy-miny)*df
+            dz = (maxz-minz)*df
+            self.ax.set_xlim3d(minx - dx, maxx + dx)
+            self.ax.set_ylim3d(miny - dy, maxy + dy)
+            self.ax.set_zlim3d(minz - dz, maxz + dz)
+            self.ax.get_proj()
+        elif (int(event.buttons())==4 or int(event.buttons())==3): #central button/wheel or left and right together
+            # convert dx dy -> dxx dyy dzz
+            minx, maxx, miny, maxy, minz, maxz = self.ax.get_w_lims()
+            elev, azim = numpy.deg2rad(self.ax.elev), numpy.deg2rad(self.ax.azim)
+            dxe = (dy / self.size_y) * numpy.sin(elev)
+            dye = - (dx / self.size_x)
+            dze = - (dy / self.size_y) * numpy.cos(elev)
+            dxx = (maxx - minx) * (dxe * numpy.cos(azim) - dye * numpy.sin(azim))
+            dyy = (maxy - miny) * (dye * numpy.cos(azim) + dxe * numpy.sin(azim))
+            dzz = (maxz - minz) * (dze)
+            # pan
+            self.ax.set_xlim3d(minx + dxx, maxx + dxx)
+            self.ax.set_ylim3d(miny + dyy, maxy + dyy)
+            self.ax.set_zlim3d(minz + dzz, maxz + dzz)
+            self.ax.get_proj()
+
+        self.last_pos_x = pos_x
+        self.last_pos_y = pos_y
+
+        print(self.ax.azim, self.ax.elev)
+
+        self.draw()
 
 #######################################################################
 #######################################################################
