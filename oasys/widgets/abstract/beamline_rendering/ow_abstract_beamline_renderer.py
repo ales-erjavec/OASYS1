@@ -110,8 +110,11 @@ class AbstractBeamlineRenderer(widget.OWWidget):
     range_min = Setting(0.0)
     range_max = Setting(1.0)
 
-    def __init__(self):
+    def __init__(self, is_using_workspace_units=False):
         super().__init__()
+
+        self.is_using_workspace_units = is_using_workspace_units
+        self.units_to_mm              = 1000
 
         self.build_layout()
 
@@ -151,18 +154,18 @@ class AbstractBeamlineRenderer(widget.OWWidget):
         gui.checkBox(beamline_box, self, "use_labels", "Show labels", labelWidth=200, callback=self.refresh)
         gui.checkBox(beamline_box, self, "draw_source", "Draw source", labelWidth=200, callback=self.refresh)
         gui.checkBox(beamline_box, self, "draw_optical_axis", "Draw optical axis", labelWidth=200, callback=self.refresh)
-        oasysgui.lineEdit(beamline_box, self, "initial_height", "Beam vertical baseline [user units]", labelWidth=230, valueType=float, orientation="horizontal", callback=self.refresh)
+        self.le_initial_height = oasysgui.lineEdit(beamline_box, self, "initial_height", "Beam vertical baseline ", labelWidth=230, valueType=float, orientation="horizontal", callback=self.refresh)
 
         oe_exp_box = oasysgui.widgetBox(gen_box, "Expansion/Compression (aesthetic)", addSpace=False, orientation="vertical", height=110)
 
         oasysgui.lineEdit(oe_exp_box, self, "element_expansion_factor", "O.E. expansion factor (\u22651)", labelWidth=230, valueType=float, orientation="horizontal", callback=self.refresh)
         oasysgui.lineEdit(oe_exp_box, self, "distance_compression_factor", "Length compression factor (\u22651)", labelWidth=230, valueType=float, orientation="horizontal", callback=self.refresh)
 
-        range_box = oasysgui.widgetBox(gen_box, "Range", addSpace=False, orientation="vertical", height=140)
+        range_box = oasysgui.widgetBox(gen_box, "Range", addSpace=False, orientation="vertical", height=200)
 
-        gui.comboBox(range_box, self, "use_range", label="Use Layout Longitudinal Range", labelWidth=350,
-                     items=["No", "Yes"],
-                     callback=self.set_range, sendSelectedValue=False, orientation="horizontal")
+        self.cb_use_range = gui.comboBox(range_box, self, "use_range", label="Use Layout Longitudinal Range", labelWidth=350,
+                                         items=["No", "Yes"],
+                                         callback=self.set_range, sendSelectedValue=False, orientation="horizontal")
 
         gui.separator(range_box, height=5)
 
@@ -170,9 +173,14 @@ class AbstractBeamlineRenderer(widget.OWWidget):
 
         self.range_box_1 = oasysgui.widgetBox(range_box, "", addSpace=False, orientation="vertical")
 
-        slider_min_box = oasysgui.widgetBox(self.range_box_1, "", addSpace=False, orientation="horizontal")
+        def range_min_value_change():
+            self.slider_min.setValue(self.range_min*self.units_to_mm)
+            self.refresh()
 
-        oasysgui.widgetLabel(slider_min_box, "Range Min")
+        self.le_range_min = oasysgui.lineEdit(self.range_box_1, self, "range_min", "Range Min ", labelWidth=220, valueType=float,
+                                              orientation="horizontal", callback=range_min_value_change)
+
+        slider_min_box = oasysgui.widgetBox(self.range_box_1, "", addSpace=False, orientation="horizontal")
 
         self.slider_min = QSlider(Qt.Horizontal)
         self.slider_min.setMinimum(0.0)
@@ -180,45 +188,42 @@ class AbstractBeamlineRenderer(widget.OWWidget):
         self.slider_min.setValue(0.0)
         self.slider_min.setTickPosition(QSlider.TicksBelow)
         self.slider_min.setTickInterval(1)
-        self.slider_min.setFixedWidth(180)
+        self.slider_min.setFixedWidth(300)
 
-        def minValuechange():
-            self.range_min = self.slider_min.value()
+        def slider_min_value_change():
+            self.range_min = self.slider_min.value()/self.units_to_mm
             self.refresh()
 
-        self.slider_min.valueChanged.connect(minValuechange)
+        self.slider_min.valueChanged.connect(slider_min_value_change)
 
         slider_min_box.layout().addWidget(self.slider_min)
 
-        le = oasysgui.lineEdit(slider_min_box, self, "range_min", " ", labelWidth=1, valueType=float, orientation="horizontal")
-        le.setReadOnly(True)
-
         # - range max -----------------
 
-        slider_max_box = oasysgui.widgetBox(self.range_box_1, "", addSpace=False, orientation="horizontal")
+        def range_max_value_change():
+            self.slider_max.setValue(self.range_max*self.units_to_mm)
+            self.refresh()
 
-        oasysgui.widgetLabel(slider_max_box, "Range Max")
+        self.le_range_max = oasysgui.lineEdit(self.range_box_1, self, "range_max", "Range Max ", labelWidth=220, valueType=float,
+                                              orientation="horizontal", callback=range_max_value_change)
+
+        slider_max_box = oasysgui.widgetBox(self.range_box_1, "", addSpace=False, orientation="horizontal")
 
         self.slider_max = QSlider(Qt.Horizontal)
         self.slider_max.setMinimum(0.0)
         self.slider_max.setMaximum(10.0)
         self.slider_max.setValue(10.0)
         self.slider_max.setTickPosition(QSlider.TicksBelow)
-        self.slider_max.setFixedWidth(180)
+        self.slider_max.setFixedWidth(300)
         self.slider_max.setTickInterval(1)
 
-        def maxValuechange():
-            self.range_max = self.slider_max.value()
+        def slider_max_value_change():
+            self.range_max = self.slider_max.value()/self.units_to_mm
             self.refresh()
 
-        self.slider_max.valueChanged.connect(maxValuechange)
+        self.slider_max.valueChanged.connect(slider_max_value_change)
 
         slider_max_box.layout().addWidget(self.slider_max)
-
-        le = oasysgui.lineEdit(slider_max_box, self, "range_max", " ", labelWidth=1, valueType=float, orientation="horizontal")
-        le.setReadOnly(True)
-
-        self.set_range(do_refresh=False)
 
         gui.rubber(self.controlArea)
 
@@ -234,6 +239,27 @@ class AbstractBeamlineRenderer(widget.OWWidget):
         self.mainArea.layout().addWidget(self.figure_canvas)
 
         gui.rubber(self.mainArea)
+
+    def set_units_attributes(self, units_label, units_to_mm):
+        self.units_label = units_label
+        self.units_to_mm = units_to_mm
+        self.tick_interval = 1
+
+    def get_units_attributes(self):
+        return "m", 1000
+
+    def after_change_workspace_units(self):
+        units_label, units_to_mm = self.get_units_attributes()
+
+        label = self.le_initial_height.parent().layout().itemAt(0).widget()
+        label.setText(label.text() + " [" + units_label + "]")
+        label = self.le_range_min.parent().layout().itemAt(0).widget()
+        label.setText(label.text() + " [" + units_label + "]")
+        label = self.le_range_max.parent().layout().itemAt(0).widget()
+        label.setText(label.text() + " [" + units_label + "]")
+
+        self.set_units_attributes(units_label, units_to_mm)
+        self.set_range(do_refresh=False)
 
     def refresh(self):
         if self.is_interactive: self.reset_all()
@@ -270,35 +296,51 @@ class AbstractBeamlineRenderer(widget.OWWidget):
         congruence.checkStrictlyPositiveNumber(self.distance_compression_factor, "Layout compression factor")
         if self.use_range:
             if self.range_max <= self.range_min:
-                self.range_max = self.range_min + 1/self.workspace_units_to_mm
-                self.slider_max.setValue(self.range_max)
+                self.range_max = self.range_min + self.tick_interval
+                self.slider_max.setValue(self.range_max*self.units_to_mm)
 
     def render(self, reset_rotation=True, init_range=False):
         try:
             self.check_fields()
 
-            number_of_elements, centers, limits = self.render_beamline(reset_rotation)
+            render_result = self.render_beamline(reset_rotation)
 
-            limits[:, 0, :] *= 10.0/self.element_expansion_factor # aestetic
+            if not render_result is None:
+                number_of_elements, centers, limits = render_result
 
-            if init_range:
-                self.slider_min.setMinimum(numpy.min(limits[:, 1, :]) - (1/self.workspace_units_to_mm)) # for visibility
-                self.slider_min.setMaximum(numpy.max(limits[:, 1, :]) - (1/self.workspace_units_to_mm)) # for consistency
-                self.slider_min.setValue(max(self.range_min, numpy.min(limits[:, 1, :])))
-                self.slider_max.setMinimum(numpy.min(limits[:, 1, :]) + (1/self.workspace_units_to_mm)) # for consistency
-                self.slider_max.setMaximum(numpy.max(limits[:, 1, :]) + (1/self.workspace_units_to_mm)) # for visibility
-                self.slider_max.setValue(min(self.range_max, numpy.max(limits[:, 1, :])))
+                limits[:, 0, :] *= 10.0/self.element_expansion_factor # aestetic
 
-            if self.use_range == 1:
-                for i in range(number_of_elements): limits[i, 1, :] = numpy.array([self.range_min, self.range_max])
+                # sliders are integers, so they must be always in mm
 
-            if self.draw_optical_axis:
-                if self.use_range == 1: self.draw_central_radiation_line(centers=centers, rng=numpy.array([self.range_min, self.range_max]))
-                else:                   self.draw_central_radiation_line(centers=centers)
+                if init_range:
+                    self.slider_min.setMinimum(numpy.min(limits[:, 1, :])*self.units_to_mm - self.tick_interval) # for visibility
+                    self.slider_min.setMaximum(numpy.max(limits[:, 1, :])*self.units_to_mm - self.tick_interval) # for consistency
+                    if self.range_min*self.units_to_mm == self.slider_min.minimum() + self.tick_interval:
+                        self.range_min = self.slider_min.minimum()/self.units_to_mm
+                        self.slider_min.setValue(self.slider_min.minimum())
+                    else:
+                        self.slider_min.setValue(max(self.range_min*self.units_to_mm, numpy.min(limits[:, 1, :])*self.units_to_mm))
+                    self.slider_min.setTickInterval(self.tick_interval)
 
-            self.format_axis(limits)
+                    self.slider_max.setMinimum(numpy.min(limits[:, 1, :])*self.units_to_mm + self.tick_interval) # for consistency
+                    self.slider_max.setMaximum(numpy.max(limits[:, 1, :])*self.units_to_mm + self.tick_interval) # for visibility
+                    if self.range_max*self.units_to_mm == self.slider_max.maximum() - self.tick_interval:
+                        self.range_max = self.slider_max.maximum()/self.units_to_mm
+                        self.slider_max.setValue(self.slider_max.maximum())
+                    else:
+                        self.slider_max.setValue(min(self.range_max*self.units_to_mm, numpy.max(limits[:, 1, :])*self.units_to_mm))
+                    self.slider_max.setTickInterval(self.tick_interval)
 
-            if reset_rotation: self.reset_rotation()
+                if self.use_range == 1:
+                    for i in range(number_of_elements): limits[i, 1, :] = numpy.array([self.range_min, self.range_max])
+
+                if self.draw_optical_axis:
+                    if self.use_range == 1: self.draw_central_radiation_line(centers=centers, rng=numpy.array([self.range_min, self.range_max]))
+                    else:                   self.draw_central_radiation_line(centers=centers)
+
+                self.format_axis(limits)
+
+                if reset_rotation: self.reset_rotation()
 
         except Exception as e:
             QMessageBox.critical(self, "Error", str(e), QMessageBox.Ok)
@@ -311,7 +353,7 @@ class AbstractBeamlineRenderer(widget.OWWidget):
     def format_axis(self, limits):
         if self.use_axis:
             self.axis.set_axis_on()
-            self.axis.set_ylabel("\n\n\n\n\nDistance along beam direction [user units]")
+            self.axis.set_ylabel("\n\n\n\n\nDistance along beam direction [" + self.units_label + "]")
             self.axis.axes.xaxis.set_ticklabels([])
             self.axis.axes.zaxis.set_ticklabels([])
             for line in self.axis.axes.xaxis.get_ticklines(): line.set_color(color='tab:gray')
@@ -337,23 +379,24 @@ class AbstractBeamlineRenderer(widget.OWWidget):
         else:
             self.axis.set_axis_off()
 
-    def add_source(self, centers, limits, length=2.3, height=0.0, canting=0.0, aspect_ration_modifier=AspectRatioModifier()):
+    def add_source(self, centers, limits, length=2.3, height=0.0, canting=0.0, aspect_ration_modifier=AspectRatioModifier(), source_name=None):
         length *= aspect_ration_modifier.element_expansion_factor[0]
         height *= aspect_ration_modifier.layout_reduction_factor[2]
         canting *= aspect_ration_modifier.layout_reduction_factor[0]
     
-        center = numpy.array([0, length / 2 + canting, height])
+        center = numpy.array([0, canting, height])
     
         if canting != 0.0:
             self.axis.scatter(0, 0, height, s=30, c='c', marker='x')
             if self.use_labels: self.axis.text(0, 0, height, "Section Center")
     
         self.axis.scatter(center[0], center[1], center[2], s=30, c='r')
-        if self.use_labels: self.axis.text(center[0], center[1], center[2], "Source Center")
+        if self.use_labels: self.axis.text(center[0], center[1], center[2],
+                                           ("" if source_name is None else (source_name+" ")) + "Source Center")
     
-        centers[0, :] = center
+        centers[0, :]   = center
         limits[0, 0, :] = numpy.array([0, 0])
-        limits[0, 1, :] = numpy.array([numpy.min([0, length / 2 + canting]), numpy.max([0, length / 2 + canting])])
+        limits[0, 1, :] = numpy.array([canting - (length / 2), canting + (length / 2)])
         limits[0, 2, :] = numpy.array([0, height])
 
     def add_optical_element(self, centers, limits, oe_index,
@@ -461,7 +504,7 @@ class AbstractBeamlineRenderer(widget.OWWidget):
         shift *= aspect_ratio_modifier.layout_reduction_factor[1]
         height *= aspect_ratio_modifier.layout_reduction_factor[2]
 
-        basic_aperture = 100/self.workspace_units_to_mm
+        basic_aperture = 100/self.units_to_mm
 
         vertexes = [[shift - basic_aperture/2, distance, height - basic_aperture/2],  # surface
                     [shift + basic_aperture/2, distance, height - basic_aperture/2],  # surface
