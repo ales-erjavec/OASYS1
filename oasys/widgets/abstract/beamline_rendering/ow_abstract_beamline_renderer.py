@@ -71,6 +71,7 @@ class OpticalElementsColors:
     CRYSTAL = (0, 1, 0, 0.1)
     GRATING = (1, 0, 0, 0.1)
     SLITS = (165/255, 42/255, 42/255, 0.1)
+    LENS = (128/255, 0/255, 128/255, 0.1)
 
 class Orientations:
     UP = 0
@@ -119,7 +120,7 @@ class AbstractBeamlineRenderer(widget.OWWidget):
         self.build_layout()
 
     def build_layout(self):
-        self.warning(text="Widget under development: please do not report anomalies")
+        #self.warning(text="Widget under development: please do not report anomalies")
 
         geom = QApplication.desktop().availableGeometry()
 
@@ -399,6 +400,56 @@ class AbstractBeamlineRenderer(widget.OWWidget):
         limits[0, 1, :] = numpy.array([canting - (length / 2), canting + (length / 2)])
         limits[0, 2, :] = numpy.array([0, height])
 
+    def add_non_optical_element(self, centers, limits, oe_index, length,
+                                distance, height, shift,
+                                color=OpticalElementsColors.LENS, aspect_ration_modifier=AspectRatioModifier(), label=None):
+        length *= aspect_ration_modifier.element_expansion_factor[0]
+        distance *= aspect_ration_modifier.layout_reduction_factor[0]
+        shift *= aspect_ration_modifier.layout_reduction_factor[1]
+        height *= aspect_ration_modifier.layout_reduction_factor[2]
+
+        half_width = 50 / self.units_to_mm
+        half_length = length / 2
+        half_thickness = half_width
+
+        vertexes = [[-half_width, -half_length, -half_thickness],
+                    [half_width, -half_length, -half_thickness],
+                    [-half_width, -half_length, half_thickness],
+                    [half_width, -half_length, half_thickness],
+                    [-half_width, half_length, -half_thickness],
+                    [half_width, half_length, -half_thickness],
+                    [-half_width, half_length, half_thickness],
+                    [half_width, half_length, half_thickness]
+                    ]
+
+        vertexes = numpy.array(vertexes)
+        vertexes[:, 0] += shift
+        vertexes[:, 1] += distance
+        vertexes[:, 2] += height
+
+        center = numpy.array([shift, distance, height])
+
+        edges = [[vertexes[0], vertexes[1], vertexes[3], vertexes[2]],
+                 [vertexes[0], vertexes[1], vertexes[5], vertexes[4]],
+                 [vertexes[2], vertexes[3], vertexes[7], vertexes[6]],
+                 [vertexes[0], vertexes[2], vertexes[6], vertexes[4]],
+                 [vertexes[1], vertexes[3], vertexes[7], vertexes[5]],
+                 [vertexes[4], vertexes[5], vertexes[7], vertexes[6]]
+                 ]
+
+        faces = Poly3DCollection(edges, linewidths=1, edgecolors='k')
+        faces.set_facecolor(color)
+
+        self.axis.add_collection3d(faces)
+
+        self.axis.scatter(vertexes[:, 0], vertexes[:, 1], vertexes[:, 2], s=0)
+        if label and self.use_labels: self.axis.text(center[0], center[1], center[2], label)
+
+        centers[oe_index, :]   = center
+        limits[oe_index, 0, :] = numpy.array([numpy.min(vertexes[:, 0]), numpy.max(vertexes[:, 0])])
+        limits[oe_index, 1, :] = numpy.array([numpy.min(vertexes[:, 1]), numpy.max(vertexes[:, 1])])
+        limits[oe_index, 2, :] = numpy.array([numpy.min(vertexes[:, 2]), numpy.max(vertexes[:, 2])])
+
     def add_optical_element(self, centers, limits, oe_index,
                             width, length, thickness, inclination,
                             distance, height, shift,
@@ -410,10 +461,10 @@ class AbstractBeamlineRenderer(widget.OWWidget):
         distance *= aspect_ration_modifier.layout_reduction_factor[0]
         shift *= aspect_ration_modifier.layout_reduction_factor[1]
         height *= aspect_ration_modifier.layout_reduction_factor[2]
-    
+
         half_width = width / 2
         half_length = length / 2
-    
+
         if orientation == Orientations.UP:
             vertexes = [[-half_width, -half_length * numpy.cos(inclination), -half_length * numpy.sin(inclination)],  # surface
                         [half_width, -half_length * numpy.cos(inclination), -half_length * numpy.sin(inclination)],  # surface
@@ -490,9 +541,11 @@ class AbstractBeamlineRenderer(widget.OWWidget):
         distance *= aspect_ratio_modifier.layout_reduction_factor[0]
         shift *= aspect_ratio_modifier.layout_reduction_factor[1]
         height *= aspect_ratio_modifier.layout_reduction_factor[2]
-    
-        self.axis.scatter(shift, distance, height, s=30, c='g', marker='x')
-        if self.use_labels: self.axis.text(shift, distance, height, label)
+
+        if label is None: self.axis.scatter(shift, distance, height, s=0, c='r')
+        else:
+            self.axis.scatter(shift, distance, height, s=30, c='g', marker='x')
+            if self.use_labels: self.axis.text(shift, distance, height, label)
     
         centers[oe_index, :]   = numpy.array([shift, distance, height])
         limits[oe_index, 0, :] = numpy.array([shift, shift])
