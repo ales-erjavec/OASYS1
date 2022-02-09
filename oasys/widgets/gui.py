@@ -172,6 +172,12 @@ class FigureCanvas3D(FigureCanvas):
 
     def __init__(self, fig, ax, show_legend=True):
         super().__init__(fig)
+
+        box = widgetBox(self, "", orientation="vertical")
+        orange_gui.button(box, self, "Default View", width=100, height=35, callback=self.__default_view)
+        orange_gui.button(box, self, "Top View", width=100, height=35, callback=self.__top_view)
+        orange_gui.button(box, self, "Lateral View", width=100, height=35, callback=self.__lateral_view)
+
         self.ax = ax
         self.size_x, self.size_y = fig.get_size_inches() * fig.dpi
         self.x_c = int(self.size_x / 2)
@@ -183,6 +189,24 @@ class FigureCanvas3D(FigureCanvas):
         self.__show_legend = show_legend
         self.__add_legend()
 
+        self.mark_default_view()
+
+    def mark_default_view(self):
+        self.__initial_azim = self.ax.azim
+        self.__initial_elev = self.ax.elev
+
+    def __default_view(self):
+        self.ax.view_init(azim=self.__initial_azim, elev=self.__initial_elev)
+        self.draw()
+
+    def __top_view(self):
+        self.ax.view_init(azim=0.0, elev=90.0)
+        self.draw()
+
+    def __lateral_view(self):
+        self.ax.view_init(azim=0.0, elev=0.0)
+        self.draw()
+
     def __add_legend(self):
         if self.__show_legend:
             self.ax.text2D(0.05, 0.95,
@@ -191,12 +215,6 @@ class FigureCanvas3D(FigureCanvas):
                            "Mouse Left & Right Buttons or Central Button -> Click and Hold: Shift",
                            transform=self.ax.transAxes,
                            color='blue')
-
-    def __recenter(self, posx, posy):
-        pass #
-
-    def __reset_view(self):
-        pass
 
     def __pan(self, dx, dy):
         # convert dx dy -> dxx dyy dzz
@@ -230,6 +248,8 @@ class FigureCanvas3D(FigureCanvas):
                           elev=art3d._norm_angle(self.ax.elev - (dy / self.size_y) * 180))
 
     def mouseMoveEvent(self, event):
+        print(self.ax.azim, self.ax.elev)
+
         pos_x = event.pos().x() - self.x_c
         pos_y = -(event.pos().y() - self.y_c)
 

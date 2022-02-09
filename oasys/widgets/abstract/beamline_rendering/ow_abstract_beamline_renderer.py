@@ -96,8 +96,6 @@ class AbstractBeamlineRenderer(widget.OWWidget):
     WIDGET_WIDTH = 1900
     WIDGET_HEIGHT = 1000
 
-    is_interactive = Setting(1)
-
     initial_height = Setting(0.0)
     use_axis = Setting(1)
     use_labels = Setting(1)
@@ -140,14 +138,7 @@ class AbstractBeamlineRenderer(widget.OWWidget):
 
         gui.button(button_box, self, "Restore Default View and Values", callback=self.reset_default, height=45)
 
-        button_box = oasysgui.widgetBox(self.controlArea, "", addSpace=False, orientation="horizontal", width=control_area_width)
-
-        gui.button(button_box, self, "Reset Zoom/Shift", callback=self.reset_zoom_shift, height=25)
-        gui.button(button_box, self, "Reset Rotation", callback=self.reset_rotation, height=25)
-
         gen_box = oasysgui.widgetBox(self.controlArea, "Options", addSpace=False, orientation="vertical", width=control_area_width)
-
-        gui.checkBox(gen_box, self, "is_interactive", "Real time refresh active", labelWidth=200)
 
         beamline_box = oasysgui.widgetBox(gen_box, "Beamline", addSpace=False, orientation="vertical", height=170)
 
@@ -263,7 +254,8 @@ class AbstractBeamlineRenderer(widget.OWWidget):
         self.set_range(do_refresh=False)
 
     def refresh(self):
-        if self.is_interactive: self.reset_all()
+        self.render(reset_rotation=False)
+        self.figure_canvas.draw()
 
     def set_range(self, do_refresh=True):
         if self.use_range == 1:
@@ -271,6 +263,7 @@ class AbstractBeamlineRenderer(widget.OWWidget):
             self.distance_compression_factor = 1.0
         else:
             self.range_box_1.setVisible(False)
+
         if do_refresh: self.refresh()
 
     def reset_default(self):
@@ -280,16 +273,14 @@ class AbstractBeamlineRenderer(widget.OWWidget):
         self.set_range(do_refresh=False)
         self.reset_all()
 
-    def reset_zoom_shift(self):
-        self.render(reset_rotation=False)
+    def reset_all(self):
+        self.render(reset_rotation=True)
         self.figure_canvas.draw()
 
     def reset_rotation(self):
         self.axis.view_init(azim=DEFAULT_AZIM, elev=DEFAULT_ELEV)
         self.figure_canvas.draw()
-
-    def reset_all(self):
-        self.render(reset_rotation=True)
+        self.figure_canvas.mark_default_view()
 
     def check_fields(self):
         congruence.checkNumber(self.initial_height, "Beam vertical baseline")
@@ -300,11 +291,11 @@ class AbstractBeamlineRenderer(widget.OWWidget):
                 self.range_max = self.range_min + self.tick_interval
                 self.slider_max.setValue(self.range_max*self.units_to_mm)
 
-    def render(self, reset_rotation=True, init_range=False):
+    def render(self, reset_rotation=True, on_receiving_input=False):
         try:
             self.check_fields()
 
-            render_result = self.render_beamline(reset_rotation)
+            render_result = self.render_beamline()
 
             if not render_result is None:
                 number_of_elements, centers, limits = render_result
@@ -313,7 +304,7 @@ class AbstractBeamlineRenderer(widget.OWWidget):
 
                 # sliders are integers, so they must be always in mm
 
-                if init_range:
+                if on_receiving_input:
                     self.slider_min.setMinimum(numpy.min(limits[:, 1, :])*self.units_to_mm - self.tick_interval) # for visibility
                     self.slider_min.setMaximum(numpy.max(limits[:, 1, :])*self.units_to_mm - self.tick_interval) # for consistency
                     if self.range_min*self.units_to_mm == self.slider_min.minimum() + self.tick_interval:
@@ -342,13 +333,14 @@ class AbstractBeamlineRenderer(widget.OWWidget):
                 self.format_axis(limits)
 
                 if reset_rotation: self.reset_rotation()
+                if on_receiving_input: self.figure_canvas.mark_default_view()
 
         except Exception as e:
             QMessageBox.critical(self, "Error", str(e), QMessageBox.Ok)
 
             if self.IS_DEVELOP: raise e
 
-    def render_beamline(self, reset_rotation=True):
+    def render_beamline(self):
         raise NotImplementedError()
 
     def format_axis(self, limits):
