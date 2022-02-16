@@ -170,13 +170,14 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
 class FigureCanvas3D(FigureCanvas):
 
-    def __init__(self, fig, ax, show_legend=True):
+    def __init__(self, fig, ax, show_legend=True, show_buttons=True):
         super().__init__(fig)
 
-        box = widgetBox(self, "", orientation="vertical")
-        orange_gui.button(box, self, "Default View", width=100, height=35, callback=self.__default_view)
-        orange_gui.button(box, self, "Top View", width=100, height=35, callback=self.__top_view)
-        orange_gui.button(box, self, "Lateral View", width=100, height=35, callback=self.__lateral_view)
+        if show_buttons:
+            box = widgetBox(self, "", orientation="vertical")
+            orange_gui.button(box, self, "Default View", width=100, height=35, callback=self.__default_view)
+            orange_gui.button(box, self, "Top View",     width=100, height=35, callback=self.__top_view)
+            orange_gui.button(box, self, "Lateral View", width=100, height=35, callback=self.__lateral_view)
 
         self.ax = ax
         self.size_x, self.size_y = fig.get_size_inches() * fig.dpi
