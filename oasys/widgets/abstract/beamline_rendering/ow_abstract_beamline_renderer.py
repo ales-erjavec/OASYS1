@@ -104,6 +104,7 @@ class AbstractBeamlineRenderer(widget.OWWidget):
 
     element_expansion_factor =  Setting(1.0)
     distance_compression_factor = Setting(1.0)
+    sagittal_expansion_factor = Setting(10.0)
 
     use_range = Setting(0)
     range_min = Setting(0.0)
@@ -148,10 +149,11 @@ class AbstractBeamlineRenderer(widget.OWWidget):
         gui.checkBox(beamline_box, self, "draw_optical_axis", "Draw optical axis", labelWidth=200, callback=self.refresh)
         self.le_initial_height = oasysgui.lineEdit(beamline_box, self, "initial_height", "Beam vertical baseline ", labelWidth=230, valueType=float, orientation="horizontal", callback=self.refresh)
 
-        oe_exp_box = oasysgui.widgetBox(gen_box, "Expansion/Compression (aesthetic)", addSpace=False, orientation="vertical", height=110)
+        oe_exp_box = oasysgui.widgetBox(gen_box, "Expansion/Compression (aesthetic)", addSpace=False, orientation="vertical", height=130)
 
         oasysgui.lineEdit(oe_exp_box, self, "element_expansion_factor", "O.E. expansion factor (\u22651)", labelWidth=230, valueType=float, orientation="horizontal", callback=self.refresh)
         oasysgui.lineEdit(oe_exp_box, self, "distance_compression_factor", "Length compression factor (\u22651)", labelWidth=230, valueType=float, orientation="horizontal", callback=self.refresh)
+        oasysgui.lineEdit(oe_exp_box, self, "sagittal_expansion_factor", "Sagittal expansion factor (\u22651)", labelWidth=230, valueType=float, orientation="horizontal", callback=self.refresh)
 
         range_box = oasysgui.widgetBox(gen_box, "Range", addSpace=False, orientation="vertical", height=200)
 
@@ -284,8 +286,9 @@ class AbstractBeamlineRenderer(widget.OWWidget):
 
     def check_fields(self, on_receiving_input=False):
         congruence.checkNumber(self.initial_height, "Beam vertical baseline")
-        congruence.checkStrictlyPositiveNumber(self.element_expansion_factor, "O.E. Expansion Factor")
+        congruence.checkStrictlyPositiveNumber(self.element_expansion_factor, "O.E. expansion factor")
         congruence.checkStrictlyPositiveNumber(self.distance_compression_factor, "Layout compression factor")
+        congruence.checkStrictlyPositiveNumber(self.sagittal_expansion_factor, "Sagittal expansion factor")
         if not on_receiving_input and self.use_range:
             if self.range_max <= self.range_min:
                 self.range_max = self.range_min + self.tick_interval
@@ -300,7 +303,7 @@ class AbstractBeamlineRenderer(widget.OWWidget):
             if not render_result is None:
                 number_of_elements, centers, limits = render_result
 
-                limits[:, 0, :] *= 10.0/self.element_expansion_factor # aestetic
+                limits[:, 0, :] *= self.sagittal_expansion_factor/self.element_expansion_factor # aestetic
 
                 # sliders are integers, so they must be always in mm
 
@@ -558,9 +561,9 @@ class AbstractBeamlineRenderer(widget.OWWidget):
             self.axis.text(shift, distance, height, label)
 
         centers[oe_index, :] = numpy.array([shift, distance, height])
-        limits[oe_index, 0, :] = numpy.array([shift, shift])
+        limits[oe_index, 0, :] = numpy.array([shift - basic_aperture/2, shift + basic_aperture/2])
         limits[oe_index, 1, :] = numpy.array([distance, distance])
-        limits[oe_index, 2, :] = numpy.array([height, height])
+        limits[oe_index, 2, :] = numpy.array([height - basic_aperture/2, height + basic_aperture/2])
 
     def add_point(self, centers, limits, oe_index, distance, height, shift, label="Sample", aspect_ratio_modifier=AspectRatioModifier()):
         distance *= aspect_ratio_modifier.layout_reduction_factor[0]
