@@ -282,18 +282,18 @@ class AbstractBeamlineRenderer(widget.OWWidget):
         self.figure_canvas.draw()
         self.figure_canvas.mark_default_view()
 
-    def check_fields(self):
+    def check_fields(self, on_receiving_input=False):
         congruence.checkNumber(self.initial_height, "Beam vertical baseline")
         congruence.checkStrictlyPositiveNumber(self.element_expansion_factor, "O.E. Expansion Factor")
         congruence.checkStrictlyPositiveNumber(self.distance_compression_factor, "Layout compression factor")
-        if self.use_range:
+        if not on_receiving_input and self.use_range:
             if self.range_max <= self.range_min:
                 self.range_max = self.range_min + self.tick_interval
                 self.slider_max.setValue(self.range_max*self.units_to_mm)
 
     def render(self, reset_rotation=True, on_receiving_input=False):
         try:
-            self.check_fields()
+            self.check_fields(on_receiving_input)
 
             render_result = self.render_beamline()
 
@@ -529,30 +529,15 @@ class AbstractBeamlineRenderer(widget.OWWidget):
         limits[oe_index, 1, :] = numpy.array([numpy.min(vertexes[:, 1]), numpy.max(vertexes[:, 1])])
         limits[oe_index, 2, :] = numpy.array([numpy.min(vertexes[:, 2]), numpy.max(vertexes[:, 2])])
 
-    def add_point(self, centers, limits, oe_index, distance, height, shift, label="Sample", aspect_ratio_modifier=AspectRatioModifier()):
-        distance *= aspect_ratio_modifier.layout_reduction_factor[0]
-        shift *= aspect_ratio_modifier.layout_reduction_factor[1]
-        height *= aspect_ratio_modifier.layout_reduction_factor[2]
-
-        if label is None: self.axis.scatter(shift, distance, height, s=0, c='r')
-        else:
-            self.axis.scatter(shift, distance, height, s=30, c='g', marker='x')
-            if self.use_labels: self.axis.text(shift, distance, height, label)
-    
-        centers[oe_index, :]   = numpy.array([shift, distance, height])
-        limits[oe_index, 0, :] = numpy.array([shift, shift])
-        limits[oe_index, 1, :] = numpy.array([distance, distance])
-        limits[oe_index, 2, :] = numpy.array([height, height])
-
     def add_slits_filter(self, centers, limits, oe_index, distance, height, shift, aperture=None, label="Slits", aspect_ratio_modifier=AspectRatioModifier()):
         distance *= aspect_ratio_modifier.layout_reduction_factor[0]
         shift *= aspect_ratio_modifier.layout_reduction_factor[1]
         height *= aspect_ratio_modifier.layout_reduction_factor[2]
 
-        basic_aperture = 100/self.units_to_mm
+        basic_aperture = 100 / self.units_to_mm
 
-        vertexes = [[shift - basic_aperture/2, distance, height - basic_aperture/2],  # surface
-                    [shift + basic_aperture/2, distance, height - basic_aperture/2],  # surface
+        vertexes = [[shift - basic_aperture / 2, distance, height - basic_aperture / 2],  # surface
+                    [shift + basic_aperture / 2, distance, height - basic_aperture / 2],  # surface
                     [shift - basic_aperture / 2, distance, height + basic_aperture / 2],  # surface
                     [shift + basic_aperture / 2, distance, height + basic_aperture / 2]
                     ]
@@ -573,6 +558,21 @@ class AbstractBeamlineRenderer(widget.OWWidget):
             self.axis.text(shift, distance, height, label)
 
         centers[oe_index, :] = numpy.array([shift, distance, height])
+        limits[oe_index, 0, :] = numpy.array([shift, shift])
+        limits[oe_index, 1, :] = numpy.array([distance, distance])
+        limits[oe_index, 2, :] = numpy.array([height, height])
+
+    def add_point(self, centers, limits, oe_index, distance, height, shift, label="Sample", aspect_ratio_modifier=AspectRatioModifier()):
+        distance *= aspect_ratio_modifier.layout_reduction_factor[0]
+        shift *= aspect_ratio_modifier.layout_reduction_factor[1]
+        height *= aspect_ratio_modifier.layout_reduction_factor[2]
+
+        if label is None: self.axis.scatter(shift, distance, height, s=0, c='r')
+        else:
+            self.axis.scatter(shift, distance, height, s=30, c='g', marker='x')
+            if self.use_labels: self.axis.text(shift, distance, height, label)
+    
+        centers[oe_index, :]   = numpy.array([shift, distance, height])
         limits[oe_index, 0, :] = numpy.array([shift, shift])
         limits[oe_index, 1, :] = numpy.array([distance, distance])
         limits[oe_index, 2, :] = numpy.array([height, height])
@@ -604,3 +604,24 @@ def initialize_arrays(number_of_elements):
 
     return centers, limits
 
+def get_inclinations(orientation, inclination, beam_vertical_inclination, beam_horizontal_inclination):
+    if orientation == Orientations.UP:
+        absolute_inclination = beam_vertical_inclination + inclination
+        beam_vertical_inclination += 2 * inclination
+    elif orientation == Orientations.DOWN:
+        absolute_inclination = beam_vertical_inclination - inclination
+        beam_vertical_inclination -= 2 * inclination
+    elif orientation == Orientations.LEFT:
+        absolute_inclination = beam_horizontal_inclination + inclination
+        beam_horizontal_inclination -= 2 * inclination
+    elif orientation == Orientations.RIGHT:
+        absolute_inclination = beam_horizontal_inclination - inclination
+        beam_horizontal_inclination += 2 * inclination
+
+    return absolute_inclination, beam_horizontal_inclination, beam_vertical_inclination
+
+def get_height_shift(segment_to_oe, previous_height, previous_shift, beam_vertical_inclination, beam_horizontal_inclination):
+    height = previous_height + segment_to_oe * numpy.sin(beam_vertical_inclination)
+    shift  = previous_shift  + segment_to_oe * numpy.sin(beam_horizontal_inclination)
+
+    return height, shift
