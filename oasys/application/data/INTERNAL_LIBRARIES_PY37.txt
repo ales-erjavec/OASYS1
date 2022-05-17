@@ -2,6 +2,7 @@ srxraylib
 syned
 wofry
 OASYS1
+xoppylib
 silx==0.15.0
 PyQt5==5.15.2
 pip==21.0.1
