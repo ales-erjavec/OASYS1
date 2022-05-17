@@ -1,17 +1,10 @@
 import sys
-import sysconfig
 import os
 import logging
-import re
-import errno
-import shlex
-import subprocess
 import itertools
 import json
-import traceback
 import concurrent.futures
 
-from collections import namedtuple, deque
 from xml.sax.saxutils import escape
 from distutils import version
 
@@ -26,8 +19,7 @@ except ImportError:
 from PyQt5.QtWidgets import (
     QWidget, QDialog, QLabel, QLineEdit, QTreeView, QHeaderView,
     QTextBrowser, QDialogButtonBox, QProgressDialog,
-    QVBoxLayout, QStyle, QStyledItemDelegate, QStyleOptionViewItem,
-    QApplication, QHBoxLayout,  QPushButton, QFormLayout
+    QVBoxLayout, QHBoxLayout
 )
 
 from PyQt5.QtGui import (
@@ -36,15 +28,14 @@ from PyQt5.QtGui import (
 
 from PyQt5.QtCore import (
     QSortFilterProxyModel, QItemSelectionModel,
-    Qt, QObject, QMetaObject, QEvent, QSize, QTimer, QThread, Q_ARG,
-    QSettings)
+    Qt, QSize, QTimer, QThread)
 from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from urllib.request import urlopen
 
 from orangecanvas.gui.utils import message_warning, message_information, \
                         message_critical as message_error
-from orangecanvas.help.manager import get_dist_meta, trim, parse_meta
+from orangecanvas.help.manager import get_dist_meta, trim
 
 from orangecanvas.resources import package_dirname
 

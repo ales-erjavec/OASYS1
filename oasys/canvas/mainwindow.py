@@ -1,4 +1,4 @@
-import os, sys
+import os
 import io
 import platform
 import pickle
@@ -13,7 +13,7 @@ import pkg_resources
 from PyQt5.QtWidgets import (
     QWidget, QMenu, QAction, QDialog, QMessageBox, QFileDialog,
     QHBoxLayout, QLineEdit, QPushButton, QCheckBox, QVBoxLayout, QLabel,
-    QFormLayout, QComboBox, QGridLayout, QApplication, QDialogButtonBox
+    QFormLayout, QComboBox, QGridLayout, QApplication
 )
 from PyQt5.QtGui import (
     QKeySequence, QIcon
@@ -560,30 +560,23 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                     self.project_name = project_name
                     self.version = version
 
-            def get_latest_version(name): # from pypi if the package is not installed yet
-                import subprocess
-                latest_version = str(subprocess.run([sys.executable, '-m', 'pip', 'install', '{}==random'.format(name)], capture_output=True, text=True))
-                latest_version = latest_version[latest_version.find('(from versions:') + 15:]
-                latest_version = latest_version[:latest_version.find(')')]
-                return latest_version.replace(' ', '').split(',')[-1]
-
             entry_points = []
 
             for internal_library in self.__pypi_internal_libraries:
                 try:
                     entry_points.append(EntryPoint(internal_library.name, pkg_resources.get_distribution(internal_library.name).version))
                 except pkg_resources.DistributionNotFound:
-                    pass #entry_points.append(EntryPoint(internal_library.name, get_latest_version(internal_library.name)))
+                    pass
 
             items = addons.installable_items(self.__pypi_internal_libraries, entry_points)
 
             self.__internal_library_to_update = []
             self.__internal_library_to_install = []
             for item in items:
-                if internal_libraries.is_updatable(item):   self.__internal_library_to_update.append(item)
+                if internal_libraries.is_updatable(item):     self.__internal_library_to_update.append(item)
                 elif internal_libraries.is_installable(item): self.__internal_library_to_install.append(item)
 
-            self.__internal_library_updatable = len(self.__internal_library_to_update)
+            self.__internal_library_updatable   = len(self.__internal_library_to_update)
             self.__internal_library_installable = len(self.__internal_library_to_install)
 
     def new_instance(self):
