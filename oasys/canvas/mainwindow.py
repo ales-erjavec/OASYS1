@@ -493,6 +493,8 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         self.__pypi_internal_libraries = None
         self.__internal_library_to_update = None
         self.__internal_library_updatable = 0
+        self.__internal_library_to_install = None
+        self.__internal_library_installable = 0
 
         # AUTOMATIC UPDATE OF THE INTERNAL LIBRARIES
         if not no_update: self.__set_pypi_internal_libraries(load_pypi_internal_libraries())
@@ -558,16 +560,31 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                     self.project_name = project_name
                     self.version = version
 
-            items = addons.installable_items(
-                self.__pypi_internal_libraries,
-                [EntryPoint(internal_library.name,
-                            pkg_resources.get_distribution(internal_library.name).version)
-                 for internal_library in self.__pypi_internal_libraries])
+            def get_latest_version(name): # from pypi if the package is not installed yet
+                import subprocess
+                latest_version = str(subprocess.run([sys.executable, '-m', 'pip', 'install', '{}==random'.format(name)], capture_output=True, text=True))
+                latest_version = latest_version[latest_version.find('(from versions:') + 15:]
+                latest_version = latest_version[:latest_version.find(')')]
+                return latest_version.replace(' ', '').split(',')[-1]
+
+            entry_points = []
+
+            for internal_library in self.__pypi_internal_libraries:
+                try:
+                    entry_points.append(EntryPoint(internal_library.name, pkg_resources.get_distribution(internal_library.name).version))
+                except pkg_resources.DistributionNotFound:
+                    pass #entry_points.append(EntryPoint(internal_library.name, get_latest_version(internal_library.name)))
+
+            items = addons.installable_items(self.__pypi_internal_libraries, entry_points)
 
             self.__internal_library_to_update = []
+            self.__internal_library_to_install = []
             for item in items:
-                if internal_libraries.is_updatable(item): self.__internal_library_to_update.append(item)
+                if internal_libraries.is_updatable(item):   self.__internal_library_to_update.append(item)
+                elif internal_libraries.is_installable(item): self.__internal_library_to_install.append(item)
+
             self.__internal_library_updatable = len(self.__internal_library_to_update)
+            self.__internal_library_installable = len(self.__internal_library_to_install)
 
     def new_instance(self):
         run_command(["python", "-m", "oasys.canvas"], raise_on_fail=False, wait_for_output=False)
@@ -881,18 +898,18 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         # AUTOMATIC UPDATES
         # -------------------------------------------------------------
 
-        if self.__internal_library_updatable or self.__updatable:
+        if self.__internal_library_updatable or self.__internal_library_installable or self.__updatable:
             message = ""
 
-            if self.__internal_library_updatable:
-                message += "OASYS needs to update its internal libraries"
+            if self.__internal_library_updatable or self.__internal_library_installable:
+                message += "OASYS needs to update/install its internal libraries"
 
             if self.__updatable:
                 addons_action.setText("Update Now")
                 addons_action.setToolTip("Update or install new add-ons")
                 addons_action.setIcon(QIcon(resource_path("icons/Update.svg")))
 
-                if self.__internal_library_updatable:
+                if self.__internal_library_updatable or self.__internal_library_installable:
                     message += " and "
                     one = "one"
                 else:
@@ -912,7 +929,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
 
             def do_update():
                 is_app_to_be_closed = False
-                if self.__internal_library_updatable:
+                if self.__internal_library_updatable or self.__internal_library_installable:
                     is_app_to_be_closed = self.open_internal_libraries(is_app_to_be_closed=not self.__updatable) > 0
                 if self.__updatable:
                     self.open_addons(is_app_to_be_closed=is_app_to_be_closed)

@@ -96,7 +96,7 @@ from oasys.application.addons import get_meta_from_archive, cleanup, TristateChe
 from oasys.application.addons import Installed, Installable, Available
 
 def is_updatable(item):
-    if isinstance(item, Available) or item.installable is None:
+    if isinstance(item, Available) or isinstance(item, Installable) or item.installable is None:
         return False
     inst, dist = item
     try:
@@ -107,6 +107,10 @@ def is_updatable(item):
         if version.LooseVersion(dist.version) < version.LooseVersion(inst.version):
             if MAX_VERSION[dist.project_name] is None: return True
             else: return version.LooseVersion(MAX_VERSION[dist.project_name]) >= version.LooseVersion(inst.version)
+
+def is_installable(item):
+    if isinstance(item, Available) or isinstance(item, Installable) or item.installable is None: return True
+    else: return False
 
 class InternalLibrariesManagerWidget(QWidget):
 
@@ -198,12 +202,14 @@ class InternalLibrariesManagerWidget(QWidget):
                            (Qt.ItemIsTristate if updatable else 0))
             item1.setEnabled(False)
 
-            if installed and updatable:
-                item1.setCheckState(Qt.Checked)
-            elif installed:
-                item1.setCheckState(Qt.Checked)
-            else:
-                item1.setCheckState(Qt.Unchecked)
+            item1.setCheckState(Qt.Checked)
+
+            #if installed and updatable:
+            #    item1.setCheckState(Qt.Checked)
+            #elif installed:
+            #    item1.setCheckState(Qt.Checked)
+            #else:
+            #    item1.setCheckState(Qt.Unchecked)
 
             item2 = QStandardItem(cleanup(name))
 
@@ -222,6 +228,8 @@ class InternalLibrariesManagerWidget(QWidget):
 
             if updatable:
                 item4.setText("Update")
+            elif not installed:
+                item4.setText("Install")
 
             model.appendRow([item1, item2, item3, item4])
 
@@ -649,4 +657,12 @@ def list_available_versions():
 def list_installed_internal_libraries():
     workingset = pkg_resources.WorkingSet(sys.path)
 
-    return [workingset.by_key[internal_library.lower()] for internal_library in INTERNAL_LIBRARIES]
+    installed_internal_libraries = []
+
+    for internal_library in INTERNAL_LIBRARIES:
+        try:
+            installed_internal_libraries.append(workingset.by_key[internal_library.lower()])
+        except KeyError:
+            pass
+
+    return installed_internal_libraries
