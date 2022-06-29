@@ -91,7 +91,7 @@ def write_surface_file(zz, xx, yy, file_name, overwrite=True):
     if not os.path.isfile(file_name):  # if file doesn't exist, create it.
         file = h5py.File(file_name, 'w')
         # points to the default data to be plotted
-        file.attrs['default']          = subgroup_name + '/Z'
+        file.attrs['default']          = subgroup_name
         # give the HDF5 root some more attributes
         file.attrs['file_name']        = file_name
         file.attrs['file_time']        = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
