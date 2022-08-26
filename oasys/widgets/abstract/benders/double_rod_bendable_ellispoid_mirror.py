@@ -166,7 +166,8 @@ def calculate_bender_correction(bender_parameter : DoubleRodBenderParameters):
 
     for i in range(z_bender_correction.shape[0]): z_bender_correction[i, :] = numpy.copy(correction_profile)
 
-    bender_data_to_plot = BenderDataToPlot(y=y,
+    bender_data_to_plot = BenderDataToPlot(x=x,
+                                           y=y,
                                            ideal_profile=ideal_profile,
                                            bender_profile=bender_profile,
                                            correction_profile=correction_profile,
