@@ -1,9 +1,10 @@
+numpy==1.22.4
+fabio==0.11.0
+scipy==1.9.1
 srxraylib
 syned
 wofry
 OASYS1
-dabax
-xoppylib
 silx==0.15.0
 PyQt5==5.15.2
-pip==21.0.1
+pip==22.2.2
