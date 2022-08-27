@@ -9,7 +9,7 @@ from setuptools import setup
 
 NAME = 'OASYS1'
 
-VERSION = '1.2.110'
+VERSION = '1.2.112'
 
 ISRELEASED = True
 
@@ -49,11 +49,12 @@ CLASSIFIERS = (
 INSTALL_REQUIRES = (
     'setuptools',
     'requests',
-    'numpy<1.23,>=1.22',
+    'numpy<1.23,>=1.21',
     'fabio==0.11.0',
     'PyQt5==5.15.2',
     'scipy==1.9.1',
     'matplotlib>=3.3.2',
+    'xraylib==4.1.2',
     'oasys-canvas-core>=1.0.6',
     'oasys-widget-core>=1.0.1',
     'silx==0.15.0',
