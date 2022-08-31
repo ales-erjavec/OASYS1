@@ -65,6 +65,7 @@ class DoubleRodBenderParameters:
     E = None
     h = None
     r = None
+    l = None
 
     R0 = None
     R0_max = False
@@ -91,6 +92,9 @@ class DoubleRodBenderParameters:
     figure_error = None
 
 def calculate_bender_correction(bender_parameter : DoubleRodBenderParameters):
+    workspace_units_to_m  = bender_parameter.workspace_units_to_m
+    workspace_units_to_mm = bender_parameter.workspace_units_to_mm
+
     x             = bender_parameter.x
     y             = bender_parameter.y
     W1            = bender_parameter.W1
@@ -99,10 +103,17 @@ def calculate_bender_correction(bender_parameter : DoubleRodBenderParameters):
     q             = bender_parameter.q
     grazing_angle = bender_parameter.grazing_angle
 
-    if bender_parameter.optimized_length is None:
+    optimized_length = bender_parameter.optimized_length
+
+    E = bender_parameter.E
+    l = bender_parameter.l
+    h = bender_parameter.h
+    r = bender_parameter.r
+
+    if optimized_length is None:
         y_fit = y
     else:
-        cursor = numpy.where(numpy.logical_and(y >= -bender_parameter.optimized_length / 2, y <= bender_parameter.optimized_length / 2))
+        cursor = numpy.where(numpy.logical_and(y >= -optimized_length / 2, y <= optimized_length / 2))
         y_fit = y[cursor]
 
     ideal_slope_profile_fit = ideal_slope_profile(y_fit, p, q, grazing_angle)
@@ -120,7 +131,7 @@ def calculate_bender_correction(bender_parameter : DoubleRodBenderParameters):
                        ]
 
     def bender_function(x, R0, eta, W2):
-        return __bender_slope_profile(x, p, q, grazing_angle, W1, L, R0 / bender_parameter.workspace_units_to_m, eta, W2 / bender_parameter.workspace_units_to_mm)
+        return __bender_slope_profile(x, p, q, grazing_angle, W1, L, R0 / workspace_units_to_m, eta, W2 / workspace_units_to_mm)
 
     for i in range(bender_parameter.n_fit_steps):
         parameters, _ = curve_fit(f=bender_function,
@@ -131,19 +142,19 @@ def calculate_bender_correction(bender_parameter : DoubleRodBenderParameters):
                                   method='trf')
         initial_guess = parameters
 
-    R0  = parameters[0] / bender_parameter.workspace_units_to_m # here in workspace units
+    R0  = parameters[0] / workspace_units_to_m # here in workspace units
     eta = parameters[1]
-    W2  = parameters[2] / bender_parameter.workspace_units_to_mm
+    W2  = parameters[2] / workspace_units_to_mm
 
     alpha = calculate_taper_factor(W1, W2, L, p, q, grazing_angle)
     W0    = calculate_W0(W1, alpha, L, p, q, grazing_angle) # W at the center
 
     bender_profile = __bender_height_profile(y, p, q, grazing_angle, R0, eta, alpha)
 
-    F_upstream, F_downstream = calculate_bender_forces(q, R0, eta, bender_parameter.E, W0, L, bender_parameter.h, bender_parameter.r)
+    F_upstream, F_downstream = calculate_bender_forces(q, R0, eta, E, W0, l, h, r)
 
     parameters = numpy.append(parameters, round(alpha, 3))
-    parameters = numpy.append(parameters, round(W0 * bender_parameter.workspace_units_to_mm, 4))
+    parameters = numpy.append(parameters, round(W0 * workspace_units_to_mm, 4))
     parameters = numpy.append(parameters, round(F_upstream, 6))
     parameters = numpy.append(parameters, round(F_downstream, 6))
 
@@ -155,12 +166,12 @@ def calculate_bender_correction(bender_parameter : DoubleRodBenderParameters):
 
     # from here it's Shadow Axis system
     correction_profile = ideal_profile - bender_profile
-    if not bender_parameter.optimized_length is None: correction_profile_fit = correction_profile[cursor]
+    if not optimized_length is None: correction_profile_fit = correction_profile[cursor]
 
     # r-squared = 1 - residual sum of squares / total sum of squares
     r_squared = 1 - (numpy.sum(correction_profile ** 2) / numpy.sum((ideal_profile - numpy.mean(ideal_profile)) ** 2))
-    rms       = round(correction_profile.std() * 1e9 * bender_parameter.workspace_units_to_m, 6)
-    if not bender_parameter.optimized_length is None: rms_opt = round(correction_profile_fit.std() * 1e9 * bender_parameter.workspace_units_to_m, 6)
+    rms       = round(correction_profile.std() * 1e9 * workspace_units_to_m, 6)
+    if not bender_parameter.optimized_length is None: rms_opt = round(correction_profile_fit.std() * 1e9 * workspace_units_to_m, 6)
 
     z_bender_correction = numpy.zeros((len(x), len(y)))
 
@@ -172,7 +183,7 @@ def calculate_bender_correction(bender_parameter : DoubleRodBenderParameters):
                                            bender_profile=bender_profile,
                                            correction_profile=correction_profile,
                                            titles=["Bender vs. Ideal Profiles" + "\n" + r'$R^2$ = ' + str(r_squared),
-                                                   "Correction Profile 1D, r.m.s. = " + str(rms) + " nm" + ("" if bender_parameter.optimized_length is None else (", " + str(rms_opt) + " nm (optimized)"))],
+                                                   "Correction Profile 1D, r.m.s. = " + str(rms) + " nm" + ("" if optimized_length is None else (", " + str(rms_opt) + " nm (optimized)"))],
                                            z_bender_correction_no_figure_error=z_bender_correction)
 
     if not bender_parameter.figure_error is None:
