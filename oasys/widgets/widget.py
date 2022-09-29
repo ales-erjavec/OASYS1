@@ -53,6 +53,9 @@ class OWWidget(widget.OWWidget):
             area.setWidget(self.mainArea)
             area.setWidgetResizable(True)
 
+    def setCanvasMainWindow(self, canvas_main_window):
+        self.canvas_main_window = canvas_main_window
+
     def setWorkingDirectory(self, directory):
         self.working_directory = directory
 

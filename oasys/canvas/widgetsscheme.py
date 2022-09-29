@@ -36,6 +36,8 @@ class OASYSWidgetsScheme(WidgetsScheme):
 
     def __init__(self, parent=None, title=None, description=None,
                  working_directory=None, workspace_units=None):
+        self.__canvas_main_window = parent
+
         settings = QSettings()
 
         self.__working_directory = (
@@ -93,6 +95,9 @@ class OASYSWidgetsScheme(WidgetsScheme):
         """
         return self.__workspace_units
 
+    def canvas_main_window(self):
+        return self.__canvas_main_window
+
     working_directory = Property(str,
                                  fget=working_directory,
                                  fset=set_working_directory)
@@ -101,6 +106,8 @@ class OASYSWidgetsScheme(WidgetsScheme):
                                fget=workspace_units,
                                fset=set_workspace_units)
 
+    canvas_main_window = Property(object,
+                                  fget=canvas_main_window)
 
 
     def save_to(self, stream, pretty=True, pickle_fallback=False):
@@ -140,6 +147,7 @@ class OASYSWidgetManager(WidgetManager):
         widget = super().create_widget_instance(node)
         if hasattr(widget, "setWorkingDirectory"): widget.setWorkingDirectory(self.scheme().working_directory)
         if hasattr(widget, "setWorkspaceUnits"):   widget.setWorkspaceUnits(self.scheme().workspace_units)
+        if hasattr(widget, "setCanvasMainWindow"): widget.setCanvasMainWindow(self.scheme().canvas_main_window)
 
         return widget
 
