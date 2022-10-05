@@ -40,7 +40,7 @@ Examples
 DIR=$(dirname "$0")
 
 # Python version in the bundled framework
-PYTHON_VERSION=3.8.8
+PYTHON_VERSION=3.8.10
 
 # Pip arguments used to populate the python environment in the application
 # bundle
@@ -72,12 +72,14 @@ APPDIR=${1:?"Target APPDIR argument is missing"}
 PYVER=${PYTHON_VERSION%.*}  # Major.Minor
 
 if [[ ${#PIP_REQ_ARGS[@]} -eq 0 ]]; then
-    PIP_REQ_ARGS+=('numpy==1.18.1' 'fabio==0.11.0' 'PyQt5==5.15.2' 'PyQtWebEngine~=5.15' 'oasys1')
+    PIP_REQ_ARGS+=('numpy~=1.23.2' 'fabio==0.14.0' 'PyQt5==5.15.2' 'PyQtWebEngine~=5.15' 'xraylib~=4.1.2' 'oasys1')
 fi
 
 mkdir -p "${APPDIR}"/Contents/MacOS
 mkdir -p "${APPDIR}"/Contents/Frameworks
 mkdir -p "${APPDIR}"/Contents/Resources
+
+cp -R ./lib "${APPDIR}"/Contents/Frameworks
 
 cp -a "${DIR}"/skeleton.app/Contents/{Resources,Info.plist.in} \
     "${APPDIR}"/Contents
@@ -96,12 +98,42 @@ ln -fs ../Frameworks/Python.framework/Versions/${PYVER}/bin/python${PYVER} \
     "${APPDIR}"/Contents/MacOS/python
 
 "${APPDIR}"/Contents/MacOS/python -m ensurepip
-"${APPDIR}"/Contents/MacOS/python -m pip install pip~=21.0.1 wheel
+"${APPDIR}"/Contents/MacOS/python -m pip install pip~=22.2.0 wheel
+
+
+cat <<'EOF' > "${APPDIR}"/Contents/MacOS/ENV
+
+# Create an environment for running python from the bundle
+# Should be run as "source ENV"
+
+BUNDLE_DIR=`dirname "$0"`/../
+BUNDLE_DIR=`perl -MCwd=realpath -e 'print realpath($ARGV[0])' "$BUNDLE_DIR"`/
+FRAMEWORKS_DIR="$BUNDLE_DIR"Frameworks/
+RESOURCES_DIR="$BUNDLE_DIR"Resources/
+
+PYVERSION="3.8"
+PYTHONEXECUTABLE="$FRAMEWORKS_DIR"Python.framework/Resources/Python.app/Contents/MacOS/Python
+PYTHONHOME="$FRAMEWORKS_DIR"Python.framework/Versions/"$PYVERSION"/
+DYLD_FRAMEWORK_PATH="$FRAMEWORKS_DIR"${DYLD_FRAMEWORK_PATH:+:$DYLD_FRAMEWORK_PATH}
+
+export PYTHONNOUSERSITE=1
+
+# Some non framework libraries are put in $FRAMEWORKS_DIR by machlib standalone
+base_ver=11.0
+ver=$(sw_vers | grep ProductVersion | cut -d':' -f2 | tr -d ' ')
+if [ $(echo -e $base_ver"\n"$ver | sort -V | tail -1) == "$base_ver" ]
+then
+   export DYLD_LIBRARY_PATH="$FRAMEWORKS_DIR"${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}lib/os10
+else
+   export DYLD_LIBRARY_PATH="$FRAMEWORKS_DIR"${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}lib/os11
+fi
+EOF
 
 cat <<'EOF' > "${APPDIR}"/Contents/MacOS/Oasys1
 #!/bin/bash
 
 DIR=$(dirname "$0")
+source "$DIR"/ENV
 
 # LaunchServices passes the Carbon process identifier to the application with
 # -psn parameter - we do not want it
@@ -112,7 +144,7 @@ fi
 # Disable user site packages
 export PYTHONNOUSERSITE=1
 
-exec "${DIR}"/PythonApp -m oasys.canvas "$@"
+exec "${DIR}"/PythonApp -m oasys.canvas --force-discovery "$@"
 EOF
 chmod +x "${APPDIR}"/Contents/MacOS/Oasys1
 

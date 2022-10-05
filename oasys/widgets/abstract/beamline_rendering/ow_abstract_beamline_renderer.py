@@ -607,19 +607,19 @@ def initialize_arrays(number_of_elements):
 
     return centers, limits
 
-def get_inclinations(orientation, inclination, beam_vertical_inclination, beam_horizontal_inclination):
+def get_inclinations(orientation, inclination_in, inclination_out, beam_vertical_inclination, beam_horizontal_inclination):
     if orientation == Orientations.UP:
-        absolute_inclination = beam_vertical_inclination + inclination
-        beam_vertical_inclination += 2 * inclination
+        absolute_inclination = beam_vertical_inclination + inclination_in
+        beam_vertical_inclination +=  inclination_in + inclination_out
     elif orientation == Orientations.DOWN:
-        absolute_inclination = beam_vertical_inclination - inclination
-        beam_vertical_inclination -= 2 * inclination
+        absolute_inclination = beam_vertical_inclination - inclination_in
+        beam_vertical_inclination -= inclination_in + inclination_out
     elif orientation == Orientations.LEFT:
-        absolute_inclination = beam_horizontal_inclination + inclination
-        beam_horizontal_inclination -= 2 * inclination
+        absolute_inclination = beam_horizontal_inclination + inclination_in
+        beam_horizontal_inclination -= inclination_in + inclination_out
     elif orientation == Orientations.RIGHT:
-        absolute_inclination = beam_horizontal_inclination - inclination
-        beam_horizontal_inclination += 2 * inclination
+        absolute_inclination = beam_horizontal_inclination - inclination_in
+        beam_horizontal_inclination += inclination_in + inclination_out
 
     return absolute_inclination, beam_horizontal_inclination, beam_vertical_inclination
 

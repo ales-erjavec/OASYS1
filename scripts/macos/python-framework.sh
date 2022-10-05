@@ -56,6 +56,9 @@ python-framework-fetch-pkg() {
     local versiondir=${version%%[abrpc]*}  # strip alpha, beta, rc component
     local filename=python-${version}-macosx${macosver}.pkg
     local url="https://www.python.org/ftp/python/${versiondir}/${filename}"
+    
+    echo ${url}
+    
     mkdir -p "${cachedir}"
     if [[ -f "${cachedir}/${filename}" ]]; then
         verbose 1 "python-${version}-macosx{macosver}.pkg is present in cache"

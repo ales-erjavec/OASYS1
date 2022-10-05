@@ -249,8 +249,6 @@ class FigureCanvas3D(FigureCanvas):
                           elev=art3d._norm_angle(self.ax.elev - (dy / self.size_y) * 180))
 
     def mouseMoveEvent(self, event):
-        print(self.ax.azim, self.ax.elev)
-
         pos_x = event.pos().x() - self.x_c
         pos_y = -(event.pos().y() - self.y_c)
 
