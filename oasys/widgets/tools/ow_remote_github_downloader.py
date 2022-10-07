@@ -117,7 +117,6 @@ class OWRemoteGithubDownloader(oasyswidget.OWWidget):
     want_main_area = 0
     beam_file_name = Setting("")
     selectedIndex = Setting([0])
-    selectedURL = Setting("")
     selectedFile = Setting("")
     servers_list = Setting(1)
     repository = Setting("https://github.com/oasys-kit/ShadowOui-tutorial")
@@ -244,11 +243,11 @@ class OWRemoteGithubDownloader(oasyswidget.OWWidget):
             return
 
         try:
-            filepath, http_msg = urlretrieve(self.selectedURL,
+            filepath, http_msg = urlretrieve(self.urlselectedfile,
                                              filename=filename,
                                              reporthook=None,
                                              data=None)
-            print("Workspace file %s downloaded to %s" % (self.selectedURL, filepath))
+            print("Workspace file %s downloaded to %s" % (self.urlselectedfile, filepath))
             QMessageBox.information(self, "Success", "File saved: " + filepath, QMessageBox.Ok)
 
         except IOError:
