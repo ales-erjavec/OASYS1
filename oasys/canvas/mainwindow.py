@@ -463,6 +463,13 @@ def resource_path(path):
     return pkg_resources.resource_filename(__name__, path)
 
 from oasys.util.external_command import CommandFailed, run_command
+from oasys.util.oasys_registry import GenericRegistry
+from oasys.util.singleton import synchronized_method, Singleton
+
+@Singleton
+class MainWindowRegistry(GenericRegistry):
+    def __init__(self):
+        GenericRegistry.__init__(self, registry_name="MAIN-WINDOW-REGISTRY")
 
 class OASYSMainWindow(canvasmain.CanvasMainWindow):
 

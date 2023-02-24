@@ -1,9 +1,12 @@
 import os
 
+import oasys.canvas.mainwindow
 from PyQt5.QtWidgets import QScrollArea
 from PyQt5.QtCore import Qt
+from PyQt5.Qt import QIcon
 
 from orangewidget import widget
+from oasys.canvas.mainwindow import MainWindowRegistry
 
 def layout_insert(layout, widget, before):
     for i in range(layout.count()):
@@ -22,6 +25,23 @@ class OWWidget(widget.OWWidget):
         super().__init__()
 
         self.setWindowFlags(Qt.WindowMinimizeButtonHint | Qt.WindowCloseButtonHint)
+
+        canvas_window = MainWindowRegistry.Instance().get_instance(application_name=str(os.getpid()))
+
+    def __get_node_item(self):
+        return self.canvas_main_window.current_document().scene().item_for_node(self._node)
+
+    def changeNodeIcon(self, icon):
+        item = self.__get_node_item()
+        item.icon_item.hide()
+        if isinstance(icon, QIcon): item.setIcon(icon)
+        else:                       item.setIcon(QIcon(icon))
+        item.update()
+
+    def changeNodeTitle(self, title):
+        item = self.__get_node_item()
+        item.setTitle(title)
+        item.update()
 
     def insertLayout(self):
         """

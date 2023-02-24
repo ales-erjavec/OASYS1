@@ -5,6 +5,9 @@ from PyQt5.QtWidgets import QWidget, QGridLayout, QFileDialog, QMessageBox, QLab
 
 from orangewidget import gui as orange_gui
 
+
+current_canvas_window = None
+
 # ----------------------------------
 # Default fonts
 def widgetLabel(widget, label="", labelWidth=None, **misc):
