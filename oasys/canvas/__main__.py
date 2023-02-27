@@ -4,7 +4,6 @@ Orange Canvas main entry point
 """
 
 import os
-import sys
 import gc
 import re
 import logging
@@ -40,9 +39,8 @@ from orangecanvas.utils.settings import config_slot
 from orangecanvas.registry import cache, qt
 from orangecanvas.registry import WidgetRegistry, set_global_registry
 
-from oasys.canvas.mainwindow import OASYSMainWindow, MainWindowRegistry
+from oasys.canvas.mainwindow import OASYSMainWindow
 from oasys.canvas import conf
-from oasys.widgets import gui
 
 log = logging.getLogger(__name__)
 
@@ -345,11 +343,8 @@ def main(argv=None):
         automatic_saver_thread.finished.connect(app.exit)
         automatic_saver_thread.start()
 
-        MainWindowRegistry.Instance().register_instance(instance=canvas_window, application_name=str(os.getpid())) # need it for finding the canvas from the widgets
-
         canvas_window.show()
         canvas_window.raise_()
-
 
         want_welcome = True or \
             settings.value("startup/show-welcome-screen", True, type=bool) \

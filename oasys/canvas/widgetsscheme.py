@@ -148,13 +148,12 @@ class OASYSWidgetManager(WidgetManager):
         if hasattr(widget, "setWorkingDirectory"): widget.setWorkingDirectory(self.scheme().working_directory)
         if hasattr(widget, "setWorkspaceUnits"):   widget.setWorkspaceUnits(self.scheme().workspace_units)
         if hasattr(widget, "setCanvasMainWindow"): widget.setCanvasMainWindow(self.scheme().canvas_main_window)
-        if hasattr(widget, "createdFromNode"):     widget.createdFromNode(node)
 
         return widget
 
     def __working_directory_changed(self, workdir):
         for node in self.scheme().nodes:
-            w = self.widget_for_node(node)
+            w = self.widget_widget_for_nodefor_node(node)
             if hasattr(w, "setWorkingDirectory"):
                 w.setWorkingDirectory(workdir)
 

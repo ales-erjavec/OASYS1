@@ -462,14 +462,9 @@ def load_pypi_internal_libraries():
 def resource_path(path):
     return pkg_resources.resource_filename(__name__, path)
 
-from oasys.util.external_command import CommandFailed, run_command
+from oasys.util.external_command import run_command
 from oasys.util.oasys_registry import GenericRegistry
-from oasys.util.singleton import synchronized_method, Singleton
-
-@Singleton
-class MainWindowRegistry(GenericRegistry):
-    def __init__(self):
-        GenericRegistry.__init__(self, registry_name="MAIN-WINDOW-REGISTRY")
+from oasys.util.singleton import Singleton
 
 class OASYSMainWindow(canvasmain.CanvasMainWindow):
 
