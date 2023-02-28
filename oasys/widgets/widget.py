@@ -37,15 +37,17 @@ class OWWidget(widget.OWWidget):
 
     def changeNodeIcon(self, icon):
        node_item = self.getNodeItem()
-       node_item.icon_item.hide()
-       if isinstance(icon, QIcon): node_item.setIcon(icon)
-       else:                       node_item.setIcon(QIcon(icon))
-       node_item.update()
+       if not node_item is None:
+           node_item.icon_item.hide()
+           if isinstance(icon, QIcon): node_item.setIcon(icon)
+           else:                       node_item.setIcon(QIcon(icon))
+           node_item.update()
 
     def changeNodeTitle(self, title):
         node_item = self.getNodeItem()
-        node_item.setTitle(title)
-        node_item.update()
+        if not node_item is None:
+            node_item.setTitle(title)
+            node_item.update()
 
     def insertLayout(self):
         """
