@@ -148,6 +148,7 @@ class OASYSWidgetManager(WidgetManager):
         if hasattr(widget, "setWorkingDirectory"): widget.setWorkingDirectory(self.scheme().working_directory)
         if hasattr(widget, "setWorkspaceUnits"):   widget.setWorkspaceUnits(self.scheme().workspace_units)
         if hasattr(widget, "setCanvasMainWindow"): widget.setCanvasMainWindow(self.scheme().canvas_main_window)
+        if hasattr(widget, "createdFromNode"):     widget.createdFromNode(node)
 
         return widget
 

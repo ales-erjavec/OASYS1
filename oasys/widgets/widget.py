@@ -24,19 +24,26 @@ class OWWidget(widget.OWWidget):
 
         self.setWindowFlags(Qt.WindowMinimizeButtonHint | Qt.WindowCloseButtonHint)
 
+    def getScene(self):
+        return self.canvas_main_window.current_document().scene()
+
     def getNode(self):
-        return self.canvas_main_window.current_document().scene().node_for_item(self._node_item)
+        if self._node is None: self._node = self.getScene().node_for_item(self._node_item)
+        return self._node
+
+    def getNodeItem(self):
+        if self._node_item is None: self._node_item = self.getScene().item_for_node(self._node)
+        return self._node_item
 
     def changeNodeIcon(self, icon):
-        try:
-            self._node_item.icon_item.hide()
-            if isinstance(icon, QIcon): self._node_item.setIcon(icon)
-            else:                       self._node_item.setIcon(QIcon(icon))
-            self._node_item.update()
-        except:
-            pass
+       node_item = self.getNodeItem()
+       node_item.icon_item.hide()
+       if isinstance(icon, QIcon): node_item.setIcon(icon)
+       else:                       node_item.setIcon(QIcon(icon))
+       node_item.update()
 
     def changeNodeTitle(self, title):
+
         self._node_item.setTitle(title)
         self._node_item.update()
 
