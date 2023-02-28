@@ -9,7 +9,7 @@ from setuptools import setup
 
 NAME = 'OASYS1'
 
-VERSION = '1.2.122'
+VERSION = '1.2.123'
 
 ISRELEASED = True
 
@@ -60,8 +60,8 @@ INSTALL_REQUIRES = (
     'silx==0.15.0',
     'hdf5plugin',
     'srxraylib>=1.0.28',
-    'syned>=1.0.20',
-    'wofry>=1.0.25',
+    'syned>=1.0.26',
+    'wofry>=1.0.31',
 )
 
 
