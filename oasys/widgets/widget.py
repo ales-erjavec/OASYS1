@@ -43,9 +43,9 @@ class OWWidget(widget.OWWidget):
        node_item.update()
 
     def changeNodeTitle(self, title):
-
-        self._node_item.setTitle(title)
-        self._node_item.update()
+        node_item = self.getNodeItem()
+        node_item.setTitle(title)
+        node_item.update()
 
     def insertLayout(self):
         """
