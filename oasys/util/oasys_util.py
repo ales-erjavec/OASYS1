@@ -265,32 +265,43 @@ class ChemicalFormulaParser(object):
     def parse_formula(cls, formula):
         return parse(formula).getsyms()
 
-def get_fwhm(histogram, bins):
-    quote = numpy.max(histogram)*0.5
-    cursor = numpy.where(histogram >= quote)
+def get_fwhm(histogram, bins, ret0=None):
+    fwhm = ret0
+    quote = ret0
+    coordinates = None
 
-    if histogram[cursor].size > 1:
-        bin_size    = bins[1]-bins[0]
-        fwhm        = bin_size*(cursor[0][-1]-cursor[0][0])
-        coordinates = (bins[cursor[0][0]], bins[cursor[0][-1]])
-    else:
-        fwhm = 0.0
-        coordinates = None
+    if histogram.size > 1:
+        quote = numpy.max(histogram)*0.5
+        cursor = numpy.where(histogram >= quote)
+
+        if histogram[cursor].size > 1:
+            bin_size    = bins[1]-bins[0]
+            fwhm        = bin_size*(cursor[0][-1]-cursor[0][0])
+            coordinates = (bins[cursor[0][0]], bins[cursor[0][-1]])
 
     return fwhm, quote, coordinates
 
-def get_sigma(histogram, bins):
-    frequency = histogram/numpy.sum(histogram)
-    average   = numpy.sum(frequency*bins)
-    return numpy.sqrt(numpy.sum(frequency*((bins-average)**2)))
+def get_sigma(histogram, bins, ret0=None):
+    if histogram.size > 1:
+        frequency = histogram/numpy.sum(histogram)
+        average   = numpy.sum(frequency*bins)
+        return numpy.sqrt(numpy.sum(frequency*((bins-average)**2)))
+    else:
+        return ret0
 
-def get_rms(histogram, bins):
-    frequency = histogram/numpy.sum(histogram)
-    return numpy.sqrt(numpy.sum(frequency*(bins**2)))
+def get_rms(histogram, bins, ret0=None):
+    if histogram.size > 1:
+        frequency = histogram/numpy.sum(histogram)
+        return numpy.sqrt(numpy.sum(frequency*(bins**2)))
+    else:
+        return ret0
 
-def get_average(histogram, bins):
-    frequency = histogram/numpy.sum(histogram)
-    return numpy.sum(frequency*bins)
+def get_average(histogram, bins, ret0=None):
+    if histogram.size > 1:
+        frequency = histogram/numpy.sum(histogram)
+        return numpy.sum(frequency*bins)
+    else:
+        return ret0
 
 ###################################
 
