@@ -154,7 +154,7 @@ class OASYSWidgetManager(WidgetManager):
 
     def __working_directory_changed(self, workdir):
         for node in self.scheme().nodes:
-            w = self.widget_widget_for_nodefor_node(node)
+            w = self.widget_for_node(node)
             if hasattr(w, "setWorkingDirectory"):
                 w.setWorkingDirectory(workdir)
 
