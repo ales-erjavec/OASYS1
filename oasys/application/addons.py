@@ -967,13 +967,25 @@ class Installer(QObject):
             if command == Install:
                 self.setStatusMessage(
                     "Installing {}".format(cleanup(pkg.installable.name)))
-                if self.conda: self.conda.install(pkg.installable, raise_on_fail=False)
-                self.pip.install(pkg.installable, admin=not IS_WINDOW)
+                if self.conda:
+                    self.conda.install(pkg.installable, raise_on_fail=False)
+                else:
+                    if IS_WINDOW:
+                        try:    self.pip.install(pkg.installable, admin=True)
+                        except: self.pip.install(pkg.installable, admin=False)
+                    else:
+                        self.pip.install(pkg.installable, admin=True)
             elif command == Upgrade:
                 self.setStatusMessage(
                     "Upgrading {}".format(cleanup(pkg.installable.name)))
-                if self.conda: self.conda.upgrade(pkg.installable, raise_on_fail=False)
-                self.pip.upgrade(pkg.installable, admin=not IS_WINDOW)
+                if self.conda:
+                    self.conda.upgrade(pkg.installable, raise_on_fail=False)
+                else:
+                    if IS_WINDOW:
+                        try:    self.pip.upgrade(pkg.installable, admin=True)
+                        except: self.pip.upgrade(pkg.installable, admin=False)
+                    else:
+                        self.pip.upgrade(pkg.installable, admin=True)
             elif command == Uninstall:
                 self.setStatusMessage(
                     "Uninstalling {}".format(cleanup(pkg.local.project_name)))
