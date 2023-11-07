@@ -7,4 +7,4 @@ wofry
 OASYS1
 silx==0.15.0
 PyQt5==5.15.2
-pip==22.2.2
+pip==23.3.1
