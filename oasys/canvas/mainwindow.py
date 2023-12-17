@@ -36,7 +36,6 @@ import oasys.application.internal_libraries as internal_libraries
 
 from . import widgetsscheme
 from .conf import oasysconf
-
 from oasys.util.oasys_util import ShowWaitDialog
 from urllib.request import urlopen
 
@@ -55,9 +54,7 @@ class OASYSUserSettings(settings.UserSettingsDialog):
 
         box = QWidget(self, objectName="working-directory-container")
         layout = QVBoxLayout()
-        self.default_wd_label = QLabel(
-            QSettings().value("output/default-working-directory",
-                              "", type=str))
+        self.default_wd_label = QLabel(widgetsscheme.check_working_directory(QSettings().value("output/default-working-directory", "", type=str)))
         pb = QPushButton("Change ...")
         pb.clicked.connect(self.change_working_directory)
 
@@ -278,12 +275,10 @@ class OASYSUserSettings(settings.UserSettingsDialog):
         QSettings().setValue("output/wonder-default-automatic", self.combo_default_automatic_wonder.currentIndex())
 
     def change_working_directory(self):
-        cur_wd = QSettings().value("output/default-working-directory",
-                                   os.path.expanduser("~/Oasys"), type=str)
-        new_wd = QFileDialog.getExistingDirectory(
-            self, "Set working directory", cur_wd
-        )
+        cur_wd = widgetsscheme.check_working_directory(QSettings().value("output/default-working-directory", os.path.expanduser("~/Oasys"), type=str))
+        new_wd = QFileDialog.getExistingDirectory(self, "Set working directory", cur_wd)
         if new_wd:
+            new_wd = widgetsscheme.check_working_directory(new_wd)
             QSettings().setValue("output/default-working-directory", new_wd)
             self.default_wd_label.setText(new_wd)
 
@@ -303,9 +298,7 @@ class OASYSSchemeInfoDialog(schemeinfo.SchemeInfoDialog):
         self.working_dir_line = QLineEdit(self)
         self.working_dir_line.setReadOnly(True)
 
-        cur_wd = (settings.value("output/default-working-directory",
-                                 "", type=str) or
-                  os.path.expanduser("~/Oasys"))
+        cur_wd = widgetsscheme.check_working_directory(settings.value("output/default-working-directory", "", type=str) or os.path.expanduser("~/Oasys"))
 
         self.working_dir_line.setText(cur_wd)
         pb = QPushButton("Change ...")
@@ -319,7 +312,6 @@ class OASYSSchemeInfoDialog(schemeinfo.SchemeInfoDialog):
         self.units_edit = QWidget(self)
         self.units_edit.setLayout(QGridLayout())
         self.units_edit.layout().setContentsMargins(0, 0, 0, 0)
-
 
         self.combo_units = QComboBox()
         self.combo_units.addItems([self.tr("m"),
@@ -648,7 +640,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         """
         log = logging.getLogger(__name__)
 
-        default_workdir = QSettings().value("output/default-working-directory", os.path.expanduser("~/Oasys"), type=str)
+        default_workdir = widgetsscheme.check_working_directory(QSettings().value("output/default-working-directory", os.path.expanduser("~/Oasys"), type=str))
         default_units   = QSettings().value("output/default-units", 1, type=int)
 
         if "http" in filename: is_remote = True
@@ -669,10 +661,10 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
 
             doc  = ElementTree.parse(contents)
             root = doc.getroot()
-            workdir     = root.get("working_directory", default_workdir)
-            workunits   = root.get("workspace_units", str(default_units))
-            title       = root.get("title", "untitled")
-            description = root.get("description", "")
+            working_directory  = root.get("working_directory", default_workdir)
+            working_units      = root.get("workspace_units", str(default_units))
+            title              = root.get("title", "untitled")
+            description        = root.get("description", "")
             # First parse the contents into intermediate representation
             # to catch format errors early (will be re-parsed later).
             try:
@@ -687,8 +679,10 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                      parent=self)
                 return None
 
-            if not workdir or not os.path.isdir(workdir): workdir = default_workdir
-            if workunits is None: workunits = default_units
+            working_directory = widgetsscheme.check_working_directory(working_directory)
+
+            if not working_directory or not os.path.isdir(working_directory): working_directory = default_workdir
+            if working_units is None: working_units = default_units
         except Exception:
             return None
 
@@ -697,8 +691,8 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         new_scheme = widgetsscheme.OASYSWidgetsScheme(parent=self)
 
         if not title is None: new_scheme.title = title
-        new_scheme.working_directory = workdir
-        new_scheme.workspace_units   = int(workunits)
+        new_scheme.working_directory = working_directory
+        new_scheme.workspace_units   = int(working_units)
         if not description is None: new_scheme.description = description
 
         status = self.show_scheme_properties_for(new_scheme, self.tr("Properties of " + new_scheme.title))
@@ -718,8 +712,8 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
 
             message = None
             if title          != new_scheme.title:             message = "Workflow title"
-            if workdir        != new_scheme.working_directory: message = "Workflow working directory" if message is None else (message + ", working directory")
-            if int(workunits) != new_scheme.workspace_units:   message = "Workflow units" if message is None else (message + ", units")
+            if working_directory        != new_scheme.working_directory: message = "Workflow working directory" if message is None else (message + ", working directory")
+            if int(working_units) != new_scheme.workspace_units:   message = "Workflow units" if message is None else (message + ", units")
             if description    != new_scheme.description:       message = "Workflow description" if message is None else (message + ", description")
 
             if not message is None:

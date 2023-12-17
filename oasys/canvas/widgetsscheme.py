@@ -29,30 +29,25 @@ from orangewidget.canvas.workflow import (
 log = logging.getLogger(__name__)
 
 
+def check_working_directory(working_directory):
+    if sys.platform == "win32": return working_directory.replace("/", "\\")  # weird bug since 12/2023
+    else:                       return working_directory.replace("\\", "/")
+
 class OASYSWidgetsScheme(WidgetsScheme):
     #: Signal emitted when the working directory changes.
     working_directory_changed = Signal(str)
     workspace_units_changed = Signal(int)
 
-    def __init__(self, parent=None, title=None, description=None,
-                 working_directory=None, workspace_units=None):
+    def __init__(self, parent=None, title=None, description=None, working_directory=None, workspace_units=None):
         self.__canvas_main_window = parent
 
         settings = QSettings()
 
-        self.__working_directory = (
-            working_directory or
-            settings.value("output/default-working-directory",
-                           os.path.expanduser("~/Oasys"), type=str))
+        self.__working_directory = (working_directory or settings.value("output/default-working-directory", os.path.expanduser("~/Oasys"), type=str))
+        self.__working_directory = check_working_directory(self.__working_directory)
+        if not os.path.exists(self.__working_directory): os.makedirs(self.__working_directory, exist_ok=True)
 
-        if not os.path.exists(self.__working_directory):
-            os.makedirs(self.__working_directory, exist_ok=True)
-
-        #QSettings().setValue("output/default-units", 1)
-
-        self.__workspace_units = (
-            workspace_units or
-            settings.value("output/default-units", 1, type=int))
+        self.__workspace_units = (workspace_units or settings.value("output/default-units", 1, type=int))
 
         super().__init__(parent, title=title, description=description)
 
@@ -71,6 +66,8 @@ class OASYSWidgetsScheme(WidgetsScheme):
         """
         Set the scheme working_directory.
         """
+        working_directory = check_working_directory(working_directory)
+
         if self.__working_directory != working_directory:
             self.__working_directory = working_directory
             self.working_directory_changed.emit(working_directory)
@@ -124,8 +121,7 @@ class OASYSWidgetsScheme(WidgetsScheme):
         root.set("working_directory", self.working_directory or "")
         root.set("workspace_units", str(self.workspace_units) or "")
 
-        if pretty:
-            readwrite.indent(tree.getroot(), 0)
+        if pretty: readwrite.indent(tree.getroot(), 0)
 
         if sys.version_info < (2, 7):
             # in Python 2.6 the write does not have xml_declaration parameter.
