@@ -360,8 +360,8 @@ class OASYSSchemeInfoDialog(schemeinfo.SchemeInfoDialog):
         self.combo_units.setCurrentIndex(scheme.workspace_units)
 
     def __change_working_directory(self):
-        cur_wd = self.working_dir_line.text()
-        new_wd = QFileDialog.getExistingDirectory(self, self.tr("Set working directory"), cur_wd)
+        cur_wd = widgetsscheme.check_working_directory(self.working_dir_line.text())
+        new_wd = widgetsscheme.check_working_directory(QFileDialog.getExistingDirectory(self, self.tr("Set working directory"), cur_wd))
         if new_wd: self.working_dir_line.setText(new_wd)
 
     def title(self):
@@ -762,7 +762,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
             return new_scheme
 
     def set_new_scheme(self, new_scheme):
-        dlg = ShowWaitDialog("Loading Workflow...", "\nLoading Workflow " + new_scheme.title + " ...\n", parent=self)
+        dlg = ShowWaitDialog("Loading Workflow...", "Loading Workflow " + new_scheme.title, parent=self)
         dlg.show()
 
         raised_exception = None
@@ -995,7 +995,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
         status = dialog.exec_()
 
         if status == QDialog.Accepted:
-            scheme.working_directory = dialog.workingDirectory()
+            scheme.working_directory = widgetsscheme.check_working_directory(dialog.workingDirectory())
             scheme.workspace_units = dialog.workspaceUnits()
             os.chdir(scheme.working_directory)
 

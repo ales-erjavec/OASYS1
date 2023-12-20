@@ -159,46 +159,32 @@ try:
             dialog = ShowTextDialog(title, text, width, height, parent, label, button)
             dialog.show()
 
-    import threading
+    import sys, threading
 
-    class ShowWaitDialog(QtWidgets.QDialog):
-        def __init__(self, title, text, width=500, height=80, parent=None, wait=0.25):
-            QtWidgets.QDialog.__init__(self, parent)
-            self.setModal(True)
-            self.setWindowTitle(title)
-            layout = QtWidgets.QVBoxLayout(self)
-            layout.addWidget(QtWidgets.QLabel(text))
-            self.setFixedWidth(width)
-            self.setFixedHeight(height)
-            self.__progress = QtWidgets.QProgressBar(self)
-            self.__progress.setFixedWidth(width*0.95)
-            self.__progress.setFixedHeight(20)
-            self.__progress.setTextVisible(False)
-            layout.addWidget(self.__progress)
-            self.__thread = None
-            self.__wait = wait
-
-        def show(self):
-            def animate_progress_bar():
-                value = 0
-                while (self.__run_progress):
-                    value += 10
-                    if value > 100: value = 0
-                    self.__progress.setValue(value)
-                    time.sleep(self.__wait)
-
-            super().show()
-            self.__run_progress = True
-            self.__thread = threading.Thread(target=animate_progress_bar).start()
-
-        def hide(self):
-            self.__run_progress = False
-            if not self.__thread is None: self.__thread.join()
-            super().hide()
-
-    from PyQt5.QtWidgets import QWidget
+    from PyQt5.QtWidgets import QWidget, QDialog, QVBoxLayout, QLabel
     from PyQt5.QtGui import QPainter, QPalette, QBrush, QPen, QColor
     from PyQt5.QtCore import Qt
+
+    class ShowWaitDialog(QDialog):
+        def __init__(self, title, text, width=500, height=80, parent=None):
+            QDialog.__init__(self, parent)
+            self.setModal(True)
+            self.setWindowTitle(title)
+            layout = QVBoxLayout(self)
+            self.setFixedWidth(width)
+            self.setFixedHeight(height)
+            label = QLabel()
+            label.setFixedWidth(width*0.95)
+            label.setText(text)
+            label.setAlignment(Qt.AlignCenter)
+            label.setStyleSheet("font: 14px")
+            layout.addWidget(label)
+            label = QLabel()
+            label.setFixedWidth(width*0.95)
+            label.setText("Please wait....")
+            label.setAlignment(Qt.AlignCenter)
+            label.setStyleSheet("font: bold italic 16px; color: rgb(232, 120, 32);")
+            layout.addWidget(label)
 
     class Overlay(QWidget):
 

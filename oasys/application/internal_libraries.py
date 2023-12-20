@@ -56,7 +56,7 @@ for a in open(os.path.join(package_dirname("oasys.application"), "data", interna
     a = a.strip()
     if a:
         a = a.split(sep="==")
-        library_name = a[0]
+        library_name = a[0].lower()
         INTERNAL_LIBRARIES.append(library_name)
         if len(a) == 2:
             MAX_VERSION[library_name] = a[1]
@@ -90,14 +90,15 @@ def is_updatable(item):
     if isinstance(item, Available) or isinstance(item, Installable) or item.installable is None:
         return False
     inst, dist = item
+    project_name = str(dist.project_name).lower()
     try:
         if version.StrictVersion(dist.version) < version.StrictVersion(inst.version):
-            if MAX_VERSION[dist.project_name] is None: return True
-            else: return version.StrictVersion(MAX_VERSION[dist.project_name]) >= version.StrictVersion(inst.version)
+            if MAX_VERSION[project_name] is None: return True
+            else: return version.StrictVersion(MAX_VERSION[project_name]) >= version.StrictVersion(inst.version)
     except ValueError:
         if version.LooseVersion(dist.version) < version.LooseVersion(inst.version):
-            if MAX_VERSION[dist.project_name] is None: return True
-            else: return version.LooseVersion(MAX_VERSION[dist.project_name]) >= version.LooseVersion(inst.version)
+            if MAX_VERSION[project_name] is None: return True
+            else: return version.LooseVersion(MAX_VERSION[project_name]) >= version.LooseVersion(inst.version)
 
 def is_installable(item):
     if isinstance(item, Available) or isinstance(item, Installable) or item.installable is None: return True
