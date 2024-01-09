@@ -61,12 +61,12 @@ is_auto_update = True
 
 try:
     for package in OFFICIAL_ADDONS:
-        r = urlopen(PYPI_API_JSON.format(name=package)).read().decode("utf-8")
-        p = json.loads(r)
-        p["releases"] = p["releases"][p["info"]["version"]] # load only the last version
+        p = requests.get(url=PYPI_API_JSON.format(name=package)).json()
+        p["releases"] = {p["info"]["version"] : p["releases"][p["info"]["version"]]} # load only the last version
 
         official_addons_list.append(p)
-except:
+except Exception as e:
+    print(type(e), e)
     is_auto_update = False
 
 OFFICIAL_ADDON_LIST = "https://raw.githubusercontent.com/oasys-kit/oasys-addons/master/list"
@@ -81,7 +81,7 @@ Installable = namedtuple(
      "summary",
      "description",
      "package_url",
-     "release_urls"]
+     "release_urls",]
 )
 
 ReleaseUrl = namedtuple(
@@ -790,13 +790,14 @@ def list_available_versions():
     for addon in addons:
         try:
             info = addon["info"]
+            physical_url = addon["releases"][info["version"]][-1]["url"]
             packages.append(
                 Installable(info["name"], info["version"],
                             info["summary"], info["description"],
                             info["package_url"],
-                            info["package_url"])
+                            [physical_url])
             )
-        except (TypeError, KeyError):
+        except (TypeError, KeyError) as e:
             continue  # skip invalid packages
 
     return packages
@@ -965,25 +966,27 @@ class Installer(QObject):
         command, pkg = self.__queue.popleft()
         try:
             if command == Install:
-                self.setStatusMessage(
-                    "Installing {}".format(cleanup(pkg.installable.name)))
+                self.setStatusMessage("Installing {}".format(cleanup(pkg.installable.name)))
                 if self.conda:
                     self.conda.install(pkg.installable, raise_on_fail=False)
                 else:
                     if IS_WINDOW:
                         try:    self.pip.install(pkg.installable, admin=True)
-                        except: self.pip.install(pkg.installable, admin=False)
+                        except:
+                            try:    self.pip.install(pkg.installable, admin=False)
+                            except: self.pip.install(pkg.installable, admin=True, from_url=True)
                     else:
                         self.pip.install(pkg.installable, admin=True)
             elif command == Upgrade:
-                self.setStatusMessage(
-                    "Upgrading {}".format(cleanup(pkg.installable.name)))
+                self.setStatusMessage("Upgrading {}".format(cleanup(pkg.installable.name)))
                 if self.conda:
                     self.conda.upgrade(pkg.installable, raise_on_fail=False)
                 else:
                     if IS_WINDOW:
                         try:    self.pip.upgrade(pkg.installable, admin=True)
-                        except: self.pip.upgrade(pkg.installable, admin=False)
+                        except:
+                            try:    self.pip.upgrade(pkg.installable, admin=False)
+                            except: self.pip.upgrade(pkg.installable, admin=True, from_url=True)
                     else:
                         self.pip.upgrade(pkg.installable, admin=True)
             elif command == Uninstall:
@@ -1013,20 +1016,25 @@ class PipInstaller:
         arguments = QSettings().value('add-ons/pip-install-arguments', '', type=str)
         self.arguments = shlex.split(arguments)
 
-    def install(self, pkg, admin=True):
+    def install(self, pkg, admin=True, from_url=False):
         if admin: cmd = ["python", "-m", "pip", "install"]
         else:     cmd = ["python", "-m", "pip", "install", "--user"]
         cmd.extend(self.arguments)
-        if pkg.package_url.startswith("http://") or pkg.package_url.startswith("https://"): cmd.append(pkg.name)
-        else: cmd.append(pkg.package_url) # Package url is path to the (local) wheel
+        if from_url:
+            cmd.append(pkg.release_urls[0])
+        else:
+            if pkg.package_url.startswith("http://") or pkg.package_url.startswith("https://"): cmd.append(pkg.name)
+            else: cmd.append(pkg.package_url) # Package url is path to the (local) wheel
 
         run_command(cmd)
 
-    def upgrade(self, package, admin=True):
+    def upgrade(self, package, admin=True, from_url=False):
         if admin: cmd = ["python", "-m", "pip", "install", "--upgrade", "--no-cache-dir"]
         else:     cmd = ["python", "-m", "pip", "install", "--upgrade", "--no-cache-dir", "--user"]
         cmd.extend(self.arguments)
-        cmd.append(package.name)
+
+        if from_url: cmd.append(package.release_urls[0])
+        else:        cmd.append(package.name)
 
         run_command(cmd)
 
