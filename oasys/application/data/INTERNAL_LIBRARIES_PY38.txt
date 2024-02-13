@@ -4,6 +4,8 @@ scipy==1.9.1
 srxraylib
 syned
 wofry
+wofryimpl
+shadow-hybrid-methods
 OASYS1
 silx==0.15.0
 PyQt5==5.15.2
