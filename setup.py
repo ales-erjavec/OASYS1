@@ -9,7 +9,7 @@ from setuptools import setup
 
 NAME = 'OASYS1'
 
-VERSION = '1.2.140'
+VERSION = '1.2.141'
 
 ISRELEASED = True
 
@@ -61,7 +61,6 @@ INSTALL_REQUIRES = (
     'srxraylib>=1.0.28',
     'syned>=1.0.28',
     'wofry>=1.0.31',
-    'oasys-hybrid-methods>=1.0.0',
 )
 
 

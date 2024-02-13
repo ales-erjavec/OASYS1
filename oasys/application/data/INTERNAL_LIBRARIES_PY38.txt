@@ -5,7 +5,6 @@ srxraylib
 syned
 wofry
 OASYS1
-oasys-hybrid-methods
 silx==0.15.0
 PyQt5==5.15.2
 pip==23.3.1
