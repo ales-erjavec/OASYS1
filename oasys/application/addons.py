@@ -5,7 +5,6 @@ import logging
 import re
 import errno
 import shlex
-import subprocess
 import itertools
 import json
 import traceback
@@ -39,8 +38,6 @@ from PyQt5.QtCore import (
     Qt, QObject, QMetaObject, QEvent, QSize, QTimer, QThread, Q_ARG,
     QSettings)
 from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
-
-from urllib.request import urlopen
 
 from orangecanvas.gui.utils import message_warning, message_information, \
                         message_critical as message_error
@@ -191,13 +188,24 @@ def get_meta_from_archive(path):
                 for key in ('Name', 'Version', 'Description', 'Summary')]
 
 
-def cleanup(name, sep="-"):
+def cleanup(name: str, sep="-"):
     """Used for sanitizing addon names. The function removes Orange/Orange3
     from the name and adds spaces before upper letters of the leftover to
     separate its words."""
-    prefix, separator, postfix = name.partition(sep)
-    name = postfix if separator == sep else prefix
-    return "".join(re.findall("[A-Z][a-z]*", name[0].upper() + name[1:]))
+
+    try:
+        display_name = ""
+        tokens       = name.split(sep=sep)
+        start        = 1 if tokens[0].lower() == "oasys1" else 0
+        for i in range(start, len(tokens)): display_name += tokens[i][0].upper() + tokens[i][1:] + " "
+
+        return display_name.strip()
+    except:
+        return name
+
+    #prefix, separator, postfix = name.partition(sep)
+    #name = postfix if separator == sep else prefix
+    #return "".join(re.findall("[A-Z][a-z]*", name[0].upper() + name[1:]))
 
 
 class AddonManagerWidget(QWidget):
@@ -302,8 +310,7 @@ class AddonManagerWidget(QWidget):
             item2.setToolTip(summary)
             item2.setData(item, Qt.UserRole)
 
-            if updatable:
-                version = "{} < {}".format(dist.version, ins.version)
+            if updatable: version = "{} < {}".format(dist.version, ins.version)
 
             item3 = QStandardItem(version)
             item3.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
@@ -314,10 +321,8 @@ class AddonManagerWidget(QWidget):
             model.appendRow([item1, item2, item3, item4])
 
         self.__view.resizeColumnToContents(0)
-        self.__view.setColumnWidth(
-            1, max(150, self.__view.sizeHintForColumn(1)))
-        self.__view.setColumnWidth(
-            2, max(150, self.__view.sizeHintForColumn(2)))
+        self.__view.setColumnWidth(1, max(150, self.__view.sizeHintForColumn(1)))
+        self.__view.setColumnWidth(2, max(150, self.__view.sizeHintForColumn(2)))
 
         if self.__items:
             self.__view.selectionModel().select(
@@ -642,9 +647,10 @@ class AddonManagerDialog(QDialog):
                 if d is not None:
                     dists[d.project_name] = d
 
-        project_names = unique(
-            itertools.chain(packages.keys(), dists.keys())
-        )
+        project_names = unique(itertools.chain(packages.keys(), dists.keys()))
+
+        project_names = [name for name in project_names]
+        project_names.sort(key=lambda x: x[7].upper() + x[8:])
 
         items = []
         for name in project_names:
@@ -701,12 +707,9 @@ class AddonManagerDialog(QDialog):
         for url in event.mimeData().urls():
             path = OSX_NSURL_toLocalFile(url) or url.toLocalFile()
             if path.endswith(self.ADDON_EXTENSIONS):
-                name, vers, summary, descr = (get_meta_from_archive(path) or
-                                              (os.path.basename(path), '', '', ''))
+                name, vers, summary, descr = (get_meta_from_archive(path) or (os.path.basename(path), '', '', ''))
                 names.append(cleanup(name))
-                packages.append(
-                    Installable(name, vers, summary,
-                                descr or summary, path, [path]))
+                packages.append(Installable(name, vers, summary, descr or summary, path, [path]))
         future = concurrent.futures.Future()
         future.set_result((AddonManagerDialog._packages or []) + packages)
         self._set_packages(future)
@@ -761,8 +764,6 @@ class AddonManagerDialog(QDialog):
         sys.exit(0)
 
 
-import platform
-
 def list_available_versions():
     """
     List add-ons available.
@@ -782,8 +783,7 @@ def list_available_versions():
               set(a.get("info", {}).get("name", "") for a in addons)
     for p in missing:
         response = requests.get(PYPI_API_JSON.format(name=p))
-        if response.status_code != 200:
-            continue
+        if response.status_code != 200: continue
         addons.append(response.json())
 
     packages = []
@@ -914,9 +914,7 @@ def installable_items(pypipackages, installed=[]):
             if d is not None:
                 dists[d.project_name] = d
 
-    project_names = unique(
-        itertools.chain(packages.keys(), dists.keys())
-    )
+    project_names = unique(itertools.chain(packages.keys(), dists.keys()))
 
     items = []
     for name in project_names:
