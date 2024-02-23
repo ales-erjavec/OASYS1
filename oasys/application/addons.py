@@ -195,9 +195,12 @@ def cleanup(name: str, sep="-"):
 
     try:
         display_name = ""
-        tokens       = name.split(sep=sep)
-        start        = 1 if tokens[0].lower() == "oasys1" else 0
-        for i in range(start, len(tokens)): display_name += tokens[i][0].upper() + tokens[i][1:] + " "
+        if name.strip().lower() == "oasys1":
+            display_name = name
+        else:
+            tokens       = name.split(sep=sep)
+            start        = 1 if tokens[0].lower() == "oasys1" else 0
+            for i in range(start, len(tokens)): display_name += tokens[i][0].upper() + tokens[i][1:] + " "
 
         return display_name.strip()
     except:
