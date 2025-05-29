@@ -9,7 +9,7 @@ import importlib_metadata
 from PyQt5.QtGui import QPixmap, QFont, QFontMetrics, QColor, QPainter, QIcon
 from PyQt5.QtCore import Qt, QCoreApplication, QPoint, QRect
 
-from orangewidget.canvas import config as owconfig
+from orangewidget.workflow import config as owconfig
 from orangecanvas import config
 
 from . import discovery, widgetsscheme
@@ -31,7 +31,7 @@ config.spec += [
                        "Check for updates every (in days)")
 ]
 
-class oasysconf(owconfig.orangeconfig):
+class oasysconf(owconfig.Config):
     OrganizationDomain = ""
     ApplicationName = "OASYS1"
 

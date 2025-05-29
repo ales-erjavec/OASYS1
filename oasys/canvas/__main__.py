@@ -185,7 +185,7 @@ def main(argv=None):
         rootlogger.addHandler(stream_handler)
         oasyslogger.addHandler(stream_handler)
 
-        config.set_default(conf.oasysconf)
+        config.set_default(conf.oasysconf())
         log.info("Starting 'OASYS' application.")
 
         qt_argv = argv[:1]
