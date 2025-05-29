@@ -22,7 +22,7 @@ from PyQt5.QtCore import pyqtSignal as Signal, pyqtProperty as Property
 
 from orangecanvas.scheme import Scheme, readwrite
 
-from orangewidget.canvas.workflow import (
+from orangewidget.workflow.widgetsscheme import (
     WidgetsScheme, WidgetManager, WidgetsSignalManager
 )
 

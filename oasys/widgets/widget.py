@@ -15,7 +15,7 @@ def layout_insert(layout, widget, before):
         raise ValueError("{} is not in layout".format(widget))
     layout.insertWidget(i, widget, )
 
-class OWWidget(widget.OWWidget):
+class OWWidget(widget.OWBaseWidget):
 
     IS_DEVELOP = False if not "OASYSDEVELOP" in os.environ.keys() else str(os.environ.get('OASYSDEVELOP')) == "1"
 
