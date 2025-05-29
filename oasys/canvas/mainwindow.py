@@ -518,7 +518,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                         objectName="new-oasys-instance",
                         toolTip=self.tr("Run a new OASYS instance"),
                         triggered=self.new_instance,
-                        icon=canvasmain.canvas_icons("Open.svg")
+                        icon=canvasmain.load_styled_svg_icon("Open.svg")
                         )
 
             file_menu = self.menuBar().children()[-1]
@@ -833,7 +833,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                     toolTip=self.tr("Open a new workflow."),
                     triggered=new_scheme,
                     shortcut=QKeySequence.New,
-                    icon=canvasmain.canvas_icons("New.svg")
+                    icon=canvasmain.load_styled_svg_icon("New.svg")
                     )
 
         open_action = \
@@ -842,7 +842,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                     toolTip=self.tr("Open a workflow."),
                     triggered=open_scheme,
                     shortcut=QKeySequence.Open,
-                    icon=canvasmain.canvas_icons("Open.svg")
+                    icon=canvasmain.load_styled_svg_icon("Open.svg")
                     )
 
         open_remote_action = \
@@ -852,7 +852,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                     triggered=open_scheme_remote,
                     shortcut=QKeySequence(Qt.ControlModifier | \
                                           (Qt.ShiftModifier | Qt.Key_U)),
-                    icon=canvasmain.canvas_icons("Documentation.svg")
+                    icon=canvasmain.load_styled_svg_icon("Documentation.svg")
                     )
 
         recent_action = \
@@ -862,7 +862,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                     triggered=open_recent,
                     shortcut=QKeySequence(Qt.ControlModifier | \
                                           (Qt.ShiftModifier | Qt.Key_R)),
-                    icon=canvasmain.canvas_icons("Recent.svg")
+                    icon=canvasmain.load_styled_svg_icon("Recent.svg")
                     )
 
         get_started_action = \
@@ -870,7 +870,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                     objectName="get-started-action",
                     toolTip=self.tr("OASYS School"),
                     triggered=get_started,
-                    icon=canvasmain.canvas_icons("Tutorials.svg")
+                    icon=canvasmain.load_styled_svg_icon("Tutorials.svg")
                     )
 
         documentation_action = \
@@ -878,7 +878,7 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
                     objectName="documentation-action",
                     toolTip=self.tr("View reference website."),
                     triggered=documentation,
-                    icon=canvasmain.canvas_icons("Get Started.svg")
+                    icon=canvasmain.load_styled_svg_icon("Get Started.svg")
                     )
 
         icon = resource_path("icons/Install.svg")
