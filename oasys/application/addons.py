@@ -43,7 +43,7 @@ from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from orangecanvas.gui.utils import message_warning, message_information, \
                         message_critical as message_error
-from orangecanvas.help.manager import get_dist_meta, trim, parse_meta
+from orangecanvas.utils.pkgmeta import get_dist_meta, trim, parse_meta
 
 from orangecanvas.resources import package_dirname
 

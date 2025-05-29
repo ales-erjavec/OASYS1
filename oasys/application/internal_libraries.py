@@ -38,7 +38,7 @@ from urllib.request import urlopen
 
 from orangecanvas.gui.utils import message_warning, message_information, \
                         message_critical as message_error
-from orangecanvas.help.manager import get_dist_meta, trim
+from orangecanvas.utils.pkgmeta import get_dist_meta, trim
 
 from orangecanvas.resources import package_dirname
 
