@@ -621,17 +621,6 @@ class OrangeListBox(QListWidget):
                 setattr(self.master, self.ogLabels, control_list)
         return control_list
 
-    def updateGeometries(self):
-        # A workaround for a bug in Qt
-        # (see: http://bugreports.qt.nokia.com/browse/QTBUG-14412)
-        if getattr(self, "_updatingGeometriesNow", False):
-            return
-        self._updatingGeometriesNow = True
-        try:
-            return super().updateGeometries()
-        finally:
-            self._updatingGeometriesNow = False
-
 
 class CallFrontListBox(orange_gui.ControlledCallFront):
     def action(self, value):
