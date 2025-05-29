@@ -777,7 +777,8 @@ class OASYSMainWindow(canvasmain.CanvasMainWindow):
 
         raised_exception = None
         try:
-            super().set_new_scheme(new_scheme)
+            super().set_scheme(new_scheme)
+            # super().set_new_scheme(new_scheme)
         except Exception as exception:
             raised_exception = exception
 
