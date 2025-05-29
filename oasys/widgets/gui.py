@@ -26,7 +26,7 @@ def lineEdit(widget, master, value, label=None, labelWidth=None,
          callbackOnType=False, focusInCallback=None,
          enterPlaceholder=False, **misc):
 
-    ledit = orange_gui.lineEdit(widget, master, value, label, labelWidth, orientation, box, callback, valueType, validator, controlWidth, callbackOnType, focusInCallback, enterPlaceholder, **misc)
+    ledit = orange_gui.lineEdit(widget, master, value, label, labelWidth, orientation, box, callback, valueType, validator, controlWidth, callbackOnType, focusInCallback, **misc)
 
     if value:
         if (valueType != str):
